@@ -329,6 +329,41 @@ public final class AllTests {
         check(after.warnings().stream().anyMatch(w -> w.contains("nincs net")), "a hiba látszik a figyelmeztetésekben");
     }
 
+    static void testDownloadCachesAndFallsBack() throws Exception {
+        List<List<String>> rows = new ArrayList<>();
+        rows.add(ARFIGYELO_HEADER);
+        rows.add(row("111", "Csirkemell filé Ft/kg", "18", "Csirkemellfilé", "Lidl", "kg", "1", "1990,0000", "2190,0000", "1990,0000", "1", "50", "190"));
+        byte[] xlsx = buildXlsx("Napi feltöltések - 2026-10-26", rows);
+        var http = com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1", 0), 0);
+        boolean[] up = {true};
+        http.createContext("/napi.xlsx", ex -> {
+            if (up[0]) {
+                ex.sendResponseHeaders(200, xlsx.length);
+                ex.getResponseBody().write(xlsx);
+            } else {
+                ex.sendResponseHeaders(503, -1);
+            }
+            ex.close();
+        });
+        http.start();
+        Path dir = Files.createTempDirectory("letoltes");
+        try {
+            String url = "http://127.0.0.1:" + http.getAddress().getPort() + "/napi.xlsx";
+            Path cache = dir.resolve("cache.xlsx");
+            ArfigyeloExcelProvider p = new ArfigyeloExcelProvider(CATALOG, url, null, cache);
+            PriceProvider.Snapshot s1 = p.load();
+            check(s1.source().contains("friss letöltés"), "letöltésből: " + s1.source());
+            check(Files.exists(cache), "elmentve a gyorsítótárba");
+            up[0] = false;
+            PriceProvider.Snapshot s2 = p.load();
+            check(s2.source().contains("utoljára letöltött"), "a mentett példányra váltott: " + s2.source());
+            eq(LocalDate.of(2026, 10, 26), s2.date(), "a mentett fájl dátuma");
+        } finally {
+            http.stop(0);
+            try (var w = Files.walk(dir)) { w.sorted(java.util.Comparator.reverseOrder()).forEach(f -> f.toFile().delete()); }
+        }
+    }
+
     // ---------- teljes rendszer ----------
 
     static void testWebServerEndToEnd() throws Exception {
