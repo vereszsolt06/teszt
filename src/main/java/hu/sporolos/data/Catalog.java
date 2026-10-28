@@ -1,0 +1,144 @@
+package hu.sporolos.data;
+
+import hu.sporolos.core.Json;
+import hu.sporolos.model.Models.Ingredient;
+import hu.sporolos.model.Models.PriceEntry;
+import hu.sporolos.model.Models.Recipe;
+import hu.sporolos.model.Models.Store;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+/**
+ * A recept-alapanyag katalógus, az üzletláncok és a receptek (resources/data/*.json),
+ * valamint az Árfigyelő-termékek alapanyagokhoz rendelése (kategória + opcionális kulcsszó).
+ */
+public final class Catalog {
+
+    /** Recept-alapanyag. Ha categoryIds üres, az Árfigyelő nem követi, ilyenkor basePrice a becslés. */
+    public record Product(String key, String name, double qty, String unit, double basePrice,
+                          Set<Integer> categoryIds, List<String> keywords) {
+        public boolean tracked() {
+            return !categoryIds.isEmpty();
+        }
+    }
+
+    /** Lánc a demó-szorzóval együtt. */
+    public record StoreInfo(Store store, double factor) {}
+
+    private final Map<String, Product> products = new LinkedHashMap<>();
+    private final Map<String, StoreInfo> stores = new LinkedHashMap<>();
+    private final List<Recipe> recipes = new ArrayList<>();
+    private final int foodCategoryMaxId;
+
+    public static Catalog loadDefault() {
+        try {
+            return new Catalog(readResource("/data/products.json"), readResource("/data/recipes.json"));
+        } catch (IOException e) {
+            throw new IllegalStateException("Nem sikerült betölteni a beépített adatokat", e);
+        }
+    }
+
+    public Catalog(String productsJson, String recipesJson) {
+        Map<String, Object> root = Json.obj(Json.parse(productsJson));
+        foodCategoryMaxId = (int) Json.num(root.get("foodCategoryMaxId"), 122);
+        for (Object o : Json.arr(root.get("stores"))) {
+            Map<String, Object> s = Json.obj(o);
+            Store st = new Store(Json.str(s.get("id")), Json.str(s.get("name")), Json.str(s.get("color")));
+            stores.put(st.id(), new StoreInfo(st, Json.num(s.get("factor"), 1.0)));
+        }
+        for (Object o : Json.arr(root.get("products"))) {
+            Map<String, Object> p = Json.obj(o);
+            List<String> kws = Json.arr(p.get("keywords")).stream().map(k -> normalize(Json.str(k))).toList();
+            Set<Integer> cats = Json.arr(p.get("categoryIds")).stream()
+                    .map(c -> (int) Json.num(c, -1)).collect(Collectors.toUnmodifiableSet());
+            Product prod = new Product(Json.str(p.get("key")), Json.str(p.get("name")),
+                    Json.num(p.get("qty"), 1), Json.str(p.get("unit")), Json.num(p.get("basePrice"), 0),
+                    cats, kws);
+            products.put(prod.key(), prod);
+        }
+
+        Map<String, Object> rroot = Json.obj(Json.parse(recipesJson));
+        for (Object o : Json.arr(rroot.get("recipes"))) {
+            Map<String, Object> r = Json.obj(o);
+            List<Ingredient> ings = new ArrayList<>();
+            for (Object io : Json.arr(r.get("ingredients"))) {
+                Map<String, Object> i = Json.obj(io);
+                String key = Json.str(i.get("key"));
+                boolean pantry = Boolean.TRUE.equals(i.get("pantry"));
+                Product prod = products.get(key);
+                if (!pantry && prod == null) {
+                    throw new IllegalStateException("A(z) '" + r.get("id") + "' recept ismeretlen alapanyagot használ: " + key);
+                }
+                String label = i.get("label") != null ? Json.str(i.get("label")) : prod.name();
+                ings.add(new Ingredient(key, label, Json.str(i.get("amount")), Json.num(i.get("share"), 0), pantry));
+            }
+            List<String> tags = Json.arr(r.get("tags")).stream().map(Json::str).toList();
+            List<String> steps = Json.arr(r.get("steps")).stream().map(Json::str).toList();
+            recipes.add(new Recipe(Json.str(r.get("id")), Json.str(r.get("name")), Json.str(r.get("emoji")),
+                    (int) Json.num(r.get("minutes"), 30), (int) Json.num(r.get("servings"), 4),
+                    Json.str(r.get("difficulty")), tags, ings, steps));
+        }
+    }
+
+    public Map<String, Product> products() { return products; }
+    public Map<String, StoreInfo> stores() { return stores; }
+    public List<Recipe> recipes() { return recipes; }
+
+    public boolean isFoodCategory(int categoryId) {
+        return categoryId > 0 && categoryId <= foodCategoryMaxId;
+    }
+
+    /** Illeszkedik-e egy bolti termék a recept-alapanyagra (kategória + ha van, kulcsszó a névben). */
+    public boolean matches(Product p, PriceEntry e) {
+        if (!p.categoryIds().contains(e.categoryId())) return false;
+        if (p.keywords().isEmpty()) return true;
+        String n = normalize(e.productName());
+        for (String kw : p.keywords()) if (n.contains(kw)) return true;
+        return false;
+    }
+
+    /**
+     * Üzletlánc azonosító a névből ("SPAR" → "spar"); ismeretlen láncot felvesz,
+     * hogy új láncok megjelenése se törje el az appot.
+     */
+    public synchronized String resolveStore(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        String n = normalize(raw).trim();
+        for (StoreInfo s : stores.values()) {
+            if (n.equals(s.store().id()) || n.equals(normalize(s.store().name()).trim())) return s.store().id();
+        }
+        for (StoreInfo s : stores.values()) {
+            if (n.contains(s.store().id())) return s.store().id();
+        }
+        String id = n.replace(' ', '-');
+        String[] palette = {"#5b6b5f", "#7a4e8c", "#a0522d", "#2f6f73", "#8a6d1d"};
+        stores.put(id, new StoreInfo(new Store(id, raw.trim(), palette[Math.floorMod(id.hashCode(), palette.length)]), 1.0));
+        return id;
+    }
+
+    /** Kisbetűsít, ékezetet töröl, a nem betű/szám karaktereket szóközre cseréli. */
+    public static String normalize(String s) {
+        if (s == null) return "";
+        return Normalizer.normalize(s.toLowerCase(Locale.ROOT), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replaceAll("[^a-z0-9]+", " ")
+                .trim();
+    }
+
+    static String readResource(String path) throws IOException {
+        try (InputStream in = Catalog.class.getResourceAsStream(path)) {
+            if (in == null) throw new IOException("Hiányzó erőforrás: " + path);
+            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        }
+    }
+}
