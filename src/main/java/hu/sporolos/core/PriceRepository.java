@@ -57,7 +57,8 @@ public final class PriceRepository {
                 snap = p.load();
                 break;
             } catch (Exception e) {
-                String msg = p.getClass().getSimpleName() + ": " + e.getMessage();
+                String msg = p.getClass().getSimpleName() + ": "
+                        + (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
                 warnings.add(msg);
                 System.err.println("[árforrás] " + msg);
             }
