@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spórolós Konyha</title>
+  <meta name="description" content="Receptajánló a GVH Árfigyelő napi árai alapján: mit főzz ma abból, ami az adott boltban épp jó áron van.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true"><path d="M6 10h20l8 10-8 10H6z" fill="var(--tag)" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round"/><circle cx="25" cy="20" r="2.6" fill="var(--ink)"/></svg>
+      <div>
+        <h1>Spórolós Konyha</h1>
+        <p class="source" id="source">Árak betöltése…</p>
+      </div>
+    </div>
+    <button class="ghost" id="refresh" type="button" title="Árak újratöltése az Árfigyelőből">Árak frissítése</button>
+  </header>
+
+  <nav class="stores" aria-label="Bolt választása">
+    <p class="stores-hint">Hol vásárolsz ma?</p>
+    <div class="store-row" id="stores" role="tablist"></div>
+  </nav>
+
+  <main class="layout">
+    <section class="cook" aria-labelledby="pick-title">
+      <div class="filters" id="filters" role="group" aria-label="Szűrés">
+        <button type="button" data-tag="" aria-pressed="true">Bármi</button>
+        <button type="button" data-tag="gyors" aria-pressed="false">Gyors</button>
+        <button type="button" data-tag="olcsó" aria-pressed="false">Olcsó</button>
+        <button type="button" data-tag="vega" aria-pressed="false">Húsmentes</button>
+        <button type="button" data-tag="magyaros" aria-pressed="false">Magyaros</button>
+        <button type="button" data-tag="húsos" aria-pressed="false">Húsos</button>
+      </div>
+
+      <article class="pick" id="pick" aria-live="polite">
+        <div class="pick-skeleton">Recept keresése…</div>
+      </article>
+
+      <div class="actions">
+        <button class="primary" id="another" type="button">Másik receptet kérek</button>
+        <span class="counter" id="counter"></span>
+      </div>
+
+      <h2 class="section-title">Ebben a boltban még kifizetődő</h2>
+      <ol class="more" id="more"></ol>
+    </section>
+
+    <aside class="deals" aria-labelledby="deals-title">
+      <div class="deals-head">
+        <h2 id="deals-title" class="section-title">Most jó áron</h2>
+        <label class="switch">
+          <input type="checkbox" id="onlyIngredients" checked>
+          <span>csak főzéshez</span>
+        </label>
+      </div>
+      <ul class="tags" id="deals"></ul>
+    </aside>
+  </main>
+
+  <footer class="foot">
+    <p>Az árak a <a href="https://arfigyelo.gvh.hu" target="_blank" rel="noopener">GVH Árfigyelő</a> napi adataiból származnak; a boltban kiírt ár az irányadó. A recept költsége a felhasznált mennyiségre jutó rész, nem a teljes csomag ára.</p>
+  </footer>
+
+  <template id="tpl-tag">
+    <li class="tag">
+      <span class="tag-kind"></span>
+      <span class="tag-name"></span>
+      <span class="tag-prices"><s class="tag-old"></s> <b class="tag-price"></b></span>
+      <span class="tag-reason"></span>
+    </li>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Maven-leíró az IDE-k (IntelliJ IDEA, Eclipse, VS Code) kényelméért.
+  Külső függősége nincs; a projekt a build.sh / build.cmd szkriptekkel Maven nélkül is fordul.
+  Futtatás Mavennel:  mvn -q package && java -jar target/sporolos-konyha.jar
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>hu.sporolos</groupId>
+  <artifactId>sporolos-konyha</artifactId>
+  <version>1.0.0</version>
+  <packaging>jar</packaging>
+  <name>Spórolós Konyha</name>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <build>
+    <finalName>sporolos-konyha</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.4.2</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>hu.sporolos.App</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+      <!-- a saját tesztfuttatót (AllTests) a build.sh test indítja; a Surefire itt nem keres JUnit teszteket -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.5.2</version>
+        <configuration>
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

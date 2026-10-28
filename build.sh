@@ -22,7 +22,7 @@ case "$1" in
     find src/test/java -name '*.java' > target/test-sources.txt
     javac -encoding UTF-8 --release 21 -cp target/classes -d target/test-classes @target/test-sources.txt
     cp -r src/test/resources/. target/test-classes/ 2>/dev/null || true
-    java -cp target/classes:target/test-classes hu.sporolos.AllTests
+    java -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 -cp target/classes:target/test-classes hu.sporolos.AllTests
     ;;
   run)
     java -jar target/sporolos-konyha.jar

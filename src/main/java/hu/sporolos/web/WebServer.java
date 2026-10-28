@@ -34,6 +34,7 @@ public final class WebServer {
 
     private final PriceRepository repo;
     private HttpServer server;
+    private java.util.concurrent.ExecutorService executor;
 
     public WebServer(PriceRepository repo) {
         this.repo = repo;
@@ -43,13 +44,15 @@ public final class WebServer {
         server = HttpServer.create(new InetSocketAddress(host, port), 0);
         server.createContext("/api/", this::api);
         server.createContext("/", this::staticFile);
-        server.setExecutor(Executors.newFixedThreadPool(4));
+        executor = Executors.newFixedThreadPool(4);
+        server.setExecutor(executor);
         server.start();
         return server.getAddress().getPort();
     }
 
     public void stop() {
         if (server != null) server.stop(0);
+        if (executor != null) executor.shutdownNow();
     }
 
     private void api(HttpExchange ex) throws IOException {

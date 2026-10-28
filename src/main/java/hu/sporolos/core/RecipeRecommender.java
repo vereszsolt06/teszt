@@ -3,6 +3,7 @@ package hu.sporolos.core;
 import hu.sporolos.data.Catalog;
 import hu.sporolos.data.Stats;
 import hu.sporolos.model.Models.Deal;
+import hu.sporolos.model.Models.DealType;
 import hu.sporolos.model.Models.Ingredient;
 import hu.sporolos.model.Models.PriceEntry;
 import hu.sporolos.model.Models.PricedIngredient;
@@ -144,7 +145,11 @@ public final class RecipeRecommender {
         for (PricedIngredient pi : s.items()) {
             if (pi.entry() == null) continue;
             realCost += pi.cost();
-            if (pi.deal() != null) dealWeighted += pi.cost() * pi.deal().score();
+            if (pi.deal() != null) {
+                // a "tartósan olcsó" jel fele annyit ér, mint egy friss akció vagy láncok közötti árelőny
+                double w = pi.deal().type() == DealType.CATEGORY ? 0.5 : 1.0;
+                dealWeighted += pi.cost() * pi.deal().score() * w;
+            }
         }
         double dealPart = realCost > 0 ? Stats.clamp01(2.0 * dealWeighted / realCost) : 0;
         double savingPart = othersCost > 0 ? Stats.clamp01((othersCost - s.totalCost()) / othersCost / 0.25) : 0;
