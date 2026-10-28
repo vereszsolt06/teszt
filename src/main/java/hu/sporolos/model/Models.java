@@ -27,10 +27,19 @@ public final class Models {
      * @param unitPrice       minimum egységár (Ft / egység)
      * @param chainCount      hány üzletláncban kapható
      * @param shopCount       hány boltban kapható ebben a láncban
+     * @param totalShops      a lánc összes boltjának száma (0, ha ismeretlen)
      */
     public record PriceEntry(String itemId, String productName, int categoryId, String categoryName,
                              String storeId, double price, double maxPrice, String unit,
-                             double quantity, double unitPrice, int chainCount, int shopCount) {}
+                             double quantity, double unitPrice, int chainCount, int shopCount,
+                             int totalShops) {
+
+        /** A lánc boltjainak hányad részében kapható (0..1); ismeretlen bolt­számnál 1. */
+        public double availability() {
+            if (totalShops <= 0 || shopCount <= 0) return 1.0;
+            return Math.min(1.0, shopCount / (double) totalShops);
+        }
+    }
 
     /**
      * Miért jó az ár. Típusok:
@@ -63,23 +72,29 @@ public final class Models {
     /**
      * Egy hozzávaló árazva egy adott boltban.
      *
-     * @param entry     a választott bolti termék, vagy null, ha a boltban nincs / az Árfigyelő nem követi
-     * @param deal      ha a választott termék épp jó áron van
-     * @param cost      a receptre jutó költség (Ft)
-     * @param estimated true, ha a költség becsült (nincs bolti adat)
+     * @param entry       a választott bolti termék, vagy null, ha a boltban nincs / az Árfigyelő nem követi
+     * @param deal        ha a választott termék épp jó áron van
+     * @param cost        a receptre jutó költség (Ft) – a felhasznált mennyiség ára
+     * @param estimated   true, ha a költség becsült (nincs bolti adat)
+     * @param packages    hány csomagot kell venni (0 = mérlegelős áru, annyit veszel, amennyi kell)
+     * @param buyAmount   összesen mennyit veszel a termék egységében (kg / l / db)
+     * @param checkoutCost amennyit a pénztárnál fizetsz érte (egész csomagokkal)
      */
-    public record PricedIngredient(Ingredient ingredient, PriceEntry entry, Deal deal, double cost, boolean estimated) {}
+    public record PricedIngredient(Ingredient ingredient, PriceEntry entry, Deal deal, double cost,
+                                   boolean estimated, int packages, double buyAmount, double checkoutCost) {}
 
     /**
-     * Ajánlott recept egy boltra.
+     * Egy recept beárazva egy boltban.
      *
-     * @param totalCost        a recept költsége ebben a boltban
-     * @param otherStoresCost  ugyanez a recept a többi bolt mediánjával számolva
+     * @param totalCost        a felhasznált mennyiségek ára ebben a boltban
+     * @param otherStoresCost  ugyanez a többi bolt mediánjával számolva
+     * @param checkoutTotal    a bevásárlás összege egész csomagokkal (ennyit fizetsz a pénztárnál)
      * @param coverage         a nem-kamraáru hozzávalók hányad részére van valós bolti ár (0..1)
+     * @param servings         hány adagra van számolva
      */
     public record Suggestion(Recipe recipe, String storeId, List<PricedIngredient> items,
-                             double totalCost, double otherStoresCost, int dealCount,
-                             double coverage, double score) {
+                             double totalCost, double otherStoresCost, double checkoutTotal,
+                             int dealCount, double coverage, double score, int servings) {
         public double savings() {
             return Math.max(0, otherStoresCost - totalCost);
         }

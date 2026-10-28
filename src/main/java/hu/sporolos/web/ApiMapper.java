@@ -30,6 +30,8 @@ final class ApiMapper {
         m.put("unitPrice", e.unitPrice());
         m.put("chains", e.chainCount());
         m.put("shops", e.shopCount());
+        m.put("totalShops", e.totalShops());
+        m.put("availability", Math.round(e.availability() * 100) / 100.0);
         return m;
     }
 
@@ -41,7 +43,17 @@ final class ApiMapper {
         m.put("type", d.type().name());
         m.put("referencePrice", d.referencePrice());
         m.put("savingPercent", Math.round(d.savingPercent() * 1000) / 10.0);
-        m.put("score", d.score());
+        m.put("score", Math.round(d.score() * 1000) / 1000.0);
+        m.put("reason", d.reason());
+        return m;
+    }
+
+    static Map<String, Object> dealSummary(Deal d) {
+        if (d == null) return null;
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("type", d.type().name());
+        m.put("savingPercent", Math.round(d.savingPercent() * 1000) / 10.0);
+        m.put("referencePrice", d.referencePrice());
         m.put("reason", d.reason());
         return m;
     }
@@ -63,11 +75,13 @@ final class ApiMapper {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("recipe", recipe(s.recipe()));
         m.put("store", s.storeId());
+        m.put("servings", s.servings());
         m.put("totalCost", s.totalCost());
         m.put("otherStoresCost", s.otherStoresCost());
         m.put("savings", s.savings());
+        m.put("checkoutTotal", s.checkoutTotal());
         m.put("dealCount", s.dealCount());
-        m.put("coverage", s.coverage());
+        m.put("coverage", Math.round(s.coverage() * 100) / 100.0);
         m.put("score", Math.round(s.score() * 1000) / 1000.0);
         List<Object> items = new ArrayList<>();
         for (PricedIngredient pi : s.items()) {
@@ -77,14 +91,25 @@ final class ApiMapper {
             i.put("pantry", pi.ingredient().pantry());
             i.put("cost", pi.cost());
             i.put("estimated", pi.estimated());
+            i.put("packages", pi.packages());
+            i.put("buyAmount", Math.round(pi.buyAmount() * 1000) / 1000.0);
+            i.put("checkoutCost", pi.checkoutCost());
             i.put("item", entry(pi.entry()));
-            i.put("deal", pi.deal() == null ? null : Map.of(
-                    "type", pi.deal().type().name(),
-                    "savingPercent", Math.round(pi.deal().savingPercent() * 1000) / 10.0,
-                    "reason", pi.deal().reason()));
+            i.put("deal", dealSummary(pi.deal()));
             items.add(i);
         }
         m.put("ingredients", items);
+        return m;
+    }
+
+    /** Rövid változat listákhoz (hozzávalók nélkül). */
+    static Map<String, Object> suggestionBrief(Suggestion s) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("store", s.storeId());
+        m.put("totalCost", s.totalCost());
+        m.put("checkoutTotal", s.checkoutTotal());
+        m.put("dealCount", s.dealCount());
+        m.put("coverage", Math.round(s.coverage() * 100) / 100.0);
         return m;
     }
 }

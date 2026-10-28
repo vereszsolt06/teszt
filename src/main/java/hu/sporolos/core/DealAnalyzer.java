@@ -23,6 +23,7 @@ import java.util.Set;
  *   <li>CATEGORY – egységárban a kategória legolcsóbb 5%-ában van, és messze a medián alatt
  *       (ez "tartósan olcsó" jel, ezért kisebb súllyal számít).</li>
  * </ol>
+ * A ritkán kapható (a lánc boltjainak kevesebb mint felében lévő) termékek pontszáma arányosan csökken.
  */
 public final class DealAnalyzer {
 
@@ -98,8 +99,21 @@ public final class DealAnalyzer {
             }
 
             candidates.stream().max(Comparator.comparingDouble(Deal::score))
+                    .map(DealAnalyzer::withAvailability)
                     .ifPresent(d -> dealsByKey.put(key(e), d));
         }
+    }
+
+    /**
+     * Ha a termék a lánc boltjainak csak kis részében kapható, a jó ár kevésbé hasznos:
+     * a pontszámot 0,4–1 közötti szorzóval csökkentjük, és az indoklásban jelezzük.
+     */
+    static Deal withAvailability(Deal d) {
+        double a = d.entry().availability();
+        if (a >= 0.5) return d;
+        double factor = 0.4 + 0.6 * (a / 0.5);
+        String reason = d.reason() + " · csak a boltjaik " + Math.max(1, Math.round(a * 100)) + "%-ában kapható";
+        return new Deal(d.entry(), d.type(), d.referencePrice(), d.savingPercent(), d.score() * factor, reason);
     }
 
     /** Az adott bolti termék jó ár-e (null, ha nem). */

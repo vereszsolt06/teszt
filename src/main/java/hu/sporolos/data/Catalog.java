@@ -25,8 +25,17 @@ import java.util.stream.Collectors;
 public final class Catalog {
 
     /** Recept-alapanyag. Ha categoryIds üres, az Árfigyelő nem követi, ilyenkor basePrice a becslés. */
+    /**
+     * Recept-alapanyag.
+     *
+     * @param keywords        ha nem üres, a bolti termék nevének tartalmaznia kell valamelyiket
+     * @param excludeKeywords ha a bolti termék neve ezek valamelyikét tartalmazza, nem illeszkedik
+     * @param pieceWeight     egy darab tömege kg-ban (darabos ↔ kilós termékek átváltásához; 0 = ismeretlen)
+     * @param bunchWeight     egy "csomós" (1 db-os) kiszerelés tömege kg-ban (pl. csomós répa); 0 = nincs
+     */
     public record Product(String key, String name, double qty, String unit, double basePrice,
-                          Set<Integer> categoryIds, List<String> keywords) {
+                          Set<Integer> categoryIds, List<String> keywords, List<String> excludeKeywords,
+                          double pieceWeight, double bunchWeight) {
         public boolean tracked() {
             return !categoryIds.isEmpty();
         }
@@ -59,11 +68,13 @@ public final class Catalog {
         for (Object o : Json.arr(root.get("products"))) {
             Map<String, Object> p = Json.obj(o);
             List<String> kws = Json.arr(p.get("keywords")).stream().map(k -> normalize(Json.str(k))).toList();
+            List<String> excl = Json.arr(p.get("exclude")).stream().map(k -> normalize(Json.str(k))).toList();
             Set<Integer> cats = Json.arr(p.get("categoryIds")).stream()
                     .map(c -> (int) Json.num(c, -1)).collect(Collectors.toUnmodifiableSet());
             Product prod = new Product(Json.str(p.get("key")), Json.str(p.get("name")),
                     Json.num(p.get("qty"), 1), Json.str(p.get("unit")), Json.num(p.get("basePrice"), 0),
-                    cats, kws);
+                    cats, kws, excl, Json.num(p.get("pieceWeight"), 0), Json.num(p.get("bunchWeight"), 0));
+            if (products.containsKey(prod.key())) throw new IllegalStateException("Duplikált alapanyag: " + prod.key());
             products.put(prod.key(), prod);
         }
 
@@ -80,10 +91,21 @@ public final class Catalog {
                     throw new IllegalStateException("A(z) '" + r.get("id") + "' recept ismeretlen alapanyagot használ: " + key);
                 }
                 String label = i.get("label") != null ? Json.str(i.get("label")) : prod.name();
-                ings.add(new Ingredient(key, label, Json.str(i.get("amount")), Json.num(i.get("share"), 0), pantry));
+                // a mennyiség megadható abszolút értékben ("need", az alapanyag egységében: kg / l / db)
+                // vagy a katalógus-kiszerelés hányadaként ("share")
+                double share = i.containsKey("need") && prod != null
+                        ? Json.num(i.get("need"), 0) / prod.qty()
+                        : Json.num(i.get("share"), 0);
+                if (!pantry && share <= 0) {
+                    throw new IllegalStateException("A(z) '" + r.get("id") + "' recept " + key + " hozzávalójának nincs mennyisége");
+                }
+                ings.add(new Ingredient(key, label, Json.str(i.get("amount")), share, pantry));
             }
             List<String> tags = Json.arr(r.get("tags")).stream().map(Json::str).toList();
             List<String> steps = Json.arr(r.get("steps")).stream().map(Json::str).toList();
+            if (recipes.stream().anyMatch(x -> x.id().equals(Json.str(r.get("id"))))) {
+                throw new IllegalStateException("Duplikált recept-azonosító: " + r.get("id"));
+            }
             recipes.add(new Recipe(Json.str(r.get("id")), Json.str(r.get("name")), Json.str(r.get("emoji")),
                     (int) Json.num(r.get("minutes"), 30), (int) Json.num(r.get("servings"), 4),
                     Json.str(r.get("difficulty")), tags, ings, steps));
@@ -101,8 +123,10 @@ public final class Catalog {
     /** Illeszkedik-e egy bolti termék a recept-alapanyagra (kategória + ha van, kulcsszó a névben). */
     public boolean matches(Product p, PriceEntry e) {
         if (!p.categoryIds().contains(e.categoryId())) return false;
+        if (p.keywords().isEmpty() && p.excludeKeywords().isEmpty()) return true;
+        String n = " " + normalize(e.productName()) + " ";
+        for (String kw : p.excludeKeywords()) if (n.contains(kw)) return false;
         if (p.keywords().isEmpty()) return true;
-        String n = normalize(e.productName());
         for (String kw : p.keywords()) if (n.contains(kw)) return true;
         return false;
     }

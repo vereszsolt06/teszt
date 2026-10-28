@@ -1,18 +1,18 @@
 {
-  "_comment": "Receptek. ingredient.key = products.json kulcs; share = a kiszerelés hányad része kell a recepthez (pl. 0.5 = fél csomag); pantry = alapnak vett kamraáru (só, bors, fűszer), ezt nem árazzuk.",
+  "_comment": "Receptek. ingredient.key = products.json kulcs; need = szükséges mennyiség az alapanyag egységében (kg / l / db) a megadott adagszámra; amount = a felületen mutatott, emberi mennyiség; pantry = kamraáru (só, bors, fűszer), nem árazzuk.",
   "recipes": [
     {
       "id": "paprikas-csirke", "name": "Paprikás csirke nokedlivel", "emoji": "🍗", "minutes": 60, "servings": 4, "difficulty": "közepes",
       "tags": ["magyaros", "húsos"],
       "ingredients": [
-        { "key": "csirkecomb", "amount": "1 kg", "share": 1.0 },
-        { "key": "voroshagyma", "amount": "2 fej", "share": 0.25 },
-        { "key": "paprika", "amount": "1 db", "share": 0.15 },
-        { "key": "paradicsom", "amount": "1 db", "share": 0.12 },
-        { "key": "tejfol", "amount": "1 doboz", "share": 1.0 },
-        { "key": "liszt", "amount": "40 dkg", "share": 0.4 },
-        { "key": "tojas", "amount": "3 db", "share": 0.3 },
-        { "key": "fuszerpaprika", "label": "Pirospaprika, só, bors", "pantry": true }
+        { "key": "csirkecomb", "amount": "1 kg", "need": 1.0 },
+        { "key": "voroshagyma", "amount": "2 fej", "need": 0.25 },
+        { "key": "paprika", "amount": "1 db", "need": 0.15 },
+        { "key": "paradicsom", "amount": "1 db", "need": 0.12 },
+        { "key": "tejfol", "amount": "1 pohár (450 g)", "need": 0.45 },
+        { "key": "liszt", "amount": "40 dkg", "need": 0.4 },
+        { "key": "tojas", "amount": "3 db", "need": 3 },
+        { "key": "fuszer", "label": "Pirospaprika, só, bors", "pantry": true }
       ],
       "steps": [
         "A hagymát apróra vágva olajon üvegesre pirítod, lehúzod a tűzről, és meghinted pirospaprikával.",
@@ -25,17 +25,17 @@
       "id": "bolognai", "name": "Bolognai spagetti", "emoji": "🍝", "minutes": 40, "servings": 4, "difficulty": "könnyű",
       "tags": ["húsos", "tészta", "gyors"],
       "ingredients": [
-        { "key": "spagetti", "amount": "50 dkg", "share": 1.0 },
-        { "key": "daralthus", "amount": "50 dkg", "share": 0.5 },
-        { "key": "passata", "amount": "1 üveg", "share": 1.0 },
-        { "key": "voroshagyma", "amount": "1 fej", "share": 0.12 },
-        { "key": "fokhagyma", "amount": "2 gerezd", "share": 0.15 },
-        { "key": "sargarepa", "amount": "1 db", "share": 0.12 },
-        { "key": "trappista", "amount": "10 dkg", "share": 0.2 },
+        { "key": "spagetti", "amount": "50 dkg", "need": 0.5 },
+        { "key": "daralthus", "amount": "50 dkg", "need": 0.5 },
+        { "key": "passata", "amount": "1 üveg", "need": 0.5 },
+        { "key": "voroshagyma", "amount": "1 fej", "need": 0.12 },
+        { "key": "fokhagyma", "amount": "2 gerezd", "need": 0.01 },
+        { "key": "sargarepa", "amount": "1 db", "need": 0.1 },
+        { "key": "trappista", "amount": "10 dkg", "need": 0.1 },
         { "key": "oregano", "label": "Oregánó, só, bors", "pantry": true }
       ],
       "steps": [
-        "A hagymát, fokhagymát és a reszelt répát olajon megdinszteled.",
+        "A hagymát, a fokhagymát és a reszelt répát olajon megdinszteled.",
         "Hozzáadod a darált húst, kifehéredésig pirítod, majd felöntöd a passatával, fűszerezed, és 20 percig főzöd.",
         "Közben kifőzöd a spagettit sós vízben.",
         "Tálaláskor a szószt a tésztára halmozod, és megszórod reszelt sajttal."
@@ -45,11 +45,11 @@
       "id": "rakott-krumpli", "name": "Rakott krumpli", "emoji": "🥔", "minutes": 75, "servings": 4, "difficulty": "könnyű",
       "tags": ["magyaros", "húsos", "olcsó"],
       "ingredients": [
-        { "key": "burgonya", "amount": "1,5 kg", "share": 0.75 },
-        { "key": "tojas", "amount": "6 db", "share": 0.6 },
-        { "key": "kolbasz", "amount": "20 dkg", "share": 0.5 },
-        { "key": "tejfol", "amount": "2 doboz", "share": 2.0 },
-        { "key": "vaj", "amount": "3 dkg", "share": 0.15 },
+        { "key": "burgonya", "amount": "1,5 kg", "need": 1.5 },
+        { "key": "tojas", "amount": "6 db", "need": 6 },
+        { "key": "kolbasz", "amount": "20 dkg", "need": 0.2 },
+        { "key": "tejfol", "amount": "2 pohár", "need": 0.9 },
+        { "key": "vaj", "amount": "3 dkg", "need": 0.03 },
         { "key": "so", "label": "Só, bors", "pantry": true }
       ],
       "steps": [
@@ -62,12 +62,12 @@
       "id": "lecso", "name": "Lecsó kolbásszal", "emoji": "🫑", "minutes": 35, "servings": 4, "difficulty": "könnyű",
       "tags": ["magyaros", "gyors"],
       "ingredients": [
-        { "key": "paprika", "amount": "1 kg", "share": 1.0 },
-        { "key": "paradicsom", "amount": "50 dkg", "share": 0.5 },
-        { "key": "voroshagyma", "amount": "2 fej", "share": 0.25 },
-        { "key": "kolbasz", "amount": "20 dkg", "share": 0.5 },
-        { "key": "tojas", "amount": "4 db", "share": 0.4 },
-        { "key": "kenyer", "amount": "fél vekni", "share": 0.5 },
+        { "key": "paprika", "amount": "1 kg", "need": 1.0 },
+        { "key": "paradicsom", "amount": "50 dkg", "need": 0.5 },
+        { "key": "voroshagyma", "amount": "2 fej", "need": 0.25 },
+        { "key": "kolbasz", "amount": "20 dkg", "need": 0.2 },
+        { "key": "tojas", "amount": "4 db", "need": 4 },
+        { "key": "kenyer", "amount": "fél vekni", "need": 0.5 },
         { "key": "so", "label": "Só, pirospaprika", "pantry": true }
       ],
       "steps": [
@@ -80,13 +80,13 @@
       "id": "rantott-csirke", "name": "Rántott csirkemell petrezselymes krumplival", "emoji": "🍽️", "minutes": 50, "servings": 4, "difficulty": "közepes",
       "tags": ["magyaros", "húsos"],
       "ingredients": [
-        { "key": "csirkemell", "amount": "70 dkg", "share": 0.7 },
-        { "key": "tojas", "amount": "3 db", "share": 0.3 },
-        { "key": "liszt", "amount": "10 dkg", "share": 0.1 },
-        { "key": "kenyer", "amount": "zsemlemorzsának", "share": 0.2 },
-        { "key": "burgonya", "amount": "1 kg", "share": 0.5 },
-        { "key": "vaj", "amount": "3 dkg", "share": 0.15 },
-        { "key": "napraforgoolaj", "amount": "5 dl", "share": 0.5 },
+        { "key": "csirkemell", "amount": "70 dkg", "need": 0.7 },
+        { "key": "tojas", "amount": "3 db", "need": 3 },
+        { "key": "liszt", "amount": "10 dkg", "need": 0.1 },
+        { "key": "kenyer", "amount": "zsemlemorzsának", "need": 0.2 },
+        { "key": "burgonya", "amount": "1 kg", "need": 1.0 },
+        { "key": "vaj", "amount": "3 dkg", "need": 0.03 },
+        { "key": "napraforgoolaj", "amount": "5 dl", "need": 0.5 },
         { "key": "so", "label": "Só, petrezselyem", "pantry": true }
       ],
       "steps": [
@@ -99,17 +99,17 @@
       "id": "csirkes-curry", "name": "Kókuszos csirkecurry rizzsel", "emoji": "🍛", "minutes": 35, "servings": 4, "difficulty": "könnyű",
       "tags": ["húsos", "gyors", "ázsiai"],
       "ingredients": [
-        { "key": "csirkemell", "amount": "50 dkg", "share": 0.5 },
-        { "key": "kokusztej", "amount": "1 doboz", "share": 1.0 },
-        { "key": "rizs", "amount": "30 dkg", "share": 0.3 },
-        { "key": "voroshagyma", "amount": "1 fej", "share": 0.12 },
-        { "key": "fokhagyma", "amount": "3 gerezd", "share": 0.2 },
-        { "key": "paprika", "amount": "1 db", "share": 0.15 },
+        { "key": "csirkemell", "amount": "50 dkg", "need": 0.5 },
+        { "key": "kokusztej", "amount": "1 doboz", "need": 0.4 },
+        { "key": "rizs", "amount": "30 dkg", "need": 0.3 },
+        { "key": "voroshagyma", "amount": "1 fej", "need": 0.12 },
+        { "key": "fokhagyma", "amount": "3 gerezd", "need": 0.015 },
+        { "key": "paprika", "amount": "1 db", "need": 0.15 },
         { "key": "curry", "label": "Curryfűszer, só", "pantry": true }
       ],
       "steps": [
         "A rizst kétszeres mennyiségű sós vízben puhára főzöd.",
-        "A hagymát és a fokhagymát megpirítod, rádobod a felkockázott csirkét és a currypor 2 evőkanálnyát.",
+        "A hagymát és a fokhagymát megpirítod, rádobod a felkockázott csirkét és 2 evőkanál curryport.",
         "Hozzáadod a csíkozott paprikát és a kókusztejet, 15 percig rotyogtatod. Rizzsel tálalod."
       ]
     },
@@ -117,12 +117,12 @@
       "id": "chili-con-carne", "name": "Chili con carne", "emoji": "🌶️", "minutes": 45, "servings": 4, "difficulty": "könnyű",
       "tags": ["húsos", "mexikói"],
       "ingredients": [
-        { "key": "daralthus", "amount": "50 dkg", "share": 0.5 },
-        { "key": "voros_bab", "amount": "2 doboz", "share": 2.0 },
-        { "key": "kukorica", "amount": "1 doboz", "share": 1.0 },
-        { "key": "passata", "amount": "1 üveg", "share": 1.0 },
-        { "key": "voroshagyma", "amount": "1 fej", "share": 0.12 },
-        { "key": "rizs", "amount": "25 dkg", "share": 0.25 },
+        { "key": "daralthus", "amount": "50 dkg", "need": 0.5 },
+        { "key": "voros_bab", "amount": "2 doboz", "need": 0.8 },
+        { "key": "kukorica", "amount": "1 doboz", "need": 0.285 },
+        { "key": "passata", "amount": "1 üveg", "need": 0.5 },
+        { "key": "voroshagyma", "amount": "1 fej", "need": 0.12 },
+        { "key": "rizs", "amount": "25 dkg", "need": 0.25 },
         { "key": "chili", "label": "Chili, kömény, só", "pantry": true }
       ],
       "steps": [
@@ -132,16 +132,16 @@
       ]
     },
     {
-      "id": "tortilla", "name": "Csirkés tortilla tekercs", "emoji": "🌯", "minutes": 25, "servings": 4, "difficulty": "könnyű",
+      "id": "tortilla", "name": "Csirkés tortillatekercs", "emoji": "🌯", "minutes": 25, "servings": 4, "difficulty": "könnyű",
       "tags": ["húsos", "gyors", "mexikói"],
       "ingredients": [
-        { "key": "tortilla", "amount": "6 db", "share": 1.0 },
-        { "key": "csirkemell", "amount": "40 dkg", "share": 0.4 },
-        { "key": "kukorica", "amount": "1 doboz", "share": 1.0 },
-        { "key": "paradicsom", "amount": "2 db", "share": 0.25 },
-        { "key": "uborka", "amount": "fél", "share": 0.5 },
-        { "key": "tejfol", "amount": "1 doboz", "share": 1.0 },
-        { "key": "trappista", "amount": "10 dkg", "share": 0.2 },
+        { "key": "tortilla", "amount": "6 db", "need": 6 },
+        { "key": "csirkemell", "amount": "40 dkg", "need": 0.4 },
+        { "key": "kukorica", "amount": "1 doboz", "need": 0.285 },
+        { "key": "paradicsom", "amount": "2 db", "need": 0.25 },
+        { "key": "uborka", "amount": "fél", "need": 0.5 },
+        { "key": "tejfol", "amount": "1 pohár", "need": 0.45 },
+        { "key": "trappista", "amount": "10 dkg", "need": 0.1 },
         { "key": "so", "label": "Só, fűszerpaprika", "pantry": true }
       ],
       "steps": [
@@ -154,15 +154,15 @@
       "id": "rantotta", "name": "Paprikás-paradicsomos rántotta", "emoji": "🍳", "minutes": 15, "servings": 2, "difficulty": "könnyű",
       "tags": ["vega", "gyors", "olcsó", "reggeli"],
       "ingredients": [
-        { "key": "tojas", "amount": "6 db", "share": 0.6 },
-        { "key": "paprika", "amount": "1 db", "share": 0.15 },
-        { "key": "paradicsom", "amount": "1 db", "share": 0.12 },
-        { "key": "vaj", "amount": "2 dkg", "share": 0.1 },
-        { "key": "kenyer", "amount": "4 szelet", "share": 0.25 },
+        { "key": "tojas", "amount": "6 db", "need": 6 },
+        { "key": "paprika", "amount": "1 db", "need": 0.15 },
+        { "key": "paradicsom", "amount": "1 db", "need": 0.12 },
+        { "key": "vaj", "amount": "2 dkg", "need": 0.02 },
+        { "key": "kenyer", "amount": "4 szelet", "need": 0.2 },
         { "key": "so", "label": "Só, bors", "pantry": true }
       ],
       "steps": [
-        "A paprikát és paradicsomot felkockázod, vajon 3 percig párolod.",
+        "A paprikát és a paradicsomot felkockázod, vajon 3 percig párolod.",
         "Ráöntöd a felvert, sózott tojást, és lassú tűzön krémesre kevered. Pirítóssal tálalod."
       ]
     },
@@ -170,47 +170,47 @@
       "id": "palacsinta", "name": "Lekváros és túrós palacsinta", "emoji": "🥞", "minutes": 40, "servings": 4, "difficulty": "könnyű",
       "tags": ["vega", "édes", "olcsó"],
       "ingredients": [
-        { "key": "liszt", "amount": "25 dkg", "share": 0.25 },
-        { "key": "tej", "amount": "5 dl", "share": 0.5 },
-        { "key": "tojas", "amount": "2 db", "share": 0.2 },
-        { "key": "lekvar", "amount": "fél üveg", "share": 0.5 },
-        { "key": "turo", "amount": "25 dkg", "share": 1.0 },
-        { "key": "cukor", "amount": "10 dkg", "share": 0.1 },
-        { "key": "citrom", "amount": "1 db reszelt héja", "share": 0.2 },
-        { "key": "napraforgoolaj", "amount": "1 dl", "share": 0.1 }
+        { "key": "liszt", "amount": "25 dkg", "need": 0.25 },
+        { "key": "tej", "amount": "5 dl", "need": 0.5 },
+        { "key": "tojas", "amount": "2 db", "need": 2 },
+        { "key": "lekvar", "amount": "fél üveg", "need": 0.22 },
+        { "key": "turo", "amount": "25 dkg", "need": 0.25 },
+        { "key": "cukor", "amount": "10 dkg", "need": 0.1 },
+        { "key": "citrom", "amount": "1 db reszelt héja", "need": 0.12 },
+        { "key": "napraforgoolaj", "amount": "1 dl", "need": 0.1 }
       ],
       "steps": [
-        "A lisztet, tejet, tojást, egy csipet sót és kevés olajat csomómentesre kevered, 15 percig pihenteted.",
+        "A lisztet, a tejet, a tojást, egy csipet sót és kevés olajat csomómentesre kevered, 15 percig pihenteted.",
         "Forró serpenyőben vékony palacsintákat sütsz.",
         "A túrót cukorral és citromhéjjal kikevered; a palacsinták felét lekvárral, felét túróval töltöd."
       ]
     },
     {
-      "id": "turos-csusza", "name": "Túrós csusza", "emoji": "🧀", "minutes": 25, "servings": 4, "difficulty": "könnyű",
+      "id": "turos-csusza", "name": "Túrós tészta pirított szalonnával", "emoji": "🧀", "minutes": 25, "servings": 4, "difficulty": "könnyű",
       "tags": ["magyaros", "gyors", "olcsó"],
       "ingredients": [
-        { "key": "penne", "amount": "50 dkg", "share": 1.0 },
-        { "key": "turo", "amount": "50 dkg", "share": 2.0 },
-        { "key": "tejfol", "amount": "1 doboz", "share": 1.0 },
-        { "key": "bacon", "amount": "20 dkg", "share": 1.0 },
+        { "key": "penne", "amount": "50 dkg", "need": 0.5 },
+        { "key": "turo", "amount": "50 dkg", "need": 0.5 },
+        { "key": "tejfol", "amount": "1 pohár", "need": 0.45 },
+        { "key": "bacon", "amount": "20 dkg", "need": 0.2 },
         { "key": "so", "label": "Só", "pantry": true }
       ],
       "steps": [
         "A tésztát sós vízben kifőzöd.",
-        "A bacont kockára vágod, ropogósra pirítod.",
-        "A tésztát összeforgatod a zsírral, a tetejére túró, tejföl és a pirított bacon kerül."
+        "A szalonnát kockára vágod, ropogósra pirítod.",
+        "A tésztát összeforgatod a kisült zsírral, a tetejére túró, tejföl és a pirított szalonna kerül."
       ]
     },
     {
       "id": "lencsefozelek", "name": "Lencsefőzelék virslivel", "emoji": "🥣", "minutes": 50, "servings": 4, "difficulty": "könnyű",
-      "tags": ["magyaros", "olcsó"],
+      "tags": ["magyaros", "olcsó", "főzelék"],
       "ingredients": [
-        { "key": "lencse", "amount": "40 dkg", "share": 0.8 },
-        { "key": "virsli", "amount": "1 csomag", "share": 1.0 },
-        { "key": "voroshagyma", "amount": "1 fej", "share": 0.12 },
-        { "key": "liszt", "amount": "3 ek", "share": 0.05 },
-        { "key": "tejfol", "amount": "fél doboz", "share": 0.5 },
-        { "key": "babérlevél", "label": "Babérlevél, ecet, só", "pantry": true }
+        { "key": "lencse", "amount": "40 dkg", "need": 0.4 },
+        { "key": "virsli", "amount": "1 csomag", "need": 0.5 },
+        { "key": "voroshagyma", "amount": "1 fej", "need": 0.12 },
+        { "key": "liszt", "amount": "3 ek", "need": 0.05 },
+        { "key": "tejfol", "amount": "fél pohár", "need": 0.2 },
+        { "key": "baberlevel", "label": "Babérlevél, ecet, só", "pantry": true }
       ],
       "steps": [
         "A beáztatott lencsét babérlevéllel puhára főzöd.",
@@ -220,34 +220,34 @@
     },
     {
       "id": "zoldborsofozelek", "name": "Zöldborsófőzelék fasírttal", "emoji": "🟢", "minutes": 45, "servings": 4, "difficulty": "közepes",
-      "tags": ["magyaros", "húsos"],
+      "tags": ["magyaros", "húsos", "főzelék"],
       "ingredients": [
-        { "key": "borso", "amount": "2 zacskó", "share": 2.0 },
-        { "key": "daralthus", "amount": "50 dkg", "share": 0.5 },
-        { "key": "tojas", "amount": "1 db", "share": 0.1 },
-        { "key": "kenyer", "amount": "2 szelet", "share": 0.12 },
-        { "key": "tej", "amount": "3 dl", "share": 0.3 },
-        { "key": "liszt", "amount": "2 ek", "share": 0.04 },
-        { "key": "voroshagyma", "amount": "1 fej", "share": 0.12 },
-        { "key": "napraforgoolaj", "amount": "3 dl", "share": 0.3 },
+        { "key": "borso", "amount": "2 zacskó", "need": 0.9 },
+        { "key": "daralthus", "amount": "50 dkg", "need": 0.5 },
+        { "key": "tojas", "amount": "1 db", "need": 1 },
+        { "key": "zsemle", "amount": "1 db", "need": 1 },
+        { "key": "tej", "amount": "3 dl", "need": 0.3 },
+        { "key": "liszt", "amount": "2 ek", "need": 0.04 },
+        { "key": "voroshagyma", "amount": "1 fej", "need": 0.12 },
+        { "key": "napraforgoolaj", "amount": "3 dl", "need": 0.3 },
         { "key": "so", "label": "Só, cukor, petrezselyem", "pantry": true }
       ],
       "steps": [
-        "A darált húst a beáztatott kenyérrel, tojással, reszelt hagymával és fűszerekkel összegyúrod, pogácsákat formázol, és kisütöd.",
-        "A borsót kevés vajon, cukorral megpárolod, kevés vízzel puhára főzöd.",
-        "Liszttel és tejjel behabarod, petrezselyemmel ízesíted."
+        "A darált húst a beáztatott zsemlével, tojással, reszelt hagymával és fűszerekkel összegyúrod, pogácsákat formázol, és kisütöd.",
+        "A borsót kevés zsiradékon, csipet cukorral megpárolod, kevés vízzel puhára főzöd.",
+        "Liszttel elkevert tejjel behabarod, petrezselyemmel ízesíted."
       ]
     },
     {
       "id": "spenotfozelek", "name": "Spenótfőzelék tükörtojással", "emoji": "🥬", "minutes": 25, "servings": 4, "difficulty": "könnyű",
-      "tags": ["vega", "gyors", "olcsó"],
+      "tags": ["vega", "gyors", "olcsó", "főzelék"],
       "ingredients": [
-        { "key": "spenot", "amount": "2 zacskó", "share": 2.0 },
-        { "key": "tej", "amount": "3 dl", "share": 0.3 },
-        { "key": "fokhagyma", "amount": "2 gerezd", "share": 0.15 },
-        { "key": "tojas", "amount": "4 db", "share": 0.4 },
-        { "key": "burgonya", "amount": "1 kg", "share": 0.5 },
-        { "key": "liszt", "amount": "2 ek", "share": 0.04 },
+        { "key": "spenot", "amount": "2 zacskó", "need": 0.9 },
+        { "key": "tej", "amount": "3 dl", "need": 0.3 },
+        { "key": "fokhagyma", "amount": "2 gerezd", "need": 0.01 },
+        { "key": "tojas", "amount": "4 db", "need": 4 },
+        { "key": "burgonya", "amount": "1 kg", "need": 1.0 },
+        { "key": "liszt", "amount": "2 ek", "need": 0.04 },
         { "key": "so", "label": "Só, bors", "pantry": true }
       ],
       "steps": [
@@ -260,12 +260,12 @@
       "id": "gombapaprikas", "name": "Gombapaprikás galuskával", "emoji": "🍄", "minutes": 40, "servings": 4, "difficulty": "könnyű",
       "tags": ["vega", "magyaros"],
       "ingredients": [
-        { "key": "gomba", "amount": "75 dkg", "share": 1.5 },
-        { "key": "voroshagyma", "amount": "1 fej", "share": 0.12 },
-        { "key": "tejfol", "amount": "1 doboz", "share": 1.0 },
-        { "key": "liszt", "amount": "40 dkg", "share": 0.4 },
-        { "key": "tojas", "amount": "3 db", "share": 0.3 },
-        { "key": "fuszerpaprika", "label": "Pirospaprika, só", "pantry": true }
+        { "key": "gomba", "amount": "75 dkg", "need": 0.75 },
+        { "key": "voroshagyma", "amount": "1 fej", "need": 0.12 },
+        { "key": "tejfol", "amount": "1 pohár", "need": 0.45 },
+        { "key": "liszt", "amount": "40 dkg", "need": 0.4 },
+        { "key": "tojas", "amount": "3 db", "need": 3 },
+        { "key": "fuszer", "label": "Pirospaprika, só", "pantry": true }
       ],
       "steps": [
         "A hagymát megdinszteled, pirospaprikával meghinted, rádobod a szeletelt gombát, és saját levében puhára párolod.",
@@ -277,10 +277,10 @@
       "id": "kaposztas-teszta", "name": "Káposztás tészta", "emoji": "🥬", "minutes": 35, "servings": 4, "difficulty": "könnyű",
       "tags": ["vega", "magyaros", "olcsó"],
       "ingredients": [
-        { "key": "kaposzta", "amount": "1 kg", "share": 1.0 },
-        { "key": "penne", "amount": "50 dkg", "share": 1.0 },
-        { "key": "cukor", "amount": "2 ek", "share": 0.03 },
-        { "key": "napraforgoolaj", "amount": "1 dl", "share": 0.1 },
+        { "key": "kaposzta", "amount": "1 kg", "need": 1.0 },
+        { "key": "penne", "amount": "50 dkg", "need": 0.5 },
+        { "key": "cukor", "amount": "2 ek", "need": 0.03 },
+        { "key": "napraforgoolaj", "amount": "1 dl", "need": 0.1 },
         { "key": "so", "label": "Só, bors", "pantry": true }
       ],
       "steps": [
@@ -290,50 +290,50 @@
       ]
     },
     {
-      "id": "brokkolis-teszta", "name": "Tejszínes brokkolis-baconös tészta", "emoji": "🥦", "minutes": 25, "servings": 4, "difficulty": "könnyű",
+      "id": "brokkolis-teszta", "name": "Tejszínes brokkolis-szalonnás tészta", "emoji": "🥦", "minutes": 25, "servings": 4, "difficulty": "könnyű",
       "tags": ["tészta", "gyors"],
       "ingredients": [
-        { "key": "penne", "amount": "50 dkg", "share": 1.0 },
-        { "key": "brokkoli", "amount": "50 dkg", "share": 1.0 },
-        { "key": "tejszin", "amount": "2 doboz", "share": 2.0 },
-        { "key": "bacon", "amount": "15 dkg", "share": 0.75 },
-        { "key": "fokhagyma", "amount": "2 gerezd", "share": 0.15 },
-        { "key": "trappista", "amount": "10 dkg", "share": 0.2 },
+        { "key": "penne", "amount": "50 dkg", "need": 0.5 },
+        { "key": "brokkoli", "amount": "50 dkg", "need": 0.5 },
+        { "key": "tejszin", "amount": "4 dl", "need": 0.4 },
+        { "key": "bacon", "amount": "15 dkg", "need": 0.15 },
+        { "key": "fokhagyma", "amount": "2 gerezd", "need": 0.01 },
+        { "key": "trappista", "amount": "10 dkg", "need": 0.1 },
         { "key": "so", "label": "Só, bors", "pantry": true }
       ],
       "steps": [
         "A tésztát és a brokkolirózsákat ugyanabban a sós vízben kifőzöd (a brokkolit az utolsó 4 percre).",
-        "A bacont és a fokhagymát kipirítod, felöntöd tejszínnel, belekevered a reszelt sajtot.",
+        "A szalonnát és a fokhagymát kipirítod, felöntöd tejszínnel, belekevered a reszelt sajtot.",
         "A leszűrt tésztát és brokkolit a szósszal összeforgatod."
       ]
     },
     {
-      "id": "tonhalas-teszta", "name": "Tonhalas paradicsomos penne", "emoji": "🐟", "minutes": 20, "servings": 4, "difficulty": "könnyű",
+      "id": "tonhalas-teszta", "name": "Tonhalas-paradicsomos penne", "emoji": "🐟", "minutes": 20, "servings": 4, "difficulty": "könnyű",
       "tags": ["hal", "tészta", "gyors"],
       "ingredients": [
-        { "key": "penne", "amount": "50 dkg", "share": 1.0 },
-        { "key": "tonhal", "amount": "2 doboz", "share": 2.0 },
-        { "key": "passata", "amount": "1 üveg", "share": 1.0 },
-        { "key": "fokhagyma", "amount": "2 gerezd", "share": 0.15 },
-        { "key": "voroshagyma", "amount": "1 fej", "share": 0.12 },
+        { "key": "penne", "amount": "50 dkg", "need": 0.5 },
+        { "key": "tonhal", "amount": "2 doboz", "need": 0.32 },
+        { "key": "passata", "amount": "1 üveg", "need": 0.5 },
+        { "key": "fokhagyma", "amount": "2 gerezd", "need": 0.01 },
+        { "key": "voroshagyma", "amount": "1 fej", "need": 0.12 },
         { "key": "oregano", "label": "Oregánó, chili, só", "pantry": true }
       ],
       "steps": [
-        "A hagymát és fokhagymát olajon megpirítod, felöntöd passatával, 10 percig főzöd.",
+        "A hagymát és a fokhagymát olajon megpirítod, felöntöd passatával, 10 percig főzöd.",
         "Belekevered a lecsöpögtetett tonhalat, fűszerezed.",
         "A kifőtt pennét a szósszal összeforgatod."
       ]
     },
     {
-      "id": "sult-hal", "name": "Sült halfilé citromos rizzsel", "emoji": "🐠", "minutes": 30, "servings": 4, "difficulty": "könnyű",
+      "id": "sult-hal", "name": "Vajban sült halfilé zöldborsós rizzsel", "emoji": "🐠", "minutes": 30, "servings": 4, "difficulty": "könnyű",
       "tags": ["hal", "gyors"],
       "ingredients": [
-        { "key": "halfile", "amount": "80 dkg", "share": 1.0 },
-        { "key": "citrom", "amount": "1 db", "share": 0.3 },
-        { "key": "rizs", "amount": "30 dkg", "share": 0.3 },
-        { "key": "borso", "amount": "1 zacskó", "share": 1.0 },
-        { "key": "vaj", "amount": "3 dkg", "share": 0.15 },
-        { "key": "liszt", "amount": "5 dkg", "share": 0.05 },
+        { "key": "halfile", "amount": "80 dkg", "need": 0.8 },
+        { "key": "citrom", "amount": "1 db", "need": 0.12 },
+        { "key": "rizs", "amount": "30 dkg", "need": 0.3 },
+        { "key": "borso", "amount": "1 zacskó", "need": 0.45 },
+        { "key": "vaj", "amount": "3 dkg", "need": 0.03 },
+        { "key": "liszt", "amount": "5 dkg", "need": 0.05 },
         { "key": "so", "label": "Só, bors", "pantry": true }
       ],
       "steps": [
@@ -346,12 +346,12 @@
       "id": "csicseri-curry", "name": "Csicseriborsó-curry spenóttal", "emoji": "🫘", "minutes": 30, "servings": 4, "difficulty": "könnyű",
       "tags": ["vega", "ázsiai", "gyors"],
       "ingredients": [
-        { "key": "csicseri", "amount": "2 doboz", "share": 2.0 },
-        { "key": "kokusztej", "amount": "1 doboz", "share": 1.0 },
-        { "key": "spenot", "amount": "1 zacskó", "share": 1.0 },
-        { "key": "passata", "amount": "fél üveg", "share": 0.5 },
-        { "key": "voroshagyma", "amount": "1 fej", "share": 0.12 },
-        { "key": "rizs", "amount": "30 dkg", "share": 0.3 },
+        { "key": "csicseri", "amount": "2 doboz", "need": 0.8 },
+        { "key": "kokusztej", "amount": "1 doboz", "need": 0.4 },
+        { "key": "spenot", "amount": "1 zacskó", "need": 0.45 },
+        { "key": "passata", "amount": "fél üveg", "need": 0.25 },
+        { "key": "voroshagyma", "amount": "1 fej", "need": 0.12 },
+        { "key": "rizs", "amount": "30 dkg", "need": 0.3 },
         { "key": "curry", "label": "Curry, gyömbér, só", "pantry": true }
       ],
       "steps": [
@@ -364,12 +364,12 @@
       "id": "karaj-zoldseg", "name": "Tepsis karaj zöldségekkel", "emoji": "🥩", "minutes": 70, "servings": 4, "difficulty": "könnyű",
       "tags": ["húsos"],
       "ingredients": [
-        { "key": "sertes_karaj", "amount": "80 dkg", "share": 0.8 },
-        { "key": "burgonya", "amount": "1 kg", "share": 0.5 },
-        { "key": "sargarepa", "amount": "40 dkg", "share": 0.4 },
-        { "key": "cukkini", "amount": "1 db", "share": 0.35 },
-        { "key": "voroshagyma", "amount": "2 fej", "share": 0.25 },
-        { "key": "fokhagyma", "amount": "4 gerezd", "share": 0.3 },
+        { "key": "sertes_karaj", "amount": "80 dkg", "need": 0.8 },
+        { "key": "burgonya", "amount": "1 kg", "need": 1.0 },
+        { "key": "sargarepa", "amount": "40 dkg", "need": 0.4 },
+        { "key": "cukkini", "amount": "1 db", "need": 0.35 },
+        { "key": "voroshagyma", "amount": "2 fej", "need": 0.25 },
+        { "key": "fokhagyma", "amount": "4 gerezd", "need": 0.02 },
         { "key": "so", "label": "Rozmaring, só, bors", "pantry": true }
       ],
       "steps": [
@@ -379,37 +379,37 @@
       ]
     },
     {
-      "id": "porkolt", "name": "Sertéspörkölt tarhonyával", "emoji": "🥘", "minutes": 100, "servings": 4, "difficulty": "közepes",
+      "id": "porkolt", "name": "Sertéspörkölt tésztával és uborkasalátával", "emoji": "🥘", "minutes": 100, "servings": 4, "difficulty": "közepes",
       "tags": ["magyaros", "húsos"],
       "ingredients": [
-        { "key": "sertes_comb", "amount": "1 kg", "share": 1.0 },
-        { "key": "voroshagyma", "amount": "3 fej", "share": 0.35 },
-        { "key": "paprika", "amount": "1 db", "share": 0.15 },
-        { "key": "paradicsom", "amount": "1 db", "share": 0.12 },
-        { "key": "tarhonya", "amount": "40 dkg", "share": 0.8 },
-        { "key": "uborka", "amount": "1 db (salátának)", "share": 1.0 },
-        { "key": "fuszerpaprika", "label": "Pirospaprika, kömény, só", "pantry": true }
+        { "key": "sertes_comb", "amount": "1 kg", "need": 1.0 },
+        { "key": "voroshagyma", "amount": "3 fej", "need": 0.35 },
+        { "key": "paprika", "amount": "1 db", "need": 0.15 },
+        { "key": "paradicsom", "amount": "1 db", "need": 0.12 },
+        { "key": "penne", "amount": "40 dkg", "need": 0.4 },
+        { "key": "uborka", "amount": "1 db (salátának)", "need": 1 },
+        { "key": "fuszer", "label": "Pirospaprika, kömény, só, ecet", "pantry": true }
       ],
       "steps": [
         "A sok hagymát zsiradékon üvegesre párolod, lehúzod a tűzről, meghinted pirospaprikával.",
-        "Rádobod a kockára vágott húst, sózod, köményezed, és kevés vízzel 1,5 órán át puhára párolod. Közben hozzáadod a paprikát és paradicsomot.",
-        "A tarhonyát olajon megpirítod, felöntöd vízzel, és puhára főzöd. Uborkasalátával tálalod."
+        "Rádobod a kockára vágott húst, sózod, köményezed, és kevés vízzel 1,5 órán át puhára párolod. Közben hozzáadod a paprikát és a paradicsomot.",
+        "A tésztát kifőzöd, az uborkát vékonyra szeleled, és ecetes-cukros vízzel salátát készítesz."
       ]
     },
     {
       "id": "pizza-tortilla", "name": "Gyors tortillapizza", "emoji": "🍕", "minutes": 20, "servings": 2, "difficulty": "könnyű",
       "tags": ["gyors", "vega"],
       "ingredients": [
-        { "key": "tortilla", "amount": "4 db", "share": 0.67 },
-        { "key": "passata", "amount": "fél üveg", "share": 0.5 },
-        { "key": "mozzarella", "amount": "2 golyó", "share": 2.0 },
-        { "key": "gomba", "amount": "20 dkg", "share": 0.4 },
-        { "key": "kukorica", "amount": "fél doboz", "share": 0.5 },
+        { "key": "tortilla", "amount": "4 db", "need": 4 },
+        { "key": "passata", "amount": "fél üveg", "need": 0.25 },
+        { "key": "mozzarella", "amount": "2 golyó", "need": 0.25 },
+        { "key": "gomba", "amount": "20 dkg", "need": 0.2 },
+        { "key": "kukorica", "amount": "fél doboz", "need": 0.14 },
         { "key": "oregano", "label": "Oregánó, só", "pantry": true }
       ],
       "steps": [
         "A tortillákat sütőpapírra fekteted, megkened fűszerezett passatával.",
-        "Rászórod a szeletelt gombát, kukoricát és a tépett mozzarellát.",
+        "Rászórod a szeletelt gombát, a kukoricát és a tépett mozzarellát.",
         "220 fokon 8–10 perc alatt ropogósra sütöd."
       ]
     },
@@ -417,10 +417,10 @@
       "id": "zabkasa", "name": "Almás-fahéjas zabkása", "emoji": "🍎", "minutes": 10, "servings": 2, "difficulty": "könnyű",
       "tags": ["vega", "édes", "reggeli", "gyors", "olcsó"],
       "ingredients": [
-        { "key": "zabpehely", "amount": "15 dkg", "share": 0.3 },
-        { "key": "tej", "amount": "5 dl", "share": 0.5 },
-        { "key": "alma", "amount": "2 db", "share": 0.35 },
-        { "key": "banan", "amount": "1 db", "share": 0.2 },
+        { "key": "zabpehely", "amount": "15 dkg", "need": 0.15 },
+        { "key": "tej", "amount": "5 dl", "need": 0.5 },
+        { "key": "alma", "amount": "2 db", "need": 0.35 },
+        { "key": "banan", "amount": "1 db", "need": 0.18 },
         { "key": "fahej", "label": "Fahéj, méz", "pantry": true }
       ],
       "steps": [
@@ -430,13 +430,13 @@
       ]
     },
     {
-      "id": "rizi-bizi-csirke", "name": "Rizibizis csirkecomb", "emoji": "🍚", "minutes": 60, "servings": 4, "difficulty": "könnyű",
+      "id": "rizi-bizi-csirke", "name": "Sült csirkecomb rizibizivel", "emoji": "🍚", "minutes": 60, "servings": 4, "difficulty": "könnyű",
       "tags": ["húsos", "olcsó"],
       "ingredients": [
-        { "key": "csirkecomb", "amount": "1 kg", "share": 1.0 },
-        { "key": "rizs", "amount": "30 dkg", "share": 0.3 },
-        { "key": "borso", "amount": "1 zacskó", "share": 1.0 },
-        { "key": "fokhagyma", "amount": "3 gerezd", "share": 0.2 },
+        { "key": "csirkecomb", "amount": "1 kg", "need": 1.0 },
+        { "key": "rizs", "amount": "30 dkg", "need": 0.3 },
+        { "key": "borso", "amount": "1 zacskó", "need": 0.45 },
+        { "key": "fokhagyma", "amount": "3 gerezd", "need": 0.015 },
         { "key": "so", "label": "Só, fűszerpaprika, kakukkfű", "pantry": true }
       ],
       "steps": [
@@ -449,19 +449,559 @@
       "id": "joghurtos-csirke", "name": "Joghurtos-fokhagymás csirkesaláta", "emoji": "🥗", "minutes": 25, "servings": 4, "difficulty": "könnyű",
       "tags": ["húsos", "gyors", "könnyed"],
       "ingredients": [
-        { "key": "csirkemell", "amount": "50 dkg", "share": 0.5 },
-        { "key": "joghurt", "amount": "1 doboz", "share": 1.0 },
-        { "key": "uborka", "amount": "1 db", "share": 1.0 },
-        { "key": "paradicsom", "amount": "3 db", "share": 0.35 },
-        { "key": "paprika", "amount": "1 db", "share": 0.15 },
-        { "key": "fokhagyma", "amount": "2 gerezd", "share": 0.15 },
-        { "key": "kenyer", "amount": "pirítósnak", "share": 0.25 },
+        { "key": "csirkemell", "amount": "50 dkg", "need": 0.5 },
+        { "key": "joghurt", "amount": "1 doboz", "need": 0.4 },
+        { "key": "uborka", "amount": "1 db", "need": 1 },
+        { "key": "paradicsom", "amount": "3 db", "need": 0.35 },
+        { "key": "paprika", "amount": "1 db", "need": 0.15 },
+        { "key": "fokhagyma", "amount": "2 gerezd", "need": 0.01 },
+        { "key": "kenyer", "amount": "pirítósnak", "need": 0.25 },
         { "key": "so", "label": "Só, bors, kapor", "pantry": true }
       ],
       "steps": [
         "A csirkemellet fűszerezve grillserpenyőben megsütöd, csíkokra vágod.",
         "A zöldségeket felkockázod.",
         "A joghurtot zúzott fokhagymával, sóval, kaporral kikevered, és mindent összeforgatsz. Pirítóssal tálalod."
+      ]
+    },
+
+    {
+      "id": "gulyasleves", "name": "Gulyásleves", "emoji": "🍲", "minutes": 150, "servings": 6, "difficulty": "közepes",
+      "tags": ["magyaros", "húsos", "leves"],
+      "ingredients": [
+        { "key": "marhalabszar", "amount": "80 dkg", "need": 0.8 },
+        { "key": "burgonya", "amount": "60 dkg", "need": 0.6 },
+        { "key": "sargarepa", "amount": "2 db", "need": 0.2 },
+        { "key": "petrezselyem", "amount": "1 db", "need": 0.1 },
+        { "key": "voroshagyma", "amount": "2 fej", "need": 0.25 },
+        { "key": "paprika", "amount": "1 db", "need": 0.15 },
+        { "key": "paradicsom", "amount": "1 db", "need": 0.12 },
+        { "key": "fokhagyma", "amount": "2 gerezd", "need": 0.01 },
+        { "key": "fuszer", "label": "Pirospaprika, kömény, só, bors", "pantry": true }
+      ],
+      "steps": [
+        "A hagymát zsiradékon üvegesre párolod, lehúzod a tűzről, és pirospaprikával meghinted.",
+        "Rádobod a kockára vágott húst, köménnyel, zúzott fokhagymával fűszerezed, és saját levében 1 órán át párolod.",
+        "Felöntöd 2 liter vízzel, hozzáadod a felkarikázott répát, petrezselyemgyökeret, a paprikát és a paradicsomot.",
+        "Ha a hús majdnem puha, beleteszed a kockára vágott krumplit, és együtt puhára főzöd."
+      ]
+    },
+    {
+      "id": "ujhazi", "name": "Újházi tyúkhúsleves", "emoji": "🍜", "minutes": 180, "servings": 6, "difficulty": "közepes",
+      "tags": ["magyaros", "húsos", "leves"],
+      "ingredients": [
+        { "key": "tyuk", "amount": "1,5 kg", "need": 1.5 },
+        { "key": "sargarepa", "amount": "4 db", "need": 0.4 },
+        { "key": "petrezselyem", "amount": "2 db", "need": 0.2 },
+        { "key": "voroshagyma", "amount": "1 fej", "need": 0.12 },
+        { "key": "spagetti", "amount": "15 dkg (cérnametélt helyett)", "need": 0.15 },
+        { "key": "fuszer", "label": "Szemes bors, só, zeller, petrezselyemzöld", "pantry": true }
+      ],
+      "steps": [
+        "A tyúkot hideg vízben feltesed, és nagyon lassú tűzön, gyöngyöztetve főzöd; a habját leszeded.",
+        "Két óra után hozzáadod a megtisztított zöldségeket, a hagymát és a fűszereket.",
+        "Ha a hús leválik a csontról, a levet leszűröd, és a vékonyra tört tésztát külön kifőzöd. Hússal, zöldséggel tálalod."
+      ]
+    },
+    {
+      "id": "halaszle", "name": "Bográcsos halászlé", "emoji": "🐟", "minutes": 60, "servings": 4, "difficulty": "közepes",
+      "tags": ["magyaros", "hal", "leves"],
+      "ingredients": [
+        { "key": "ponty", "amount": "1 kg", "need": 1.0 },
+        { "key": "voroshagyma", "amount": "3 fej", "need": 0.35 },
+        { "key": "paprika", "amount": "1 db", "need": 0.15 },
+        { "key": "paradicsom", "amount": "1 db", "need": 0.12 },
+        { "key": "kenyer", "amount": "mellé", "need": 0.3 },
+        { "key": "fuszer", "label": "Pirospaprika, só, erős paprika", "pantry": true }
+      ],
+      "steps": [
+        "A hagymát apróra vágva 1,5 liter vízben 30 percig főzöd, majd átpasszírozod.",
+        "Beleteszed a besózott halszeleteket, a paprikát, a paradicsomot és bőven pirospaprikát.",
+        "Keverés nélkül, csak a fazekat rázogatva 20 percig erősen forralod. Friss kenyérrel tálalod."
+      ]
+    },
+    {
+      "id": "harcsapaprikas", "name": "Harcsapaprikás túrós csuszával", "emoji": "🐡", "minutes": 45, "servings": 4, "difficulty": "közepes",
+      "tags": ["magyaros", "hal"],
+      "ingredients": [
+        { "key": "harcsa", "amount": "80 dkg", "need": 0.8 },
+        { "key": "voroshagyma", "amount": "2 fej", "need": 0.25 },
+        { "key": "paprika", "amount": "1 db", "need": 0.15 },
+        { "key": "paradicsom", "amount": "1 db", "need": 0.12 },
+        { "key": "tejfol", "amount": "1 pohár", "need": 0.45 },
+        { "key": "penne", "amount": "40 dkg", "need": 0.4 },
+        { "key": "turo", "amount": "25 dkg", "need": 0.25 },
+        { "key": "fuszer", "label": "Pirospaprika, só", "pantry": true }
+      ],
+      "steps": [
+        "A hagymát megdinszteled, pirospaprikával meghinted, hozzáadod a paprikát, a paradicsomot és kevés vizet.",
+        "Belefekteted a besózott harcsakockákat, és 15 percig, keverés nélkül főzöd.",
+        "Tejföllel behabarod. A tésztát kifőzöd, és túróval tálalod mellé."
+      ]
+    },
+    {
+      "id": "karfiolleves", "name": "Tejfölös karfiolleves", "emoji": "🥣", "minutes": 35, "servings": 4, "difficulty": "könnyű",
+      "tags": ["vega", "leves", "olcsó"],
+      "ingredients": [
+        { "key": "karfiol", "amount": "1 fej", "need": 0.8 },
+        { "key": "sargarepa", "amount": "2 db", "need": 0.2 },
+        { "key": "petrezselyem", "amount": "1 db", "need": 0.1 },
+        { "key": "tejfol", "amount": "fél pohár", "need": 0.2 },
+        { "key": "liszt", "amount": "2 ek", "need": 0.03 },
+        { "key": "so", "label": "Só, bors, szerecsendió", "pantry": true }
+      ],
+      "steps": [
+        "A karfiolt rózsáira szedve, a répát és a petrezselyemgyökeret karikázva 1,5 liter sós vízben puhára főzöd.",
+        "A tejfölt a liszttel és kevés hideg vízzel simára kevered, majd behabarod vele a levest.",
+        "Még 3 percig forralod, szerecsendióval ízesíted."
+      ]
+    },
+    {
+      "id": "rantott-karfiol", "name": "Rántott karfiol petrezselymes krumplival", "emoji": "🥦", "minutes": 45, "servings": 4, "difficulty": "közepes",
+      "tags": ["vega", "magyaros"],
+      "ingredients": [
+        { "key": "karfiol", "amount": "1 nagy fej", "need": 1.2 },
+        { "key": "tojas", "amount": "3 db", "need": 3 },
+        { "key": "liszt", "amount": "10 dkg", "need": 0.1 },
+        { "key": "zsemle", "amount": "3 db (morzsának)", "need": 3 },
+        { "key": "napraforgoolaj", "amount": "5 dl", "need": 0.5 },
+        { "key": "burgonya", "amount": "1 kg", "need": 1.0 },
+        { "key": "vaj", "amount": "3 dkg", "need": 0.03 },
+        { "key": "joghurt", "amount": "tartármártásnak", "need": 0.2 },
+        { "key": "so", "label": "Só, petrezselyem, mustár", "pantry": true }
+      ],
+      "steps": [
+        "A karfiolrózsákat sós vízben roppanósra előfőzöd, és hagyod kihűlni.",
+        "Lisztbe, tojásba, zsemlemorzsába forgatod, és bő olajban aranybarnára sütöd.",
+        "A krumplit megfőzöd, vajjal és petrezselyemmel átforgatod. A joghurtot mustárral, sóval mártássá kevered."
+      ]
+    },
+    {
+      "id": "kelkaposzta-fozelek", "name": "Kelkáposzta-főzelék sült kolbásszal", "emoji": "🥬", "minutes": 40, "servings": 4, "difficulty": "könnyű",
+      "tags": ["magyaros", "főzelék", "olcsó"],
+      "ingredients": [
+        { "key": "kelkaposzta", "amount": "1 fej", "need": 1.0 },
+        { "key": "burgonya", "amount": "2 db", "need": 0.4 },
+        { "key": "tej", "amount": "3 dl", "need": 0.3 },
+        { "key": "liszt", "amount": "2 ek", "need": 0.04 },
+        { "key": "fokhagyma", "amount": "2 gerezd", "need": 0.01 },
+        { "key": "kolbasz", "amount": "20 dkg", "need": 0.2 },
+        { "key": "so", "label": "Só, kömény, bors", "pantry": true }
+      ],
+      "steps": [
+        "A kelkáposztát csíkokra vágod, a krumplit felkockázod, és kevés sós, köményes vízben puhára főzöd.",
+        "A liszttel elkevert tejjel és zúzott fokhagymával behabarod, összeforralod.",
+        "A kolbászt serpenyőben megsütöd, és a főzelékre teszed."
+      ]
+    },
+    {
+      "id": "repafozelek", "name": "Sárgarépa-főzelék tükörtojással", "emoji": "🥕", "minutes": 30, "servings": 4, "difficulty": "könnyű",
+      "tags": ["vega", "főzelék", "olcsó"],
+      "ingredients": [
+        { "key": "sargarepa", "amount": "1 kg", "need": 1.0 },
+        { "key": "vaj", "amount": "3 dkg", "need": 0.03 },
+        { "key": "tej", "amount": "3 dl", "need": 0.3 },
+        { "key": "liszt", "amount": "2 ek", "need": 0.04 },
+        { "key": "cukor", "amount": "1 ek", "need": 0.015 },
+        { "key": "tojas", "amount": "4 db", "need": 4 },
+        { "key": "so", "label": "Só, petrezselyemzöld", "pantry": true }
+      ],
+      "steps": [
+        "A felkarikázott répát vajon, kevés cukorral megpárolod, majd kevés vízzel puhára főzöd.",
+        "Liszttel elkevert tejjel behabarod, petrezselyemzölddel ízesíted.",
+        "Tükörtojással tálalod."
+      ]
+    },
+    {
+      "id": "krumplifozelek", "name": "Krumplifőzelék virslivel", "emoji": "🥔", "minutes": 35, "servings": 4, "difficulty": "könnyű",
+      "tags": ["magyaros", "főzelék", "olcsó"],
+      "ingredients": [
+        { "key": "burgonya", "amount": "1 kg", "need": 1.0 },
+        { "key": "voroshagyma", "amount": "1 fej", "need": 0.12 },
+        { "key": "tejfol", "amount": "fél pohár", "need": 0.2 },
+        { "key": "liszt", "amount": "2 ek", "need": 0.04 },
+        { "key": "virsli", "amount": "1 csomag", "need": 0.5 },
+        { "key": "fuszer", "label": "Babérlevél, pirospaprika, ecet, só", "pantry": true }
+      ],
+      "steps": [
+        "A felkockázott krumplit babérlevéllel, sós vízben puhára főzöd.",
+        "A hagymát zsiradékon megdinszteled, liszttel és pirospaprikával rántást készítesz, és a krumplihoz adod.",
+        "Tejföllel és kevés ecettel ízesíted. Főtt virslivel tálalod."
+      ]
+    },
+    {
+      "id": "krumplileves", "name": "Kolbászos krumplileves", "emoji": "🍲", "minutes": 40, "servings": 4, "difficulty": "könnyű",
+      "tags": ["magyaros", "leves", "olcsó"],
+      "ingredients": [
+        { "key": "burgonya", "amount": "80 dkg", "need": 0.8 },
+        { "key": "sargarepa", "amount": "2 db", "need": 0.2 },
+        { "key": "petrezselyem", "amount": "1 db", "need": 0.1 },
+        { "key": "voroshagyma", "amount": "1 fej", "need": 0.12 },
+        { "key": "kolbasz", "amount": "15 dkg", "need": 0.15 },
+        { "key": "tejfol", "amount": "fél pohár", "need": 0.2 },
+        { "key": "liszt", "amount": "2 ek", "need": 0.03 },
+        { "key": "fuszer", "label": "Pirospaprika, babérlevél, só", "pantry": true }
+      ],
+      "steps": [
+        "A hagymát megdinszteled, meghinted pirospaprikával, és felöntöd 1,5 liter vízzel.",
+        "Belefőzöd a kockára vágott krumplit, a répát, a petrezselyemgyökeret és a karikázott kolbászt.",
+        "Ha minden puha, a liszttel elkevert tejföllel behabarod."
+      ]
+    },
+    {
+      "id": "zoldborsoleves", "name": "Zöldborsóleves", "emoji": "🫛", "minutes": 30, "servings": 4, "difficulty": "könnyű",
+      "tags": ["vega", "leves", "gyors"],
+      "ingredients": [
+        { "key": "borso", "amount": "1 zacskó", "need": 0.45 },
+        { "key": "sargarepa", "amount": "2 db", "need": 0.2 },
+        { "key": "petrezselyem", "amount": "1 db", "need": 0.1 },
+        { "key": "vaj", "amount": "3 dkg", "need": 0.03 },
+        { "key": "liszt", "amount": "2 ek", "need": 0.03 },
+        { "key": "tojas", "amount": "1 db (csipetkének)", "need": 1 },
+        { "key": "so", "label": "Só, petrezselyemzöld", "pantry": true }
+      ],
+      "steps": [
+        "A karikázott répát és petrezselyemgyökeret vajon megpárolod, hozzáadod a borsót.",
+        "Meghinted liszttel, felöntöd 1,5 liter vízzel, és 15 percig főzöd.",
+        "A tojásból kevés liszttel csipetkét gyúrsz, és belecsipkeded a levesbe."
+      ]
+    },
+    {
+      "id": "brassoi", "name": "Brassói aprópecsenye", "emoji": "🍳", "minutes": 45, "servings": 4, "difficulty": "könnyű",
+      "tags": ["magyaros", "húsos"],
+      "ingredients": [
+        { "key": "sertes_comb", "amount": "60 dkg", "need": 0.6 },
+        { "key": "burgonya", "amount": "1 kg", "need": 1.0 },
+        { "key": "voroshagyma", "amount": "1 fej", "need": 0.12 },
+        { "key": "fokhagyma", "amount": "5 gerezd", "need": 0.025 },
+        { "key": "napraforgoolaj", "amount": "3 dl", "need": 0.3 },
+        { "key": "csemegeuborka", "amount": "mellé", "need": 0.2 },
+        { "key": "fuszer", "label": "Pirospaprika, majoránna, só, bors", "pantry": true }
+      ],
+      "steps": [
+        "A húst csíkokra vágod, a hagymával együtt zsiradékon pirosra sütöd, majd kevés vízzel puhára párolod.",
+        "A krumplit kockára vágod, és olajban ropogósra sütöd.",
+        "A húshoz keverted a zúzott fokhagymát és a majoránnát, majd összeforgatod a krumplival. Csemegeuborkával tálalod."
+      ]
+    },
+    {
+      "id": "rantott-hus", "name": "Rántott sertésszelet rizzsel", "emoji": "🥩", "minutes": 45, "servings": 4, "difficulty": "közepes",
+      "tags": ["magyaros", "húsos"],
+      "ingredients": [
+        { "key": "sertes_karaj", "amount": "60 dkg", "need": 0.6 },
+        { "key": "tojas", "amount": "3 db", "need": 3 },
+        { "key": "liszt", "amount": "10 dkg", "need": 0.1 },
+        { "key": "zsemle", "amount": "3 db (morzsának)", "need": 3 },
+        { "key": "napraforgoolaj", "amount": "5 dl", "need": 0.5 },
+        { "key": "rizs", "amount": "30 dkg", "need": 0.3 },
+        { "key": "csemegeuborka", "amount": "mellé", "need": 0.2 },
+        { "key": "so", "label": "Só, bors", "pantry": true }
+      ],
+      "steps": [
+        "A karajt szeletekre vágod, kiklopfolod, sózod.",
+        "Lisztbe, felvert tojásba, majd zsemlemorzsába forgatod, és bő olajban kisütöd.",
+        "Párolt rizzsel és csemegeuborkával tálalod."
+      ]
+    },
+    {
+      "id": "sult-oldalas", "name": "Sült oldalas hagymás krumplival", "emoji": "🍖", "minutes": 120, "servings": 4, "difficulty": "könnyű",
+      "tags": ["húsos"],
+      "ingredients": [
+        { "key": "sertes_oldalas", "amount": "1,2 kg", "need": 1.2 },
+        { "key": "burgonya", "amount": "1 kg", "need": 1.0 },
+        { "key": "voroshagyma", "amount": "2 fej", "need": 0.25 },
+        { "key": "fokhagyma", "amount": "5 gerezd", "need": 0.025 },
+        { "key": "fuszer", "label": "Só, bors, rozmaring, mustár", "pantry": true }
+      ],
+      "steps": [
+        "Az oldalast besózod, bekened fokhagymás mustárral, és letakarva, kevés vízzel 160 fokon 1 órát sütöd.",
+        "Melléteszed a cikkekre vágott krumplit és a hagymát, és fedő nélkül 200 fokon még 40 percig sütöd, amíg minden ropogós lesz."
+      ]
+    },
+    {
+      "id": "hagymas-tarja", "name": "Hagymás rostélyos tarja hasábburgonyával", "emoji": "🧅", "minutes": 40, "servings": 4, "difficulty": "könnyű",
+      "tags": ["húsos", "magyaros"],
+      "ingredients": [
+        { "key": "sertes_tarja", "amount": "80 dkg", "need": 0.8 },
+        { "key": "voroshagyma", "amount": "4 fej", "need": 0.5 },
+        { "key": "hasabburgonya", "amount": "1 kg", "need": 1.0 },
+        { "key": "liszt", "amount": "a hagymához", "need": 0.05 },
+        { "key": "napraforgoolaj", "amount": "5 dl", "need": 0.5 },
+        { "key": "uborka", "amount": "1 db (salátának)", "need": 1 },
+        { "key": "so", "label": "Só, bors, ecet", "pantry": true }
+      ],
+      "steps": [
+        "A tarjaszeleteket kiklopfolod, fűszerezed, és forró serpenyőben mindkét oldalukat 3–4 percig sütöd.",
+        "A karikára vágott hagymát lisztbe forgatod, és bő olajban ropogósra sütöd.",
+        "A hasábburgonyát sütőben vagy olajban kisütöd, az uborkából ecetes salátát készítesz."
+      ]
+    },
+    {
+      "id": "csirkeszarny", "name": "Ropogós sült csirkeszárny fokhagymás joghurttal", "emoji": "🍗", "minutes": 50, "servings": 4, "difficulty": "könnyű",
+      "tags": ["húsos", "olcsó"],
+      "ingredients": [
+        { "key": "csirkeszarny", "amount": "1,2 kg", "need": 1.2 },
+        { "key": "burgonya", "amount": "1 kg", "need": 1.0 },
+        { "key": "joghurt", "amount": "1 doboz", "need": 0.4 },
+        { "key": "fokhagyma", "amount": "3 gerezd", "need": 0.015 },
+        { "key": "napraforgoolaj", "amount": "1 dl", "need": 0.1 },
+        { "key": "fuszer", "label": "Füstölt paprika, só, bors", "pantry": true }
+      ],
+      "steps": [
+        "A szárnyakat olajjal és fűszerekkel összeforgatod, tepsibe teszed a cikkekre vágott krumpli mellé.",
+        "220 fokon kb. 40 perc alatt ropogósra sütöd, félidőben megforgatod.",
+        "A joghurtot zúzott fokhagymával és sóval mártássá kevered."
+      ]
+    },
+    {
+      "id": "sult-csirke", "name": "Egészben sült csirke zöldségágyon", "emoji": "🐔", "minutes": 100, "servings": 4, "difficulty": "közepes",
+      "tags": ["húsos"],
+      "ingredients": [
+        { "key": "egesz_csirke", "amount": "1 db (kb. 1,5 kg)", "need": 1.5 },
+        { "key": "burgonya", "amount": "1,5 kg", "need": 1.5 },
+        { "key": "sargarepa", "amount": "3 db", "need": 0.3 },
+        { "key": "voroshagyma", "amount": "2 fej", "need": 0.25 },
+        { "key": "citrom", "amount": "1 db", "need": 0.12 },
+        { "key": "vaj", "amount": "5 dkg", "need": 0.05 },
+        { "key": "fuszer", "label": "Só, bors, kakukkfű, fokhagyma", "pantry": true }
+      ],
+      "steps": [
+        "A csirkét kívül-belül befűszerezed, a hasüregébe félbevágott citromot teszel, a bőrét puha vajjal bekened.",
+        "A tepsibe nagy darabokra vágott krumplit, répát és hagymát teszel, és ráfekteted a csirkét.",
+        "200 fokon kb. 80 percig sütöd, időnként a kisült lével locsolod."
+      ]
+    },
+    {
+      "id": "pulykasalata", "name": "Grillezett pulykamell-saláta", "emoji": "🥗", "minutes": 25, "servings": 4, "difficulty": "könnyű",
+      "tags": ["húsos", "gyors", "könnyed"],
+      "ingredients": [
+        { "key": "pulykamell", "amount": "50 dkg", "need": 0.5 },
+        { "key": "paradicsom", "amount": "3 db", "need": 0.35 },
+        { "key": "uborka", "amount": "1 db", "need": 1 },
+        { "key": "paprika", "amount": "1 db", "need": 0.15 },
+        { "key": "kukorica", "amount": "1 doboz", "need": 0.285 },
+        { "key": "joghurt", "amount": "öntetnek", "need": 0.2 },
+        { "key": "zsemle", "amount": "4 db", "need": 4 },
+        { "key": "so", "label": "Só, bors, mustár", "pantry": true }
+      ],
+      "steps": [
+        "A pulykamellet szeletekre vágod, fűszerezed, és forró serpenyőben átsütöd.",
+        "A zöldségeket felaprítod, összekevered a kukoricával.",
+        "A joghurtot mustárral, sóval öntetté kevered, és a csíkokra vágott hússal a salátára teszed. Zsemlével tálalod."
+      ]
+    },
+    {
+      "id": "rantott-sajt", "name": "Rántott sajt hasábburgonyával", "emoji": "🧀", "minutes": 30, "servings": 4, "difficulty": "könnyű",
+      "tags": ["vega", "magyaros", "gyors"],
+      "ingredients": [
+        { "key": "trappista", "amount": "50 dkg", "need": 0.5 },
+        { "key": "tojas", "amount": "3 db", "need": 3 },
+        { "key": "liszt", "amount": "10 dkg", "need": 0.1 },
+        { "key": "zsemle", "amount": "3 db (morzsának)", "need": 3 },
+        { "key": "napraforgoolaj", "amount": "5 dl", "need": 0.5 },
+        { "key": "hasabburgonya", "amount": "1 kg", "need": 1.0 },
+        { "key": "joghurt", "amount": "tartármártásnak", "need": 0.2 },
+        { "key": "so", "label": "Só, mustár", "pantry": true }
+      ],
+      "steps": [
+        "A sajtot 1 cm vastag szeletekre vágod.",
+        "Kétszer is lisztbe, tojásba és morzsába forgatod, hogy sütés közben ne folyjon ki.",
+        "Bő, forró olajban gyorsan kisütöd. Hasábburgonyával és mustáros joghurtmártással tálalod."
+      ]
+    },
+    {
+      "id": "melegszendvics", "name": "Sonkás-sajtos melegszendvics", "emoji": "🥪", "minutes": 15, "servings": 2, "difficulty": "könnyű",
+      "tags": ["gyors", "reggeli", "olcsó"],
+      "ingredients": [
+        { "key": "kenyer", "amount": "6 szelet", "need": 0.3 },
+        { "key": "sonka", "amount": "10 dkg", "need": 0.1 },
+        { "key": "trappista", "amount": "10 dkg", "need": 0.1 },
+        { "key": "vaj", "amount": "2 dkg", "need": 0.02 },
+        { "key": "paradicsom", "amount": "1 db", "need": 0.12 },
+        { "key": "so", "label": "Oregánó, ketchup", "pantry": true }
+      ],
+      "steps": [
+        "A kenyérszeleteket vékonyan megvajazod.",
+        "Rájuk teszed a sonkát, a paradicsomkarikákat és a reszelt sajtot.",
+        "200 fokos sütőben 6–8 perc alatt, amíg a sajt megolvad, megsütöd."
+      ]
+    },
+    {
+      "id": "gorog-salata", "name": "Görög saláta", "emoji": "🥗", "minutes": 15, "servings": 4, "difficulty": "könnyű",
+      "tags": ["vega", "gyors", "könnyed"],
+      "ingredients": [
+        { "key": "paradicsom", "amount": "4 db", "need": 0.5 },
+        { "key": "uborka", "amount": "1 db", "need": 1 },
+        { "key": "paprika", "amount": "1 db", "need": 0.15 },
+        { "key": "voroshagyma", "amount": "1 fej (lila)", "need": 0.12 },
+        { "key": "feta", "amount": "20 dkg", "need": 0.2 },
+        { "key": "olivaolaj", "amount": "4 ek", "need": 0.06 },
+        { "key": "zsemle", "amount": "4 db", "need": 4 },
+        { "key": "so", "label": "Oregánó, só, bors, olajbogyó", "pantry": true }
+      ],
+      "steps": [
+        "A paradicsomot, az uborkát és a paprikát nagyobb kockákra vágod, a hagymát vékony karikákra.",
+        "Összekevered, sózod, borsozod, meglocsolod olívaolajjal.",
+        "A tetejére egészben vagy durvára tördelve teszed a fetát, és megszórod oregánóval."
+      ]
+    },
+    {
+      "id": "korozott", "name": "Körözött friss kenyérrel", "emoji": "🧀", "minutes": 10, "servings": 4, "difficulty": "könnyű",
+      "tags": ["vega", "gyors", "magyaros", "reggeli", "olcsó"],
+      "ingredients": [
+        { "key": "turo", "amount": "50 dkg", "need": 0.5 },
+        { "key": "vaj", "amount": "10 dkg", "need": 0.1 },
+        { "key": "voroshagyma", "amount": "1 kis fej", "need": 0.08 },
+        { "key": "kenyer", "amount": "fél vekni", "need": 0.5 },
+        { "key": "paprika", "amount": "2 db (mellé)", "need": 0.3 },
+        { "key": "fuszer", "label": "Pirospaprika, kömény, só", "pantry": true }
+      ],
+      "steps": [
+        "A túrót villával összetöröd a puha vajjal.",
+        "Hozzákevered a nagyon apróra vágott hagymát, a pirospaprikát, a köményt és a sót.",
+        "Friss kenyérrel és felszeletelt paprikával tálalod."
+      ]
+    },
+    {
+      "id": "sajtos-teszta", "name": "Sajtos-tejfölös tészta", "emoji": "🍝", "minutes": 20, "servings": 4, "difficulty": "könnyű",
+      "tags": ["vega", "gyors", "olcsó", "tészta"],
+      "ingredients": [
+        { "key": "penne", "amount": "50 dkg", "need": 0.5 },
+        { "key": "trappista", "amount": "20 dkg", "need": 0.2 },
+        { "key": "tejfol", "amount": "1 pohár", "need": 0.45 },
+        { "key": "vaj", "amount": "3 dkg", "need": 0.03 },
+        { "key": "so", "label": "Só, bors", "pantry": true }
+      ],
+      "steps": [
+        "A tésztát sós vízben kifőzöd, leszűröd, és a vajjal összeforgatod.",
+        "Belekevered a tejföl felét, tálaláskor a tetejére kerül a maradék tejföl és bőven reszelt sajt."
+      ]
+    },
+    {
+      "id": "almas-pite", "name": "Almás pite", "emoji": "🥧", "minutes": 75, "servings": 8, "difficulty": "közepes",
+      "tags": ["vega", "édes"],
+      "ingredients": [
+        { "key": "liszt", "amount": "40 dkg", "need": 0.4 },
+        { "key": "vaj", "amount": "25 dkg", "need": 0.25 },
+        { "key": "porcukor", "amount": "15 dkg", "need": 0.15 },
+        { "key": "tojas", "amount": "1 db", "need": 1 },
+        { "key": "tejfol", "amount": "3 ek", "need": 0.06 },
+        { "key": "alma", "amount": "1,5 kg", "need": 1.5 },
+        { "key": "cukor", "amount": "10 dkg", "need": 0.1 },
+        { "key": "citrom", "amount": "1 db", "need": 0.12 },
+        { "key": "fahej", "label": "Fahéj, sütőpor, vaníliás cukor", "pantry": true }
+      ],
+      "steps": [
+        "A lisztet a hideg vajjal elmorzsolod, hozzáadod a porcukrot, a tojást, a tejfölt és a sütőport, és gyorsan tésztává gyúrod. 30 percre hűtőbe teszed.",
+        "Az almát lereszeled, kinyomkodod, és cukorral, fahéjjal, citromlével megpárolod.",
+        "A tészta felét tepsibe nyújtod, rásimítod a tölteléket, befeded a másik felével, megszurkálod.",
+        "180 fokon kb. 35 perc alatt aranybarnára sütöd."
+      ]
+    },
+    {
+      "id": "tojasos-nokedli", "name": "Tojásos nokedli uborkasalátával", "emoji": "🍳", "minutes": 25, "servings": 4, "difficulty": "könnyű",
+      "tags": ["vega", "magyaros", "olcsó"],
+      "ingredients": [
+        { "key": "liszt", "amount": "50 dkg", "need": 0.5 },
+        { "key": "tojas", "amount": "8 db", "need": 8 },
+        { "key": "zsir", "amount": "3 ek", "need": 0.04 },
+        { "key": "uborka", "amount": "1 db", "need": 1 },
+        { "key": "fuszer", "label": "Só, ecet, cukor, pirospaprika", "pantry": true }
+      ],
+      "steps": [
+        "A lisztből, 3 tojásból, sóból és vízből galuskatésztát kevered, és forrásban lévő sós vízbe szaggatod.",
+        "A kifőtt nokedlit zsíron átforgatod, ráöntöd a maradék felvert tojást, és addig kevered, amíg megszilárdul.",
+        "Az uborkát vékonyra szeleled, ecetes-cukros vízbe teszed, pirospaprikával megszórod."
+      ]
+    },
+    {
+      "id": "rakott-karfiol", "name": "Rakott karfiol", "emoji": "🥘", "minutes": 70, "servings": 4, "difficulty": "közepes",
+      "tags": ["húsos", "magyaros"],
+      "ingredients": [
+        { "key": "karfiol", "amount": "1 nagy fej", "need": 1.2 },
+        { "key": "daralthus", "amount": "40 dkg", "need": 0.4 },
+        { "key": "rizs", "amount": "15 dkg", "need": 0.15 },
+        { "key": "tejfol", "amount": "1 pohár", "need": 0.45 },
+        { "key": "tojas", "amount": "2 db", "need": 2 },
+        { "key": "trappista", "amount": "15 dkg", "need": 0.15 },
+        { "key": "voroshagyma", "amount": "1 fej", "need": 0.12 },
+        { "key": "fuszer", "label": "Só, bors, pirospaprika", "pantry": true }
+      ],
+      "steps": [
+        "A karfiolt rózsáira szedve sós vízben félpuhára főzöd, a rizst külön megfőzöd.",
+        "A darált húst a hagymával megpirítod, fűszerezed, és összekevered a rizzsel.",
+        "Tepsibe rétegezed a karfiolt és a húst, a tetejére tojással elkevert tejföl és reszelt sajt kerül.",
+        "200 fokon kb. 30 perc alatt pirosra sütöd."
+      ]
+    },
+    {
+      "id": "rizses-hus", "name": "Zöldséges csirkés rizs", "emoji": "🍚", "minutes": 35, "servings": 4, "difficulty": "könnyű",
+      "tags": ["húsos", "gyors", "olcsó"],
+      "ingredients": [
+        { "key": "csirkemell", "amount": "50 dkg", "need": 0.5 },
+        { "key": "rizs", "amount": "35 dkg", "need": 0.35 },
+        { "key": "borso", "amount": "fél zacskó", "need": 0.22 },
+        { "key": "sargarepa", "amount": "2 db", "need": 0.2 },
+        { "key": "kukorica", "amount": "1 doboz", "need": 0.285 },
+        { "key": "voroshagyma", "amount": "1 fej", "need": 0.12 },
+        { "key": "fuszer", "label": "Só, bors, pirospaprika", "pantry": true }
+      ],
+      "steps": [
+        "A hagymát megdinszteled, rádobod a felkockázott csirkét, és kifehéredésig pirítod.",
+        "Hozzáadod a rizst és a felkockázott répát, átforgatod, majd felöntöd a rizs kétszeresének megfelelő vízzel.",
+        "Lefedve 18 percig főzöd; az utolsó 5 percben belekevered a borsót és a kukoricát."
+      ]
+    },
+    {
+      "id": "gyumolcssalata", "name": "Gyümölcssaláta joghurttal", "emoji": "🍊", "minutes": 10, "servings": 4, "difficulty": "könnyű",
+      "tags": ["vega", "édes", "gyors", "reggeli", "könnyed"],
+      "ingredients": [
+        { "key": "alma", "amount": "2 db", "need": 0.4 },
+        { "key": "korte", "amount": "2 db", "need": 0.4 },
+        { "key": "banan", "amount": "2 db", "need": 0.36 },
+        { "key": "narancs", "amount": "2 db", "need": 0.4 },
+        { "key": "citrom", "amount": "fél", "need": 0.06 },
+        { "key": "joghurt", "amount": "1 doboz", "need": 0.4 },
+        { "key": "fahej", "label": "Méz, fahéj", "pantry": true }
+      ],
+      "steps": [
+        "A gyümölcsöket megmosod, meghámozod és falatnyi darabokra vágod.",
+        "Citromlével meglocsolod, hogy ne barnuljanak meg.",
+        "Mézes joghurttal tálalod."
+      ]
+    },
+    {
+      "id": "kakaos-palacsinta", "name": "Kakaós palacsinta", "emoji": "🥞", "minutes": 35, "servings": 4, "difficulty": "könnyű",
+      "tags": ["vega", "édes", "olcsó"],
+      "ingredients": [
+        { "key": "liszt", "amount": "25 dkg", "need": 0.25 },
+        { "key": "tej", "amount": "5 dl", "need": 0.5 },
+        { "key": "tojas", "amount": "2 db", "need": 2 },
+        { "key": "kakao", "amount": "5 dkg", "need": 0.05 },
+        { "key": "porcukor", "amount": "10 dkg", "need": 0.1 },
+        { "key": "napraforgoolaj", "amount": "1 dl", "need": 0.1 }
+      ],
+      "steps": [
+        "A lisztet, a tejet, a tojást, egy csipet sót és kevés olajat csomómentesre kevered, 15 percig pihenteted.",
+        "Forró serpenyőben vékony palacsintákat sütsz.",
+        "A kakaót a porcukorral összekevered, a palacsintákat megszórod vele, és feltekered."
+      ]
+    },
+    {
+      "id": "kekszes-kremes", "name": "Kekszes-tejszínes pohárkrém", "emoji": "🍮", "minutes": 20, "servings": 4, "difficulty": "könnyű",
+      "tags": ["vega", "édes", "gyors"],
+      "ingredients": [
+        { "key": "keksz", "amount": "1 csomag", "need": 0.2 },
+        { "key": "habtejszin", "amount": "2 dl", "need": 0.2 },
+        { "key": "turo", "amount": "25 dkg", "need": 0.25 },
+        { "key": "porcukor", "amount": "8 dkg", "need": 0.08 },
+        { "key": "banan", "amount": "2 db", "need": 0.36 },
+        { "key": "kakao", "amount": "1 ek", "need": 0.01 }
+      ],
+      "steps": [
+        "A tejszínt kemény habbá vered, a túrót a porcukorral kikevered, majd a kettőt óvatosan összeforgatod.",
+        "Poharakba rétegezed a morzsolt kekszet, a krémet és a banánkarikákat.",
+        "A tetejét megszórod kakaóporral, és tálalásig hűtőbe teszed."
       ]
     }
   ]

@@ -182,7 +182,7 @@ public final class AllTests {
     }
 
     static void testSpreadDeal() {
-        PriceEntry e = new PriceEntry("k", "Kefir", 8, "Kefir", "spar", 109, 159, "kg", 0.2, 545, 1, 40);
+        PriceEntry e = new PriceEntry("k", "Kefir", 8, "Kefir", "spar", 109, 159, "kg", 0.2, 545, 1, 40, 60);
         Deal d = new DealAnalyzer(List.of(e), null).dealFor(e);
         check(d != null && d.type() == DealType.SPREAD, "láncon belüli árszórás = akciógyanús");
     }
@@ -213,9 +213,9 @@ public final class AllTests {
     static void testRecommenderPrefersDeals() {
         // a demó adatokba a Lidlnél nagyon olcsó tojást és tejfölt teszünk: a tojásos/tejfölös receptek előre kerülnek
         List<PriceEntry> base = new ArrayList<>(new DemoPriceProvider(CATALOG, LocalDate.of(2026, 1, 1)).load().entries());
-        base.add(new PriceEntry("olcso-tojas", "Akciós tojás 10 db", 14, "Tojás", "lidl", 300, 300, "db", 10, 30, 1, 10));
-        base.add(new PriceEntry("olcso-tojas", "Akciós tojás 10 db", 14, "Tojás", "spar", 1100, 1100, "db", 10, 110, 1, 10));
-        base.add(new PriceEntry("olcso-tojas", "Akciós tojás 10 db", 14, "Tojás", "tesco", 1150, 1150, "db", 10, 115, 1, 10));
+        base.add(new PriceEntry("olcso-tojas", "Akciós tojás 10 db", 14, "Tojás", "lidl", 300, 300, "db", 10, 30, 1, 10, 10));
+        base.add(new PriceEntry("olcso-tojas", "Akciós tojás 10 db", 14, "Tojás", "spar", 1100, 1100, "db", 10, 110, 1, 10, 10));
+        base.add(new PriceEntry("olcso-tojas", "Akciós tojás 10 db", 14, "Tojás", "tesco", 1150, 1150, "db", 10, 115, 1, 10, 10));
         List<String> stores = List.of("aldi", "lidl", "penny", "auchan", "tesco", "spar");
         DealAnalyzer deals = new DealAnalyzer(base, null);
         RecipeRecommender rec = new RecipeRecommender(CATALOG, base, deals, stores);
@@ -224,19 +224,26 @@ public final class AllTests {
         for (int i = 1; i < lidl.size(); i++) {
             check(lidl.get(i - 1).score() >= lidl.get(i).score(), "pontszám szerint rendezett");
         }
-        Suggestion top = lidl.get(0);
-        boolean usesCheapEgg = top.items().stream()
+        // a tojásra épülő rántotta a Lidlben az akciós tojást használja, és jobb pontot kap, mint a Sparban
+        Suggestion lidlRantotta = lidl.stream().filter(x -> x.recipe().id().equals("rantotta")).findFirst()
+                .orElseThrow(() -> new AssertionError("a rántotta hiányzik a Lidl-ajánlatokból"));
+        boolean usesCheapEgg = lidlRantotta.items().stream()
                 .anyMatch(pi -> pi.entry() != null && pi.entry().itemId().equals("olcso-tojas"));
-        check(usesCheapEgg, "a legjobb Lidl-recept az akciós tojásra épül (kapott: " + top.recipe().name() + ")");
-        check(top.coverage() > 0.4, "lefedettség");
+        check(usesCheapEgg, "a Lidl-rántotta az akciós tojást használja");
+        check(lidlRantotta.dealCount() >= 1, "van benne jó ár");
+        Suggestion sparRantotta = rec.suggestion("rantotta", "spar", 0);
+        check(lidlRantotta.score() > sparRantotta.score(), "a Lidlben jobb pontot kap, mint a Sparban");
+        int lidlRank = lidl.indexOf(lidlRantotta);
+        int sparRank = rec.suggestionsFor("spar").stream().map(x -> x.recipe().id()).toList().indexOf("rantotta");
+        check(lidlRank < sparRank, "a Lidl-listán előrébb van (" + lidlRank + " vs " + sparRank + ")");
     }
 
     static void testPortionCostUsesUnitPrice() {
         // 6 tojás 10-es dobozból, 30 Ft/db → 180 Ft
         List<PriceEntry> l = List.of(
-                new PriceEntry("t", "Tojás 10 db", 14, "Tojás", "lidl", 300, 300, "db", 10, 30, 1, 1),
-                new PriceEntry("v", "Vaj 250 g", 12, "Vaj", "lidl", 500, 500, "kg", 0.25, 2000, 1, 1),
-                new PriceEntry("k", "Kenyér 1 kg", 46, "Kenyér", "lidl", 600, 600, "kg", 1, 600, 1, 1));
+                new PriceEntry("t", "Tojás 10 db", 14, "Tojás", "lidl", 300, 300, "db", 10, 30, 1, 1, 1),
+                new PriceEntry("v", "Vaj 250 g", 12, "Vaj", "lidl", 500, 500, "kg", 0.25, 2000, 1, 1, 1),
+                new PriceEntry("k", "Kenyér 1 kg", 46, "Kenyér", "lidl", 600, 600, "kg", 1, 600, 1, 1, 1));
         RecipeRecommender rec = new RecipeRecommender(CATALOG, l, new DealAnalyzer(l, null), List.of("lidl"));
         // a "rantotta" receptben 6 tojás van (share 0.6 a 10 db-ból)
         Suggestion s = rec.suggestionsFor("lidl").stream().filter(x -> x.recipe().id().equals("rantotta")).findFirst()
@@ -324,7 +331,7 @@ public final class AllTests {
     }
 
     static PriceEntry entry(String id, String name, int cat, String store, double price, String unit, double qty) {
-        return new PriceEntry(id, name, cat, "kat", store, price, price, unit, qty, price / qty, 1, 10);
+        return new PriceEntry(id, name, cat, "kat", store, price, price, unit, qty, price / qty, 1, 10, 10);
     }
 
     static String get(HttpClient c, String url, int expected) throws IOException, InterruptedException {

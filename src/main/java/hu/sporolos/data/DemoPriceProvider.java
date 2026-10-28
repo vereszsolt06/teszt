@@ -45,11 +45,11 @@ public final class DemoPriceProvider implements PriceProvider {
                     out.add(new PriceEntry("demo-" + p.key() + "-" + variant,
                             brand + " " + p.name().toLowerCase() + " " + formatQty(p.qty(), p.unit()),
                             catId, p.name(), storeId, price, shelfPrice(regular), p.unit(), p.qty(),
-                            price / p.qty(), DEMO_STORES.size(), 50));
+                            price / p.qty(), DEMO_STORES.size(), 50, 50));
                 }
             }
         }
-        return new Snapshot(date, out, "Demó árak (az Árfigyelő nem volt elérhető)");
+        return new Snapshot(date, out, "Demó árak (az Árfigyelő nem volt elérhető)", true);
     }
 
     static String formatQty(double qty, String unit) {
