@@ -80,6 +80,7 @@ final class ApiMapper {
         m.put("otherStoresCost", s.otherStoresCost());
         m.put("savings", s.savings());
         m.put("checkoutTotal", s.checkoutTotal());
+        m.put("staplesTotal", s.staplesTotal());
         m.put("dealCount", s.dealCount());
         m.put("coverage", Math.round(s.coverage() * 100) / 100.0);
         m.put("score", Math.round(s.score() * 1000) / 1000.0);
@@ -89,6 +90,7 @@ final class ApiMapper {
             i.put("label", pi.ingredient().label());
             i.put("amount", pi.ingredient().amount());
             i.put("pantry", pi.ingredient().pantry());
+            i.put("staple", pi.ingredient().staple());
             i.put("cost", pi.cost());
             i.put("estimated", pi.estimated());
             i.put("packages", pi.packages());

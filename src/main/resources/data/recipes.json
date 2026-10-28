@@ -560,7 +560,7 @@
       "id": "rantott-karfiol", "name": "Rántott karfiol petrezselymes krumplival", "emoji": "🥦", "minutes": 45, "servings": 4, "difficulty": "közepes",
       "tags": ["vega", "magyaros"],
       "ingredients": [
-        { "key": "karfiol", "amount": "1 nagy fej", "need": 1.2 },
+        { "key": "karfiol", "amount": "1 nagy fej", "need": 1.0 },
         { "key": "tojas", "amount": "3 db", "need": 3 },
         { "key": "liszt", "amount": "10 dkg", "need": 0.1 },
         { "key": "zsemle", "amount": "3 db (morzsának)", "need": 3 },
@@ -681,7 +681,7 @@
       "steps": [
         "A húst csíkokra vágod, a hagymával együtt zsiradékon pirosra sütöd, majd kevés vízzel puhára párolod.",
         "A krumplit kockára vágod, és olajban ropogósra sütöd.",
-        "A húshoz keverted a zúzott fokhagymát és a majoránnát, majd összeforgatod a krumplival. Csemegeuborkával tálalod."
+        "A húshoz kevered a zúzott fokhagymát és a majoránnát, majd összeforgatod a krumplival. Csemegeuborkával tálalod."
       ]
     },
     {
@@ -918,7 +918,7 @@
       "id": "rakott-karfiol", "name": "Rakott karfiol", "emoji": "🥘", "minutes": 70, "servings": 4, "difficulty": "közepes",
       "tags": ["húsos", "magyaros"],
       "ingredients": [
-        { "key": "karfiol", "amount": "1 nagy fej", "need": 1.2 },
+        { "key": "karfiol", "amount": "1 nagy fej", "need": 1.0 },
         { "key": "daralthus", "amount": "40 dkg", "need": 0.4 },
         { "key": "rizs", "amount": "15 dkg", "need": 0.15 },
         { "key": "tejfol", "amount": "1 pohár", "need": 0.45 },

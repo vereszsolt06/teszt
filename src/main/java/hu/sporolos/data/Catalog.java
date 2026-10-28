@@ -32,10 +32,11 @@ public final class Catalog {
      * @param excludeKeywords ha a bolti termék neve ezek valamelyikét tartalmazza, nem illeszkedik
      * @param pieceWeight     egy darab tömege kg-ban (darabos ↔ kilós termékek átváltásához; 0 = ismeretlen)
      * @param bunchWeight     egy "csomós" (1 db-os) kiszerelés tömege kg-ban (pl. csomós répa); 0 = nincs
+     * @param staple          alapvető kamraáru (olaj, liszt, cukor), ami többnyire otthon van
      */
     public record Product(String key, String name, double qty, String unit, double basePrice,
                           Set<Integer> categoryIds, List<String> keywords, List<String> excludeKeywords,
-                          double pieceWeight, double bunchWeight) {
+                          double pieceWeight, double bunchWeight, boolean staple) {
         public boolean tracked() {
             return !categoryIds.isEmpty();
         }
@@ -73,7 +74,8 @@ public final class Catalog {
                     .map(c -> (int) Json.num(c, -1)).collect(Collectors.toUnmodifiableSet());
             Product prod = new Product(Json.str(p.get("key")), Json.str(p.get("name")),
                     Json.num(p.get("qty"), 1), Json.str(p.get("unit")), Json.num(p.get("basePrice"), 0),
-                    cats, kws, excl, Json.num(p.get("pieceWeight"), 0), Json.num(p.get("bunchWeight"), 0));
+                    cats, kws, excl, Json.num(p.get("pieceWeight"), 0), Json.num(p.get("bunchWeight"), 0),
+                    Boolean.TRUE.equals(p.get("staple")));
             if (products.containsKey(prod.key())) throw new IllegalStateException("Duplikált alapanyag: " + prod.key());
             products.put(prod.key(), prod);
         }
@@ -99,7 +101,8 @@ public final class Catalog {
                 if (!pantry && share <= 0) {
                     throw new IllegalStateException("A(z) '" + r.get("id") + "' recept " + key + " hozzávalójának nincs mennyisége");
                 }
-                ings.add(new Ingredient(key, label, Json.str(i.get("amount")), share, pantry));
+                ings.add(new Ingredient(key, label, Json.str(i.get("amount")), share, pantry,
+                        prod != null && prod.staple()));
             }
             List<String> tags = Json.arr(r.get("tags")).stream().map(Json::str).toList();
             List<String> steps = Json.arr(r.get("steps")).stream().map(Json::str).toList();

@@ -37,6 +37,8 @@
 
 * { box-sizing: border-box; }
 
+[hidden] { display: none !important; }
+
 html { -webkit-text-size-adjust: 100%; }
 
 body {
@@ -349,4 +351,165 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--red) 12%, var(--paper));
   border: 1.5px solid var(--red);
+}
+
+/* ---------- 2. kör: bevásárlólista, összehasonlítás, keresés, párbeszédablak ---------- */
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.skip {
+  position: absolute; left: 12px; top: -48px; z-index: 10;
+  background: var(--ink); color: var(--paper); padding: 8px 14px; border-radius: var(--radius-sm);
+}
+.skip:focus { top: 12px; }
+
+.banner {
+  max-width: 1140px;
+  margin: 6px auto 0;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--tag);
+  background: color-mix(in srgb, var(--tag) 22%, var(--paper));
+  font-size: 0.92rem;
+}
+@media (max-width: 1180px) { .banner { margin: 6px 20px 0; } }
+
+.linkish {
+  border: 0; background: none; padding: 0; text-align: left;
+  text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px;
+}
+.linkish:hover { text-decoration-color: currentColor; }
+
+.ghost.small { padding: 5px 12px; font-size: 0.85rem; }
+.ghost.wide { width: 100%; margin-top: 10px; padding: 10px; }
+
+/* árcímke + adagszám */
+.pick-side { display: flex; flex-direction: column; align-items: flex-end; gap: 14px; }
+@media (max-width: 680px) { .pick-side { align-items: flex-start; } }
+
+.servings {
+  display: inline-flex; align-items: center;
+  border: 1.5px solid var(--line); border-radius: 999px; overflow: hidden;
+}
+.servings .step {
+  width: 36px; height: 34px; border: 0; background: transparent;
+  font-size: 1.15rem; font-weight: 700; line-height: 1;
+}
+.servings .step:hover:not([disabled]) { background: var(--leaf-soft); }
+.servings .step[disabled] { opacity: 0.35; cursor: default; }
+.servings-value { min-width: 64px; text-align: center; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+
+.avail { color: var(--red); }
+
+/* bevásárlólista */
+.shopping, .compare { padding: 20px 28px 24px; border-top: 1.5px dashed var(--line); }
+.shopping h3, .compare h3 { font-size: 1rem; font-weight: 600; }
+.shopping-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+
+.buy { list-style: none; margin: 0; padding: 0; }
+.buy li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 4px 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.buy input { accent-color: var(--leaf); width: 18px; height: 18px; margin: 3px 0 0; }
+.buy label { cursor: pointer; display: flex; flex-direction: column; }
+.buy-name { font-weight: 700; line-height: 1.3; }
+.buy-qty { font-size: 0.84rem; color: var(--muted); }
+.buy-price { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.buy li.done .buy-name, .buy li.done .buy-price { text-decoration: line-through; color: var(--muted); }
+.buy-sub { margin: 14px 0 0; font-size: 0.86rem; font-weight: 700; color: var(--muted); }
+.buy-total {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin: 14px 0 0; padding-top: 10px; border-top: 2px solid var(--ink);
+}
+.buy-total b { font-family: var(--display); font-size: 1.4rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* boltok összehasonlítása */
+.bars { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 6px; }
+.bar-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 76px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  text-align: left;
+}
+.bar-row:hover { background: var(--leaf-soft); }
+.bar-name { font-weight: 700; font-size: 0.9rem; }
+.bar { height: 12px; border-radius: 3px; background: var(--line); position: relative; }
+.bar::after {
+  content: ""; position: absolute; inset: 0 auto 0 0; width: var(--w);
+  border-radius: 3px; background: var(--c);
+}
+.bar-value { font-variant-numeric: tabular-nums; font-size: 0.9rem; min-width: 74px; text-align: right; }
+.bars li.current .bar-row { background: color-mix(in srgb, var(--tag) 30%, transparent); }
+.bars li.current .bar-name::after { content: " ●"; color: var(--leaf); }
+
+/* lista fejléce, rendezés */
+.list-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.sort { display: inline-flex; align-items: center; gap: 8px; font-size: 0.88rem; color: var(--muted); }
+.sort select {
+  font: inherit; color: var(--ink); background: var(--paper);
+  border: 1.5px solid var(--line); border-radius: var(--radius-sm); padding: 5px 8px;
+}
+
+/* keresés */
+.search { display: block; margin: 0 0 12px; }
+.search input {
+  width: 100%;
+  font: inherit;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  padding: 9px 16px;
+}
+.search input:focus { border-color: var(--leaf); outline: none; box-shadow: 0 0 0 3px var(--leaf-soft); }
+.search-hint { margin: -4px 0 10px; font-size: 0.84rem; color: var(--muted); }
+.tag.plain { border-left-color: var(--line); }
+
+/* termék ára minden láncban */
+.item-dialog {
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+  color: var(--ink);
+  padding: 22px 24px 18px;
+}
+.item-dialog::backdrop { background: rgb(10 20 14 / 0.45); }
+.dialog-close { float: right; margin: -4px -6px 8px 12px; }
+.item-dialog h2 { font-size: 1.25rem; font-weight: 800; line-height: 1.2; }
+.item-cat { margin: 6px 0 14px; color: var(--muted); font-size: 0.88rem; }
+.offers { list-style: none; margin: 0; padding: 0; }
+.offers li {
+  display: flex; justify-content: space-between; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid var(--line);
+}
+.offers li.current { background: color-mix(in srgb, var(--tag) 20%, transparent); margin: 0 -8px; padding: 10px 8px; border-radius: var(--radius-sm); }
+.offers li > div { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+.offer-price { align-items: flex-end !important; text-align: right; }
+.offer-price b { font-family: var(--display); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.offer-meta { font-size: 0.8rem; color: var(--muted); }
+.offer-diff { font-size: 0.8rem; color: var(--red); font-variant-numeric: tabular-nums; }
+
+/* értesítés */
+.toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+  background: var(--ink); color: var(--paper);
+  padding: 10px 18px; border-radius: 999px; font-size: 0.92rem;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.2);
+  max-width: calc(100vw - 32px);
 }

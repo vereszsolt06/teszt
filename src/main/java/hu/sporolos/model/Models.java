@@ -61,8 +61,15 @@ public final class Models {
     public record Deal(PriceEntry entry, DealType type, double referencePrice, double savingPercent,
                        double score, String reason) {}
 
-    /** Recept hozzávaló. share = a katalógus-kiszerelés hányad része kell; pantry = kamraáru, nem árazzuk. */
-    public record Ingredient(String productKey, String label, String amount, double share, boolean pantry) {}
+    /**
+     * Recept hozzávaló.
+     *
+     * @param share  a katalógus-kiszerelés hányad része kell
+     * @param pantry fűszer / kamraáru, nem árazzuk (só, bors, pirospaprika)
+     * @param staple alapvető kamraáru (olaj, liszt, cukor): árazzuk, de a bevásárlólistán "ha nincs otthon" tétel
+     */
+    public record Ingredient(String productKey, String label, String amount, double share, boolean pantry,
+                             boolean staple) {}
 
     /** Egy recept. */
     public record Recipe(String id, String name, String emoji, int minutes, int servings,
@@ -88,12 +95,13 @@ public final class Models {
      *
      * @param totalCost        a felhasznált mennyiségek ára ebben a boltban
      * @param otherStoresCost  ugyanez a többi bolt mediánjával számolva
-     * @param checkoutTotal    a bevásárlás összege egész csomagokkal (ennyit fizetsz a pénztárnál)
+     * @param checkoutTotal    a bevásárlás összege egész csomagokkal, az alap kamraáruk nélkül
+     * @param staplesTotal     az alap kamraáruk (olaj, liszt, cukor) ára egész csomagokkal, ha nincs otthon
      * @param coverage         a nem-kamraáru hozzávalók hányad részére van valós bolti ár (0..1)
      * @param servings         hány adagra van számolva
      */
     public record Suggestion(Recipe recipe, String storeId, List<PricedIngredient> items,
-                             double totalCost, double otherStoresCost, double checkoutTotal,
+                             double totalCost, double otherStoresCost, double checkoutTotal, double staplesTotal,
                              int dealCount, double coverage, double score, int servings) {
         public double savings() {
             return Math.max(0, otherStoresCost - totalCost);

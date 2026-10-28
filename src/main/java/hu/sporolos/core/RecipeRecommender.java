@@ -38,6 +38,8 @@ public final class RecipeRecommender {
     static final double MIN_COVERAGE = 0.40;
     /** Ennyi elérhetőség alatt (a lánc boltjainak 30%-a) büntetjük a termék választását. */
     static final double AVAILABILITY_OK = 0.30;
+    /** Ha a recept legfeljebb ennyivel (15%) kér többet egész csomagoknál, nem veszünk még egyet. */
+    static final double PACKAGE_TOLERANCE = 0.15;
 
     private static final Pattern BY_WEIGHT = Pattern.compile("(ledig|ft kg|pult|(^|\\s)[a-z]+ kg(\\s|$))");
 
@@ -134,7 +136,7 @@ public final class RecipeRecommender {
     /** Egy recept beárazása egy boltban (pontszám nélkül); factor = adagszám-szorzó. */
     Suggestion price(Recipe r, String storeId, double factor) {
         List<PricedIngredient> items = new ArrayList<>();
-        double total = 0, checkout = 0;
+        double total = 0, checkout = 0, staples = 0;
         int priced = 0, real = 0, dealCount = 0;
         Map<String, List<PriceEntry>> storeIndex = index.getOrDefault(storeId, Map.of());
         for (Ingredient ing : r.ingredients()) {
@@ -166,22 +168,24 @@ public final class RecipeRecommender {
                 if (d != null) dealCount++;
                 real++;
                 total += bestBuy.cost();
-                checkout += bestBuy.pay();
+                if (ing.staple()) staples += bestBuy.pay();
+                else checkout += bestBuy.pay();
                 items.add(new PricedIngredient(ing, best, d, bestBuy.cost(), false,
                         bestBuy.packages(), bestBuy.amount(), bestBuy.pay()));
             } else {
                 Double up = fallbackUnitPrice.get(p.key());
                 double est = up != null ? up * needed : p.basePrice() * share;
-                int packages = Math.max(1, (int) Math.ceil(share - 0.08));
+                int packages = Math.max(1, (int) Math.ceil(share - PACKAGE_TOLERANCE));
                 double pay = up != null ? up * p.qty() * packages : p.basePrice() * packages;
                 total += est;
-                checkout += pay;
+                if (ing.staple()) staples += pay;
+                else checkout += pay;
                 items.add(new PricedIngredient(ing, null, null, est, true, packages, packages * p.qty(), pay));
             }
         }
         double coverage = priced == 0 ? 0 : real / (double) priced;
         int servings = (int) Math.round(r.servings() * factor);
-        return new Suggestion(r, storeId, items, total, total, checkout, dealCount, coverage, 0, servings);
+        return new Suggestion(r, storeId, items, total, total, checkout, staples, dealCount, coverage, 0, servings);
     }
 
     private Suggestion score(Suggestion s, double othersCost) {
@@ -200,7 +204,7 @@ public final class RecipeRecommender {
         double savingPart = others > 0 ? Stats.clamp01((others - s.totalCost()) / others / 0.25) : 0;
         double score = 0.45 * dealPart + 0.35 * savingPart + 0.20 * s.coverage();
         return new Suggestion(s.recipe(), s.storeId(), s.items(), s.totalCost(), others, s.checkoutTotal(),
-                s.dealCount(), s.coverage(), score, s.servings());
+                s.staplesTotal(), s.dealCount(), s.coverage(), score, s.servings());
     }
 
     /** Ritkán kapható termék (a lánc boltjainak kis részében) kevésbé jó választás: 0,5..1 közötti súly. */
@@ -212,7 +216,7 @@ public final class RecipeRecommender {
      * A szükséges mennyiség a bolti termék egységében (kg / l / db), vagy NaN, ha nem váltható át.
      * kg és l élelmiszernél jó közelítéssel felcserélhető; darab ↔ kg a katalógus darabtömegével.
      */
-    static double amountInItemUnit(Catalog.Product p, PriceEntry e, double needed) {
+    public static double amountInItemUnit(Catalog.Product p, PriceEntry e, double needed) {
         String a = p.unit(), b = e.unit();
         boolean aMass = a.equals("kg") || a.equals("l"), bMass = b.equals("kg") || b.equals("l");
         if (a.equals(b) || (aMass && bMass)) return needed;
@@ -238,18 +242,18 @@ public final class RecipeRecommender {
      * @param amount   összesen megvett mennyiség a termék egységében
      * @param pay      a pénztárnál fizetendő
      */
-    record Purchase(double cost, int packages, double amount, double pay) {
+    public record Purchase(double cost, int packages, double amount, double pay) {
         /**
          * Választási súly: a felhasznált rész ára + a kényszerűen megvett maradék 35%-a.
          * Így nem javasol 30 tojásos tálcát 6 tojáshoz csak azért, mert darabra 2 forinttal olcsóbb,
          * de egy jóval kedvezőbb egységárú nagyobb kiszerelést továbbra is választhat.
          */
-        double effective() {
+        public double effective() {
             return cost + 0.35 * Math.max(0, pay - cost);
         }
     }
 
-    static Purchase buy(Catalog.Product p, PriceEntry e, double share, double needed) {
+    public static Purchase buy(Catalog.Product p, PriceEntry e, double share, double needed) {
         double amount = amountInItemUnit(p, e, needed);
         boolean known = !Double.isNaN(amount) && e.unitPrice() > 0;
         double cost = known ? e.unitPrice() * amount : e.price() * share;
@@ -259,13 +263,13 @@ public final class RecipeRecommender {
             if (soldByWeight(e)) return new Purchase(cost, 0, known ? amount : share, cost);
             double w = packageWeightFromName(e.productName());
             if (known && !Double.isNaN(w)) {
-                int n = Math.max(1, (int) Math.ceil(amount / w - 0.08));
+                int n = Math.max(1, (int) Math.ceil(amount / w - PACKAGE_TOLERANCE));
                 return new Purchase(cost, n, n * w, n * w * e.unitPrice());
             }
         }
         double ratio = known ? amount / e.quantity() : share;
-        // 8% tűrés: ha a recept épp egy csomagnyi kicsit többet kér, nem veszünk még egyet
-        int n = Math.max(1, (int) Math.ceil(ratio - 0.08));
+        // 15% tűrés: ha a recept csak kicsit többet kér egy csomagnál, nem veszünk még egyet
+        int n = Math.max(1, (int) Math.ceil(ratio - PACKAGE_TOLERANCE));
         return new Purchase(cost, n, n * e.quantity(), n * e.price());
     }
 
@@ -287,7 +291,7 @@ public final class RecipeRecommender {
             Pattern.compile("(\\d+(?:[.,]\\d+)?)\\s*(kg|dkg|g|gr)(?![a-z])", Pattern.CASE_INSENSITIVE);
 
     /** A terméknévben szereplő csomagtömeg kg-ban ("ca. 500g" → 0,5; "1,4kg" → 1,4), vagy NaN. */
-    static double packageWeightFromName(String name) {
+    public static double packageWeightFromName(String name) {
         java.util.regex.Matcher m = WEIGHT_IN_NAME.matcher(name == null ? "" : name);
         double found = Double.NaN;
         while (m.find()) {

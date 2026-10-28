@@ -1,0 +1,13 @@
+{
+  "name": "Spórolós Konyha",
+  "short_name": "Spórolós",
+  "description": "Receptajánló a GVH Árfigyelő napi árai alapján.",
+  "lang": "hu",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#e9eee6",
+  "theme_color": "#1d2a23",
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

@@ -257,6 +257,78 @@ public final class AllTests {
         check(s.items().stream().anyMatch(pi -> pi.estimated()), "a hiányzó alapanyagok becsültek");
     }
 
+    static void testPackageWeightFromName() {
+        eq(0.5, RecipeRecommender.packageWeightFromName("Pikok Pure Füstölt szalonna, ca. 500g"), "ca. 500g");
+        eq(1.4, RecipeRecommender.packageWeightFromName("Pilos Trappista sajt ca1,4kg"), "1,4kg");
+        eq(0.25, RecipeRecommender.packageWeightFromName("Kalifa lencse 25 dkg"), "dkg");
+        check(Double.isNaN(RecipeRecommender.packageWeightFromName("Friss csirkecomb , kg")), "nincs tömeg");
+        check(Double.isNaN(RecipeRecommender.packageWeightFromName("Tej 2,8% 1 l")), "liter nem tömeg");
+    }
+
+    static void testPurchaseModel() {
+        Catalog.Product tojas = CATALOG.products().get("tojas");
+        // 6 tojás: a 10-es doboz jobb választás, mint a 30-as tálca, pedig darabra drágább
+        PriceEntry tiz = new PriceEntry("t10", "Tojás 10 db", 14, "Tojás", "x", 600, 600, "db", 10, 60, 1, 1, 1);
+        PriceEntry harminc = new PriceEntry("t30", "Tojás 30 db", 14, "Tojás", "x", 1650, 1650, "db", 30, 55, 1, 1, 1);
+        var a = RecipeRecommender.buy(tojas, tiz, 0.6, 6);
+        var b = RecipeRecommender.buy(tojas, harminc, 0.6, 6);
+        eq(1, a.packages(), "egy 10-es doboz");
+        eq(600.0, a.pay(), "pénztári ár");
+        eq(360.0, Math.round(a.cost() * 100) / 100.0, "receptre jutó rész");
+        check(a.effective() < b.effective(), "a 10-es doboz a jobb választás");
+
+        // mérlegelős áru: annyit fizetsz, amennyi kell
+        Catalog.Product hagyma = CATALOG.products().get("voroshagyma");
+        PriceEntry ledig = new PriceEntry("h", "Vöröshagyma lédig", 40, "Vöröshagyma", "x", 250, 250, "kg", 1, 250, 1, 1, 1);
+        var c = RecipeRecommender.buy(hagyma, ledig, 0.25, 0.25);
+        eq(0, c.packages(), "mérlegelős");
+        eq(62.5, c.pay(), "0,25 kg × 250 Ft");
+
+        // kilós árú, de a névben szereplő csomagtömegű termék: egész csomagot veszel
+        Catalog.Product bacon = CATALOG.products().get("bacon");
+        PriceEntry ca = new PriceEntry("b", "Füstölt szalonna, ca. 500g", 89, "Császárszalonna", "x", 2400, 2400, "kg", 1, 2400, 1, 1, 1);
+        var d = RecipeRecommender.buy(bacon, ca, 1.0, 0.2);
+        eq(1, d.packages(), "egy csomag");
+        eq(1200.0, d.pay(), "0,5 kg × 2400 Ft");
+
+        // darab <-> kg: 0,15 kg paprika darabos kiszerelésből (1 db ≈ 0,15 kg)
+        Catalog.Product paprika = CATALOG.products().get("paprika");
+        PriceEntry darab = new PriceEntry("p", "TV paprika 3 db", 35, "Zöldpaprika", "x", 300, 300, "db", 3, 100, 1, 1, 1);
+        eq(1.0, Math.round(RecipeRecommender.amountInItemUnit(paprika, darab, 0.15) * 1000) / 1000.0, "1 darab");
+
+        // 15% tűrés: 0,5 kg-hoz elég egy 0,45 kg-os csomag
+        Catalog.Product pulyka = CATALOG.products().get("pulykamell");
+        PriceEntry p45 = new PriceEntry("pu", "Pulykamellfilé 450 g", 21, "Pulyka", "x", 1400, 1400, "kg", 0.45, 3111, 1, 1, 1);
+        eq(1, RecipeRecommender.buy(pulyka, p45, 0.5, 0.5).packages(), "nem veszünk két csomagot");
+    }
+
+    static void testAvailabilityLowersDeal() {
+        PriceEntry common = new PriceEntry("a", "Kefir", 8, "Kefir", "spar", 100, 160, "kg", 0.2, 500, 1, 300, 375);
+        PriceEntry rare = new PriceEntry("b", "Kefir2", 8, "Kefir", "spar", 100, 160, "kg", 0.2, 500, 1, 15, 375);
+        DealAnalyzer a = new DealAnalyzer(List.of(common, rare), null);
+        Deal dc = a.dealFor(common), dr = a.dealFor(rare);
+        check(dc != null && dr != null, "mindkettő jó ár");
+        check(dr.score() < dc.score() * 0.6, "a ritkán kapható pontszáma jóval kisebb");
+        check(dr.reason().contains("%-ában kapható"), "az indoklás jelzi");
+        eq(0.04, rare.availability(), "15/375");
+    }
+
+    static void testRefreshKeepsRealDataWhenSourceFails() throws Exception {
+        PriceProvider.Snapshot real = new PriceProvider.Snapshot(LocalDate.of(2026, 10, 28),
+                new DemoPriceProvider(CATALOG, LocalDate.of(2026, 10, 28)).load().entries(), "valós", false);
+        int[] calls = {0};
+        PriceProvider flaky = () -> {
+            if (calls[0]++ == 0) return real;
+            throw new IOException("nincs net");
+        };
+        PriceRepository repo = new PriceRepository(CATALOG,
+                List.of(flaky, new DemoPriceProvider(CATALOG, LocalDate.now())), null, Duration.ofHours(1));
+        repo.reload();
+        PriceRepository.State after = repo.reload(); // a második betöltéskor a valós forrás hibázik
+        eq("valós", after.snapshot().source(), "a valós adat megmaradt, nem váltott demóra");
+        check(after.warnings().stream().anyMatch(w -> w.contains("nincs net")), "a hiba látszik a figyelmeztetésekben");
+    }
+
     // ---------- teljes rendszer ----------
 
     static void testWebServerEndToEnd() throws Exception {
@@ -289,6 +361,28 @@ public final class AllTests {
             }
 
             get(c, base + "/api/deals?store=spar&ingredients=true", 200);
+
+            String firstId = String.valueOf(Json.obj(first.get("recipe")).get("id"));
+            Map<String, Object> rec = Json.obj(Json.parse(get(c, base + "/api/recipe?id=" + firstId + "&store=lidl&servings=8", 200)));
+            eq(8L, rec.get("servings"), "8 adagra számolva");
+            eq(6, Json.arr(rec.get("stores")).size(), "ár mind a 6 láncban");
+            check(Json.num(rec.get("checkoutTotal"), 0) > 0, "pénztári végösszeg");
+            get(c, base + "/api/recipe?id=nincsilyen&store=lidl", 404);
+
+            Object itemId = null;
+            for (Object o : Json.arr(first.get("ingredients"))) {
+                Object it = Json.obj(o).get("item");
+                if (it != null) { itemId = Json.obj(it).get("id"); break; }
+            }
+            check(itemId != null, "van bolti termék a receptben");
+            Map<String, Object> item = Json.obj(Json.parse(get(c, base + "/api/item?id=" + itemId, 200)));
+            check(!Json.arr(item.get("offers")).isEmpty(), "a termék ajánlatai");
+            get(c, base + "/api/item?id=nincsilyen", 404);
+
+            List<Object> hits = Json.arr(Json.parse(get(c, base + "/api/search?q=tojas&store=lidl", 200)));
+            check(!hits.isEmpty(), "a keresés talál tojást");
+            get(c, base + "/api/search?q=x", 400);
+            get(c, base + "/api/refresh", 405);
             get(c, base + "/api/deals?store=nincsilyen", 400);
             get(c, base + "/api/ismeretlen", 404);
             check(get(c, base + "/", 200).contains("Spórolós Konyha"), "főoldal");
