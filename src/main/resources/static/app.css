@@ -513,3 +513,113 @@ button { font: inherit; color: inherit; cursor: pointer; }
   box-shadow: 0 6px 24px rgb(0 0 0 / 0.2);
   max-width: calc(100vw - 32px);
 }
+
+/* ---------- 3. kör: beállítások, kiszerelés, akciók ---------- */
+
+.top-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 560px) {
+  .top { flex-wrap: wrap; }
+  .top-actions { width: 100%; justify-content: flex-start; }
+}
+
+.store-edit { border-style: dashed; background: transparent; }
+.store-edit::before { display: none; }
+
+.pack-note {
+  margin: 12px 0 0;
+  max-width: 56ch;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--leaf-soft);
+  font-size: 0.9rem;
+}
+
+.ing-price { color: var(--muted); }
+.ing-buy { display: block; margin-top: 2px; color: var(--ink); font-size: 0.84rem; }
+.ing-deal.promo, .tag.promo .tag-kind { background: var(--leaf); color: #fff; }
+.tag.promo .tag-kind { justify-self: start; padding: 0 6px; border-radius: 3px; }
+.tag.promo { border-left-color: var(--leaf); }
+
+.buy li .alt {
+  grid-column: 2 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--tag) 18%, var(--paper));
+  font-size: 0.82rem;
+}
+.buy li .alt .ghost { flex: none; background: var(--paper); }
+
+/* lapok (beállítások, akciók) */
+.sheet {
+  width: min(560px, calc(100vw - 24px));
+  max-height: calc(100vh - 32px);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+  color: var(--ink);
+  padding: 22px 24px 20px;
+  overflow: auto;
+}
+.wide-sheet { width: min(760px, calc(100vw - 24px)); }
+.sheet::backdrop { background: rgb(10 20 14 / 0.45); }
+.sheet h2 { font-size: 1.35rem; font-weight: 800; margin-bottom: 6px; }
+.hint { margin: 4px 0 10px; color: var(--muted); font-size: 0.86rem; max-width: 64ch; }
+.hint code, .sheet code { font-size: 0.82rem; background: var(--bg); padding: 1px 4px; border-radius: 3px; }
+
+.setting { border: 0; border-top: 1.5px dashed var(--line); margin: 14px 0 0; padding: 14px 0 0; }
+.setting legend { font-family: var(--display); font-weight: 600; font-size: 1.05rem; padding: 0; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 12px 7px 10px;
+  border: 1.5px solid var(--line);
+  border-left: 5px solid var(--c, var(--line));
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+.chip input { accent-color: var(--leaf); width: 17px; height: 17px; margin: 0; }
+.chip:has(input:not(:checked)) { opacity: 0.55; font-weight: 400; }
+
+.radio { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; cursor: pointer; }
+.radio input { accent-color: var(--leaf); width: 18px; height: 18px; margin: 3px 0 0; flex: none; }
+
+/* akciók */
+.promo-list { list-style: none; margin: 10px 0 0; padding: 0; }
+.promo-item {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid var(--line);
+}
+.promo-item > div { display: flex; flex-direction: column; gap: 2px; }
+.promo-status { font-size: 0.8rem; font-weight: 700; color: var(--muted); }
+.status-active .promo-status { color: var(--leaf); }
+.status-already_listed .promo-status { color: var(--muted); }
+.status-expired, .status-not_started, .status-no_match, .status-card_off { opacity: 0.7; }
+.status-no_match .promo-status { color: var(--red); }
+.empty.small { padding: 12px 0; font-size: 0.9rem; }
+
+.promo-add { margin-top: 16px; border-top: 1.5px dashed var(--line); padding-top: 12px; }
+.promo-add summary { cursor: pointer; font-family: var(--display); font-weight: 600; font-size: 1.05rem; }
+.promo-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; margin-top: 12px; }
+@media (max-width: 560px) { .promo-form { grid-template-columns: 1fr; } }
+.promo-form label { display: flex; flex-direction: column; gap: 4px; font-size: 0.86rem; color: var(--muted); }
+.promo-form label.check { flex-direction: row; align-items: center; gap: 8px; color: var(--ink); }
+.promo-form .span2 { grid-column: 1 / -1; }
+.promo-form input, .promo-form select, #promo-import {
+  font: inherit; color: var(--ink); background: var(--paper);
+  border: 1.5px solid var(--line); border-radius: var(--radius-sm); padding: 7px 9px;
+}
+.promo-form input[type="checkbox"] { accent-color: var(--leaf); width: 17px; height: 17px; }
+#promo-import { width: 100%; font-family: ui-monospace, monospace; font-size: 0.85rem; }
+.form-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+
+.offers li.not-mine { opacity: 0.55; }
+.setting legend { float: left; width: 100%; margin-bottom: 2px; }
+.setting legend + * { clear: both; }

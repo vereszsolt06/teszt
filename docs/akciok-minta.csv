@@ -1,0 +1,8 @@
+bolt;termek;ar;egyseg;kiszereles;rendes_ar;tol;ig;alapanyag;vonalkod;kartya
+# Minta: így néz ki egy akciós újságból kimásolt lista. Másold a data/akciok/ mappába, vagy illeszd be a felületen.
+Lidl;Csirkemellfilé, friss;1499;kg;1;1999;2026-10-30;2026-11-05;csirkemell;;nem
+Lidl;Tonhal saját lében 3×80 g;1199;g;240;1599;2026-10-30;2026-11-05;tonhal;;igen
+Penny;Tojás M 10 db;499;db;10;699;2026-10-30;2026-11-05;tojas;;nem
+Spar;Csiperkegomba 500 g;599;g;500;899;2026-10-30;2026-11-05;gomba;;nem
+Tesco;Sertéskaraj csont nélkül;1599;kg;1;2190;2026-10-30;2026-11-05;sertes_karaj;;igen
+Aldi;Paradicsompassata 500 g;299;g;500;399;2026-10-30;2026-11-05;passata;;nem

@@ -280,7 +280,7 @@ public final class WebServer {
         for (PromoMerger.PromoStatus ps : s.analysis(p.cards()).promoStatuses()) {
             Map<String, Object> m = new LinkedHashMap<>(ps.promo().toJson());
             m.put("storeName", storeName(s, ps.promo().storeId()));
-            Catalog.Product prod = ps.promo().ingredientKey() == null ? null : repo.catalog().products().get(ps.promo().ingredientKey());
+            Catalog.Product prod = PromoMerger.resolveIngredient(repo.catalog(), ps.promo().ingredientKey());
             m.put("ingredientName", prod == null ? null : prod.name());
             m.put("status", ps.status().name());
             m.put("statusText", ps.status().label);

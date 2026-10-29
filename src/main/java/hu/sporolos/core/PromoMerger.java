@@ -129,7 +129,7 @@ public final class PromoMerger {
             }
 
             // 2. alapanyag alapján
-            Catalog.Product prod = p.ingredientKey() == null ? null : catalog.products().get(p.ingredientKey());
+            Catalog.Product prod = resolveIngredient(catalog, p.ingredientKey());
             if (prod == null) {
                 statuses.add(new PromoStatus(p, Status.NO_MATCH, null));
                 continue;
@@ -151,6 +151,18 @@ public final class PromoMerger {
             statuses.add(new PromoStatus(p, Status.ACTIVE, null));
         }
         return new Result(List.copyOf(entries), Map.copyOf(forced), Map.copyOf(info), List.copyOf(statuses));
+    }
+
+    /** Alapanyag a kulcsa ("csirkemell") vagy a neve ("Csirkemellfilé") alapján, ékezet- és kisbetű-függetlenül. */
+    public static Catalog.Product resolveIngredient(Catalog catalog, String keyOrName) {
+        if (keyOrName == null || keyOrName.isBlank()) return null;
+        Catalog.Product direct = catalog.products().get(keyOrName.trim());
+        if (direct != null) return direct;
+        String n = Catalog.normalize(keyOrName);
+        for (Catalog.Product p : catalog.products().values()) {
+            if (Catalog.normalize(p.key()).equals(n.replace(' ', '_')) || Catalog.normalize(p.name()).equals(n)) return p;
+        }
+        return null;
     }
 
     private static void add(List<PriceEntry> entries, Map<String, Integer> pos, PriceEntry e) {

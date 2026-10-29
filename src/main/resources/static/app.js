@@ -11,11 +11,14 @@ const state = {
   suggestions: [],   // a bolt rangsorolt receptjei (szűrővel)
   shown: new Set(),  // a "Másik receptet kérek" már mutatott receptjei
   current: null,     // a kiválasztott recept részletei (/api/recipe)
+  swapped: new Set(),// a hozzávalók, amelyeknél a felhasználó az alternatív kiszerelést választotta
   servings: 0,       // 0 = a recept alapadagja
   showAll: false,
   sort: "score",
   requestId: 0,      // elavult válaszok eldobásához
   dealLimit: 12,     // ennyi jó árat mutatunk elsőre (telefonon ne legyen végtelen a lista)
+  prefs: { stores: [], bulk: false, cards: [] }, // stores: üres = minden bolt
+  ingredients: null, // az akció-űrlap alapanyag-listája
 };
 
 const DEAL_LABEL = {
@@ -23,6 +26,7 @@ const DEAL_LABEL = {
   HISTORY: "Olcsóbb a szokásosnál",
   SPREAD: "Akciógyanús",
   CATEGORY: "Tartósan olcsó",
+  PROMO: "Bolti akció",
 };
 
 // ---------- formázás ----------
@@ -50,7 +54,17 @@ function inStore(id) {
   return IN_STORE[id] || `itt: ${storeName(id)} –`;
 }
 
-// ---------- tárolás és állapot az URL-ben ----------
+const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+
+function el(tag, cls, text, attrs) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  if (attrs) for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  return e;
+}
+
+// ---------- tárolás, beállítások, állapot az URL-ben ----------
 
 function store(key, value) {
   try {
@@ -61,6 +75,41 @@ function store(key, value) {
     return null;
   }
   return null;
+}
+
+function loadPrefs() {
+  try {
+    const p = JSON.parse(store("sporolos.prefs") || "null");
+    if (p && typeof p === "object") {
+      state.prefs = {
+        stores: Array.isArray(p.stores) ? p.stores : [],
+        bulk: !!p.bulk,
+        cards: Array.isArray(p.cards) ? p.cards : [],
+      };
+    }
+  } catch (e) { /* alapbeállítások */ }
+}
+
+function savePrefs() {
+  store("sporolos.prefs", JSON.stringify(state.prefs));
+}
+
+/** A beállítások query-paraméterként minden kéréshez. */
+function prefQuery() {
+  const p = new URLSearchParams();
+  if (state.prefs.stores.length) p.set("stores", state.prefs.stores.join(","));
+  if (state.prefs.bulk) p.set("bulk", "1");
+  if (state.prefs.cards.length) p.set("cards", state.prefs.cards.join(","));
+  const s = p.toString();
+  return s ? "&" + s : "";
+}
+
+/** A felhasználó boltjai (a státusz sorrendjében). */
+function myStores() {
+  const all = state.status?.stores || [];
+  if (!state.prefs.stores.length) return all;
+  const mine = all.filter((s) => state.prefs.stores.includes(s.id));
+  return mine.length ? mine : all;
 }
 
 function readHash() {
@@ -81,7 +130,8 @@ function writeHash() {
 // ---------- hálózat ----------
 
 async function api(path, opts) {
-  const res = await fetch(path, opts);
+  const sep = path.includes("?") ? "" : "?";
+  const res = await fetch(path + sep + prefQuery(), opts);
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error || `A szerver ${res.status} hibával válaszolt.`);
   return body;
@@ -92,16 +142,12 @@ function toast(msg) {
   t.textContent = msg;
   t.hidden = false;
   clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => { t.hidden = true; }, 2600);
+  toast.timer = setTimeout(() => { t.hidden = true; }, 3200);
 }
 
 function showError(msg) {
   const pick = $("#pick");
-  pick.replaceChildren();
-  const p = document.createElement("p");
-  p.className = "empty";
-  p.textContent = msg + " Indítsd újra az alkalmazást, vagy próbáld az „Árak frissítése” gombot.";
-  pick.appendChild(p);
+  pick.replaceChildren(el("p", "empty", msg + " Indítsd újra az alkalmazást, vagy próbáld az „Árak frissítése” gombot."));
 }
 
 // ---------- betöltés ----------
@@ -112,6 +158,7 @@ async function loadStatus() {
   const d = new Date(s.date + "T00:00:00");
   const dateText = d.toLocaleDateString("hu-HU", { month: "long", day: "numeric" });
   let text = `${s.source} · ${dateText} · ${nf.format(s.itemCount)} élelmiszerár`;
+  if (s.activePromos > 0) text += ` · ${s.activePromos} saját akció`;
   if (s.historyDays > 0) text += ` · ${s.historyDays} nap előzmény`;
   $("#source").textContent = text;
 
@@ -126,7 +173,7 @@ async function loadStatus() {
     banner.hidden = true;
   }
 
-  const ids = s.stores.map((x) => x.id);
+  const ids = myStores().map((x) => x.id);
   if (!state.store || !ids.includes(state.store)) {
     const saved = store("sporolos.store");
     state.store = ids.includes(saved) ? saved : bestStore()?.id;
@@ -135,8 +182,7 @@ async function loadStatus() {
 }
 
 function bestStore() {
-  const list = state.status?.stores || [];
-  return list.reduce((a, b) => (!a || b.topScore > a.topScore ? b : a), null);
+  return myStores().reduce((a, b) => (!a || b.topScore > a.topScore ? b : a), null);
 }
 
 /** A bolt receptjei és jó árai; utána a kért (vagy a legjobb) recept. */
@@ -150,7 +196,7 @@ async function loadStore(preferredRecipe) {
   state.suggestions = sugs;
   state.shown = new Set();
   if (preferredRecipe && sugs.some((s) => s.recipe.id === preferredRecipe)) {
-    await showRecipe(preferredRecipe);
+    await showRecipe(preferredRecipe, state.servings > 0);
   } else {
     await nextRecipe(true);
   }
@@ -171,11 +217,19 @@ async function showRecipe(id, keepServings) {
   const servings = state.servings ? `&servings=${state.servings}` : "";
   const detail = await api(`/api/recipe?id=${encodeURIComponent(id)}&store=${state.store}${servings}`);
   if (myId !== state.requestId) return; // közben másik receptet kértek
+  if (state.current?.recipe.id !== id || state.current?.store !== detail.store) state.swapped = new Set();
   state.current = detail;
   state.shown.add(id);
   renderPick(!keepServings);
   renderMore();
   writeHash();
+}
+
+/** Mindent újratölt (beállítás-változás után), a kiválasztott receptet megtartva. */
+async function reloadAll() {
+  const keep = state.current?.recipe.id;
+  await loadStatus();
+  await loadStore(keep);
 }
 
 // ---------- receptválasztás ----------
@@ -215,28 +269,21 @@ function renderStores() {
   const row = $("#stores");
   row.replaceChildren();
   const best = bestStore();
-  for (const s of state.status.stores) {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "store";
-    b.setAttribute("role", "tab");
-    b.setAttribute("aria-selected", String(s.id === state.store));
+  const mine = myStores();
+  for (const s of mine) {
+    const b = el("button", "store", null, { type: "button", role: "tab", "aria-selected": String(s.id === state.store) });
     b.style.setProperty("--c", s.color);
-    const name = document.createElement("span");
-    name.className = "store-name";
-    name.textContent = s.name;
-    const meta = document.createElement("span");
-    meta.className = "store-meta";
-    meta.textContent = `${s.dealCount} jó ár`;
-    b.append(name, meta);
-    if (best && s.id === best.id) {
-      const badge = document.createElement("span");
-      badge.className = "best";
-      badge.textContent = "ma itt a legjobb";
-      b.appendChild(badge);
-    }
+    b.append(el("span", "store-name", s.name), el("span", "store-meta", `${s.dealCount} jó ár`));
+    if (best && s.id === best.id && mine.length > 1) b.appendChild(el("span", "best", "ma itt a legjobb"));
     b.addEventListener("click", () => selectStore(s.id));
     row.appendChild(b);
+  }
+  const hidden = (state.status?.stores.length || 0) - mine.length;
+  if (hidden > 0) {
+    const more = el("button", "store store-edit", null, { type: "button" });
+    more.append(el("span", "store-name", "+"), el("span", "store-meta", `${hidden} bolt elrejtve`));
+    more.addEventListener("click", openSettings);
+    row.appendChild(more);
   }
   row.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });
 }
@@ -252,6 +299,21 @@ function selectStore(id, recipe) {
 
 // ---------- a kiválasztott recept ----------
 
+/** A hozzávalók a felhasználó kiszerelés-választásaival (alternatíva cserélve, ahol kérte). */
+function effectiveIngredients(s) {
+  return s.ingredients.map((i) => (state.swapped.has(i.label) && i.alternative ? { ...i.alternative, swappedFrom: i } : i));
+}
+
+function totals(items) {
+  let cost = 0, checkout = 0, staples = 0;
+  for (const i of items) {
+    if (i.pantry) continue;
+    cost += i.cost;
+    if (i.staple) staples += i.checkoutCost; else checkout += i.checkoutCost;
+  }
+  return { cost, checkout, staples };
+}
+
 function renderPick(animate) {
   const pick = $("#pick");
   const s = state.current;
@@ -260,17 +322,16 @@ function renderPick(animate) {
   $("#counter").textContent = "";
 
   if (!s) {
-    const p = document.createElement("p");
-    p.className = "empty";
-    p.textContent = state.tag
+    pick.appendChild(el("p", "empty", state.tag
       ? "Ehhez a szűrőhöz ebben a boltban most nincs elég árazható recept. Válassz másik szűrőt vagy boltot."
-      : "Ebben a boltban most nincs elég árazható alapanyag. Válassz másik boltot.";
-    pick.appendChild(p);
+      : "Ebben a boltban most nincs elég árazható alapanyag. Válassz másik boltot."));
     return;
   }
 
   const r = s.recipe;
-  const deals = s.ingredients.filter((i) => i.deal);
+  const items = effectiveIngredients(s);
+  const t = totals(items);
+  const deals = items.filter((i) => i.deal);
 
   const head = el("div", "pick-head");
   const left = el("div");
@@ -280,11 +341,13 @@ function renderPick(animate) {
     el("p", "pick-meta", `${r.minutes} perc · ${r.difficulty}`),
     el("p", "pick-why", whyText(s, deals)),
   );
+  const pack = packNote(s, t);
+  if (pack) left.appendChild(pack);
 
   const right = el("div", "pick-side");
-  const tag = el("div", "price-tag", null, { role: "img", "aria-label": `A recept költsége kb. ${ft(s.totalCost)}` });
-  tag.append(el("small", null, `${s.servings} adag, kb.`), el("span", "now", ft(s.totalCost)));
-  if (s.savings >= 20) {
+  const tag = el("div", "price-tag", null, { role: "img", "aria-label": `A recept költsége kb. ${ft(t.cost)}` });
+  tag.append(el("small", null, `${s.servings} adag, kb.`), el("span", "now", ft(t.cost)));
+  if (s.otherStoresCost - t.cost >= 20) {
     const was = el("small", "was", "máshol ");
     was.appendChild(el("span", "old", ft(s.otherStoresCost)));
     tag.appendChild(was);
@@ -294,10 +357,10 @@ function renderPick(animate) {
   pick.appendChild(head);
 
   const body = el("div", "pick-body");
-  body.append(renderIngredients(s), renderSteps(r));
+  body.append(renderIngredients(items), renderSteps(r));
   pick.appendChild(body);
-  pick.appendChild(renderShoppingList(s));
-  pick.appendChild(renderComparison(s));
+  pick.appendChild(renderShoppingList(s, items, t));
+  pick.appendChild(renderComparison(s, t));
 
   if (animate) {
     void pick.offsetWidth;
@@ -308,12 +371,38 @@ function renderPick(animate) {
   $("#counter").textContent = left8 > 0 ? `még ${left8} jó ötlet erre a boltra` : "körbeértünk, újrakezdjük";
 }
 
-function el(tag, cls, text, attrs) {
-  const e = document.createElement(tag);
-  if (cls) e.className = cls;
-  if (text != null) e.textContent = text;
-  if (attrs) for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
-  return e;
+/** Rövid megjegyzés a kiszerelésről: mennyit spórolna nagy kiszereléssel (vagy fordítva). */
+function packNote(s, t) {
+  const withAlt = s.ingredients.filter((i) => i.alternative);
+  if (!withAlt.length) return null;
+  const allSwapped = withAlt.every((i) => state.swapped.has(i.label));
+  const box = el("p", "pack-note");
+  const btn = el("button", "linkish", null, { type: "button" });
+  if (!s.bulkMode) {
+    const save = s.totalCost - s.altTotalCost;
+    if (allSwapped) {
+      box.append(`Nagy kiszerelésekkel számolva: a recept ${ft(save)}-tal olcsóbb, de ma ${ft(t.checkout)}-ot fizetsz. `);
+      btn.textContent = "Vissza a háztartási kiszerelésre";
+    } else {
+      box.append(`Nagy kiszerelésekkel a recept ${ft(save)}-tal olcsóbb lenne (${ft(s.altTotalCost)}), de ma ${ft(s.altCheckoutTotal)}-ot fizetnél ${ft(s.checkoutTotal)} helyett. `);
+      btn.textContent = "Mutasd nagy kiszereléssel";
+    }
+  } else {
+    if (allSwapped) {
+      box.append("Háztartási kiszerelésekkel számolva. ");
+      btn.textContent = "Vissza a nagy kiszerelésre";
+    } else {
+      box.append(`Nagy kiszerelésekkel számolva. Háztartási kiszerelésekkel ma csak ${ft(s.altCheckoutTotal)}-ot fizetnél, de a recept ${ft(s.altTotalCost - s.totalCost)}-tal drágább lenne. `);
+      btn.textContent = "Mutasd háztartási kiszereléssel";
+    }
+  }
+  btn.addEventListener("click", () => {
+    if (allSwapped) state.swapped = new Set();
+    else state.swapped = new Set(withAlt.map((i) => i.label));
+    renderPick(false);
+  });
+  box.appendChild(btn);
+  return box;
 }
 
 function servingsControl(s) {
@@ -334,25 +423,25 @@ function servingsControl(s) {
 }
 
 function whyText(s, deals) {
-  const fmt = (i) => `${i.label.toLowerCase()} (−${Math.round(i.deal.savingPercent)}%)`;
-  const hot = deals.filter((i) => i.deal.type !== "CATEGORY");
+  const fmt = (i) => `${i.label.toLowerCase()}${i.deal.savingPercent > 0 ? ` (−${Math.round(i.deal.savingPercent)}%)` : ""}`;
+  const promo = deals.filter((i) => i.deal.type === "PROMO");
+  const hot = deals.filter((i) => i.deal.type !== "CATEGORY" && i.deal.type !== "PROMO");
   const steady = deals.filter((i) => i.deal.type === "CATEGORY");
   const parts = [];
-  if (hot.length) parts.push(`${cap(inStore(s.store))} épp most jó áron van: ${hot.slice(0, 3).map(fmt).join(", ")}.`);
-  if (steady.length) parts.push(`${hot.length ? "Emellett tartósan" : `${cap(inStore(s.store))} tartósan`} olcsó: ${steady.slice(0, 3).map(fmt).join(", ")}.`);
+  if (promo.length) parts.push(`${cap(inStore(s.store))} akcióban van: ${promo.slice(0, 3).map(fmt).join(", ")}.`);
+  if (hot.length) parts.push(`${promo.length ? "Emellett épp most jó áron" : `${cap(inStore(s.store))} épp most jó áron`} van: ${hot.slice(0, 3).map(fmt).join(", ")}.`);
+  if (steady.length) parts.push(`${hot.length || promo.length ? "Tartósan" : `${cap(inStore(s.store))} tartósan`} olcsó: ${steady.slice(0, 3).map(fmt).join(", ")}.`);
   if (parts.length === 0) parts.push(`Nincs benne kiemelt akció, de ${inStore(s.store)} ez most az egyik legolcsóbban összevásárolható recept.`);
-  if (s.savings >= 20) parts.push(`A többi boltban átlagosan ${ft(s.savings)}-tal többe kerülne.`);
+  if (s.savings >= 20) parts.push(`A többi boltodban átlagosan ${ft(s.savings)}-tal többe kerülne.`);
   return parts.join(" ");
 }
 
-const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
-
-function renderIngredients(s) {
+function renderIngredients(items) {
   const box = el("div", "ingredients");
   box.appendChild(el("h3", null, "Hozzávalók és mit vegyél"));
   const ul = el("ul", "ing");
   let anyEstimated = false;
-  for (const i of s.ingredients) {
+  for (const i of items) {
     const li = el("li");
     if (i.pantry) li.classList.add("pantry");
     if (i.estimated) { li.classList.add("estimated"); anyEstimated = true; }
@@ -363,22 +452,24 @@ function renderIngredients(s) {
       const p = el("span", "ing-product");
       const link = el("button", "linkish", i.item.name, { type: "button" });
       link.addEventListener("click", () => openItem(i.item.id));
-      p.append(link, document.createTextNode(` – ${ft(i.item.price)}`));
+      p.append(link);
+      p.appendChild(el("span", "ing-price", ` · ${i.priceText}`));
       if (i.item.availability < 0.5) {
         p.appendChild(el("span", "avail", ` · a boltjaik ${Math.max(1, Math.round(i.item.availability * 100))}%-ában`));
       }
+      p.appendChild(el("span", "ing-buy", `Vegyél: ${i.buyText}${i.bulk ? " (nagy kiszerelés)" : ""}`));
       if (i.deal) {
-        p.appendChild(document.createElement("br"));
-        p.appendChild(el("span", "ing-deal", `${DEAL_LABEL[i.deal.type]} · −${Math.round(i.deal.savingPercent)}%`, { title: i.deal.reason }));
+        p.appendChild(el("span", i.deal.type === "PROMO" ? "ing-deal promo" : "ing-deal",
+          `${DEAL_LABEL[i.deal.type]}${i.deal.savingPercent > 0 ? ` · −${Math.round(i.deal.savingPercent)}%` : ""}`, { title: i.deal.reason }));
       }
       li.appendChild(p);
     } else if (i.estimated) {
-      li.appendChild(el("span", "ing-product", "Az Árfigyelő nem követi, vagy ebben a boltban nincs – becsült ár."));
+      li.appendChild(el("span", "ing-product", `Az Árfigyelő nem követi, vagy ebben a boltban nincs – becsült ár (${i.priceText}).`));
     }
     ul.appendChild(li);
   }
   box.appendChild(ul);
-  if (anyEstimated) box.appendChild(el("p", "note", "* becsült ár"));
+  if (anyEstimated) box.appendChild(el("p", "note", "* becsült ár; ha akciót látsz rá az újságban, az „Akciók” gombbal felviheted."));
   return box;
 }
 
@@ -397,29 +488,21 @@ function listKey(s) {
   return `sporolos.list.${s.store}.${s.recipe.id}`;
 }
 
-function buyText(i) {
-  if (!i.item) return i.packages > 1 ? `${i.packages} csomag` : "1 csomag";
-  if (i.packages === 0) return `kb. ${qty(i.buyAmount, i.item.unit)}`;
-  return i.packages > 1 ? `${i.packages} × ${qty(i.item.quantity, i.item.unit)}` : qty(i.item.quantity, i.item.unit);
-}
-
-function renderShoppingList(s) {
+function renderShoppingList(s, items, t) {
   const box = el("section", "shopping", null, { "aria-label": "Bevásárlólista" });
   const head = el("div", "shopping-head");
   head.appendChild(el("h3", null, `Bevásárlólista – ${storeName(s.store)}`));
-  const actions = el("div", "shopping-actions");
   const copy = el("button", "ghost small", navigator.share ? "Megosztás" : "Lista másolása", { type: "button" });
-  copy.addEventListener("click", () => shareList(s));
-  actions.appendChild(copy);
-  head.appendChild(actions);
+  copy.addEventListener("click", () => shareList(s, items, t));
+  head.appendChild(copy);
   box.appendChild(head);
 
   let checked = new Set();
   try { checked = new Set(JSON.parse(store(listKey(s)) || "[]")); } catch (e) { /* üres lista */ }
 
-  const items = s.ingredients.filter((i) => !i.pantry);
-  const needed = items.filter((i) => !i.staple);
-  const staples = items.filter((i) => i.staple);
+  const buyable = items.filter((i) => !i.pantry);
+  const needed = buyable.filter((i) => !i.staple);
+  const staples = buyable.filter((i) => i.staple);
 
   const mkList = (list) => {
     const ul = el("ul", "buy");
@@ -435,8 +518,12 @@ function renderShoppingList(s) {
         store(listKey(s), checked.size ? JSON.stringify([...checked]) : null);
       });
       const label = el("label", null, null, { for: id });
-      label.append(el("span", "buy-name", i.item ? i.item.name : `${i.label} (becsült)`), el("span", "buy-qty", buyText(i)));
+      label.append(el("span", "buy-name", i.item ? i.item.name : `${i.label} (becsült)`),
+        el("span", "buy-qty", `${i.buyText}${i.item ? ` · ${i.priceText}` : ""}`));
       li.append(cb, label, el("span", "buy-price", ft(i.checkoutCost)));
+      const orig = i.swappedFrom || i;
+      const other = i.swappedFrom ? i.swappedFrom : i.alternative;
+      if (other) li.appendChild(altRow(orig, i, other));
       ul.appendChild(li);
     }
     return ul;
@@ -448,30 +535,50 @@ function renderShoppingList(s) {
     box.appendChild(mkList(staples));
   }
   const total = el("p", "buy-total");
-  total.append(el("span", null, "A pénztárnál kb."), el("b", null, ft(s.checkoutTotal)));
+  total.append(el("span", null, "A pénztárnál kb."), el("b", null, ft(t.checkout)));
   box.appendChild(total);
-  if (s.staplesTotal > 0) box.appendChild(el("p", "note", `+ ${ft(s.staplesTotal)}, ha olajat, lisztet, cukrot is venni kell.`));
-  box.appendChild(el("p", "note", "Egész csomagokkal számolva; a megmaradó rész a következő főzéshez jól jön."));
+  if (t.staples > 0) box.appendChild(el("p", "note", `+ ${ft(t.staples)}, ha olajat, lisztet, cukrot is venni kell.`));
+  box.appendChild(el("p", "note", "Egész csomagokkal számolva; a mérlegelős árut annyiért, amennyit veszel."));
   return box;
 }
 
-function listAsText(s) {
+/** A másik kiszerelés ajánlata egy bevásárlólista-sor alatt, cseregombbal. */
+function altRow(orig, current, other) {
+  const row = el("div", "alt");
+  const otherIsBulk = other.bulk;
+  const costDiff = other.cost - current.cost;      // a receptre jutó rész változása
+  const payDiff = other.checkoutCost - current.checkoutCost; // a pénztári összeg változása
+  const what = otherIsBulk ? "Nagy kiszerelésben olcsóbb" : "Kisebb kiszerelésben";
+  const txt = `${what}: ${other.item ? other.item.name : ""} (${other.buyText}, ${ft(other.checkoutCost)}). `
+    + `A receptre ${costDiff < 0 ? "−" + ft(-costDiff) : "+" + ft(costDiff)}, `
+    + `ma ${payDiff >= 0 ? "+" + ft(payDiff) : "−" + ft(-payDiff)}`
+    + (otherIsBulk && other.buyAmount > 0 ? `, és marad a későbbi főzéshez.` : ".");
+  row.appendChild(el("span", null, txt));
+  const btn = el("button", "ghost small", "Ezt veszem", { type: "button" });
+  btn.addEventListener("click", () => {
+    if (state.swapped.has(orig.label)) state.swapped.delete(orig.label);
+    else state.swapped.add(orig.label);
+    renderPick(false);
+  });
+  row.appendChild(btn);
+  return row;
+}
+
+function listAsText(s, items, t) {
   const lines = [`Bevásárlólista – ${s.recipe.name} (${s.servings} adag) – ${storeName(s.store)}`];
-  for (const i of s.ingredients) {
-    if (i.pantry || i.staple) continue;
-    lines.push(`☐ ${i.item ? i.item.name : i.label} – ${buyText(i)} – ${ft(i.checkoutCost)}`);
-  }
-  const staples = s.ingredients.filter((i) => i.staple);
+  const line = (i) => `☐ ${i.item ? i.item.name : i.label} – ${i.buyText} – ${ft(i.checkoutCost)}`;
+  for (const i of items) if (!i.pantry && !i.staple) lines.push(line(i));
+  const staples = items.filter((i) => i.staple);
   if (staples.length) {
     lines.push("Ha nincs otthon:");
-    for (const i of staples) lines.push(`☐ ${i.item ? i.item.name : i.label} – ${buyText(i)} – ${ft(i.checkoutCost)}`);
+    for (const i of staples) lines.push(line(i));
   }
-  lines.push(`Összesen kb. ${ft(s.checkoutTotal)}`);
+  lines.push(`Összesen kb. ${ft(t.checkout)}`);
   return lines.join("\n");
 }
 
-async function shareList(s) {
-  const text = listAsText(s);
+async function shareList(s, items, t) {
+  const text = listAsText(s, items, t);
   try {
     if (navigator.share) {
       await navigator.share({ title: `Bevásárlólista – ${s.recipe.name}`, text });
@@ -487,11 +594,16 @@ async function shareList(s) {
 
 // ---------- összehasonlítás a boltok között ----------
 
-function renderComparison(s) {
+function renderComparison(s, t) {
   const box = el("section", "compare", null, { "aria-label": "A recept ára boltonként" });
-  box.appendChild(el("h3", null, "Mennyibe kerülne máshol?"));
-  const rows = s.stores.filter((x) => x.coverage >= 0.4).sort((a, b) => a.totalCost - b.totalCost);
-  if (rows.length === 0) return box;
+  box.appendChild(el("h3", null, "Mennyibe kerülne a többi boltodban?"));
+  const rows = s.stores.filter((x) => x.coverage >= 0.4)
+    .map((x) => (x.store === s.store ? { ...x, totalCost: t.cost } : x))
+    .sort((a, b) => a.totalCost - b.totalCost);
+  if (rows.length <= 1) {
+    box.appendChild(el("p", "note", "A beállításokban csak ez az egy bolt van kiválasztva."));
+    return box;
+  }
   const max = Math.max(...rows.map((x) => x.totalCost));
   const ul = el("ul", "bars");
   for (const x of rows) {
@@ -511,9 +623,9 @@ function renderComparison(s) {
   box.appendChild(ul);
   const cheapest = rows[0];
   if (cheapest.store !== s.store) {
-    box.appendChild(el("p", "note", `${cap(inStore(cheapest.store))} ${ft(s.totalCost - cheapest.totalCost)}-tal olcsóbb lenne. Koppints egy boltra az átváltáshoz.`));
+    box.appendChild(el("p", "note", `${cap(inStore(cheapest.store))} ${ft(t.cost - cheapest.totalCost)}-tal olcsóbb lenne. Koppints egy boltra az átváltáshoz.`));
   } else {
-    box.appendChild(el("p", "note", `${cap(inStore(s.store))} a legolcsóbb ez a recept.`));
+    box.appendChild(el("p", "note", `${cap(inStore(s.store))} a legolcsóbb ez a recept a boltjaid közül.`));
   }
   return box;
 }
@@ -577,6 +689,7 @@ function renderDeals(deals) {
 
 function tagItem(item, type, referencePrice, reason, ingredient) {
   const li = $("#tpl-tag").content.firstElementChild.cloneNode(true);
+  if (type === "PROMO") li.classList.add("promo");
   const kind = type ? DEAL_LABEL[type] : "";
   li.querySelector(".tag-kind").textContent =
     [kind, ingredient ? `receptekhez: ${ingredient.toLowerCase()}` : ""].filter(Boolean).join(" · ") || item.category;
@@ -584,16 +697,17 @@ function tagItem(item, type, referencePrice, reason, ingredient) {
   name.textContent = item.name;
   name.addEventListener("click", () => openItem(item.id));
   const oldEl = li.querySelector(".tag-old");
-  if (!type) {
+  if (!type || referencePrice <= item.price) {
     oldEl.remove();
-    li.classList.add("plain");
+    if (!type) li.classList.add("plain");
   } else if (type === "CATEGORY") {
     oldEl.replaceWith(el("span", "tag-avg", `átlag ${ft(referencePrice)}`));
   } else {
     oldEl.textContent = ft(referencePrice);
   }
   li.querySelector(".tag-price").textContent = ft(item.price);
-  li.querySelector(".tag-reason").textContent = reason || `${ft(item.unitPrice)}/${item.unit} · ${qty(item.quantity, item.unit)}`;
+  const unitText = item.unit === "kg" && item.quantity === 1 ? "Ft/kg-os ár" : `${qty(item.quantity, item.unit)} · ${ft(item.unitPrice)}/${item.unit}`;
+  li.querySelector(".tag-reason").textContent = reason ? `${reason}` : unitText;
   return li;
 }
 
@@ -633,21 +747,178 @@ async function openItem(id) {
   for (const o of data.offers) {
     const li = el("li");
     if (o.store === state.store) li.classList.add("current");
+    if (!o.mine) li.classList.add("not-mine");
     const left = el("div");
-    left.appendChild(el("b", null, o.storeName));
-    const shops = o.totalShops ? `${o.shops} / ${o.totalShops} boltjukban` : `${o.shops} boltjukban`;
-    left.appendChild(el("span", "offer-meta",
-      o.maxPrice > o.price ? `${shops} · máshol akár ${ft(o.maxPrice)}` : shops));
-    if (o.deal) left.appendChild(el("span", "ing-deal", `${DEAL_LABEL[o.deal.type]} · −${Math.round(o.deal.savingPercent)}%`));
+    left.appendChild(el("b", null, o.storeName + (o.mine ? "" : " (nem a boltod)")));
+    const shops = o.totalShops ? `${o.shops} / ${o.totalShops} boltjukban` : (o.shops ? `${o.shops} boltjukban` : "saját akció");
+    left.appendChild(el("span", "offer-meta", o.maxPrice > o.price ? `${shops} · máshol akár ${ft(o.maxPrice)}` : shops));
+    if (o.deal) left.appendChild(el("span", "ing-deal", `${DEAL_LABEL[o.deal.type]}${o.deal.savingPercent > 0 ? ` · −${Math.round(o.deal.savingPercent)}%` : ""}`));
     const right = el("div", "offer-price");
     right.appendChild(el("b", null, ft(o.price)));
     if (o.price > min) right.appendChild(el("span", "offer-diff", `+${ft(o.price - min)}`));
-    right.appendChild(el("span", "offer-meta", `${ft(o.unitPrice)}/${o.unit}`));
+    right.appendChild(el("span", "offer-meta", `${qty(o.quantity, o.unit)} · ${ft(o.unitPrice)}/${o.unit}`));
     li.append(left, right);
     ul.appendChild(li);
   }
-  if (typeof dlg.showModal === "function") dlg.showModal();
+  openDialog(dlg);
+}
+
+function openDialog(dlg) {
+  if (typeof dlg.showModal === "function") { if (!dlg.open) dlg.showModal(); }
   else dlg.setAttribute("open", "");
+}
+
+// ---------- beállítások ----------
+
+function openSettings() {
+  const s = state.status;
+  const chips = $("#set-stores");
+  chips.replaceChildren();
+  const mine = new Set(myStores().map((x) => x.id));
+  for (const st of s.stores) {
+    const lab = el("label", "chip");
+    const cb = el("input", null, null, { type: "checkbox", value: st.id });
+    cb.checked = mine.has(st.id);
+    cb.addEventListener("change", () => {
+      const sel = $$("#set-stores input:checked").map((x) => x.value);
+      if (sel.length === 0) {
+        cb.checked = true;
+        toast("Legalább egy boltnak maradnia kell.");
+        return;
+      }
+      state.prefs.stores = sel.length === s.stores.length ? [] : sel;
+      savePrefs();
+      reloadAll().catch((e) => toast(e.message));
+    });
+    lab.style.setProperty("--c", st.color);
+    lab.append(cb, el("span", null, st.name));
+    chips.appendChild(lab);
+  }
+
+  for (const r of $$('#settings-dialog input[name="pack"]')) r.checked = (r.value === "bulk") === state.prefs.bulk;
+
+  const cards = $("#set-cards");
+  cards.replaceChildren();
+  for (const st of s.stores) {
+    if (!st.cardName) continue;
+    const lab = el("label", "chip");
+    const cb = el("input", null, null, { type: "checkbox", value: st.id });
+    cb.checked = state.prefs.cards.includes(st.id);
+    cb.addEventListener("change", () => {
+      state.prefs.cards = $$("#set-cards input:checked").map((x) => x.value);
+      savePrefs();
+      reloadAll().catch((e) => toast(e.message));
+    });
+    lab.style.setProperty("--c", st.color);
+    lab.append(cb, el("span", null, st.cardName));
+    cards.appendChild(lab);
+  }
+  openDialog($("#settings-dialog"));
+}
+
+// ---------- akciók ----------
+
+async function openPromos() {
+  if (!state.ingredients) state.ingredients = await api("/api/ingredients");
+  const form = $("#promo-form");
+  const storeSel = form.elements.store;
+  storeSel.replaceChildren(...state.status.stores.map((s) => {
+    const o = el("option", null, s.name, { value: s.id });
+    if (s.id === state.store) o.selected = true;
+    return o;
+  }));
+  const ingSel = form.elements.ingredient;
+  if (!ingSel.options.length) {
+    ingSel.append(el("option", null, "Válassz…", { value: "" }),
+      ...state.ingredients.map((i) => el("option", null, i.name + (i.tracked ? "" : " (az Árfigyelő nem követi)"), { value: i.key })));
+  }
+  await renderPromos();
+  openDialog($("#promo-dialog"));
+}
+
+async function renderPromos(data) {
+  const d = data || await api("/api/promos");
+  const ul = $("#promo-list");
+  ul.replaceChildren();
+  if (!d.promos.length) {
+    ul.appendChild(el("li", "empty small", "Még nincs felvitt akció. Az akciós újságból vagy a lánc appjából ide írhatod be őket."));
+  }
+  for (const p of d.promos) {
+    const li = el("li", `promo-item status-${p.status.toLowerCase()}`);
+    const left = el("div");
+    left.appendChild(el("b", null, `${p.storeName}: ${p.name}`));
+    const amount = p.unit === "kg" && p.quantity === 1 ? "Ft/kg" : qty(p.quantity, p.unit);
+    const dates = p.validFrom || p.validTo ? ` · ${p.validFrom || "…"} – ${p.validTo || "…"}` : "";
+    left.appendChild(el("span", "offer-meta",
+      `${ft(p.price)} (${amount})${p.regularPrice ? `, rendesen ${ft(p.regularPrice)}` : ""}${dates}${p.card ? " · kártyás" : ""}${p.ingredientName ? ` · ${p.ingredientName}` : ""}`));
+    left.appendChild(el("span", "promo-status", p.statusText + (p.matchedName ? `: ${p.matchedName}` : "")));
+    li.appendChild(left);
+    if (p.deletable) {
+      const del = el("button", "ghost small", "Törlés", { type: "button" });
+      del.addEventListener("click", async () => {
+        try {
+          const r = await api(`/api/promos?id=${encodeURIComponent(p.id)}`, { method: "DELETE" });
+          await renderPromos(r);
+          await reloadAll();
+        } catch (e) { toast(e.message); }
+      });
+      li.appendChild(del);
+    } else {
+      li.appendChild(el("span", "offer-meta", p.source));
+    }
+    ul.appendChild(li);
+  }
+  const w = $("#promo-warnings");
+  w.hidden = !d.warnings.length;
+  w.textContent = d.warnings.join(" · ");
+}
+
+async function submitPromo(e) {
+  e.preventDefault();
+  const f = e.target;
+  const body = {
+    store: f.elements.store.value,
+    ingredient: f.elements.ingredient.value,
+    name: f.elements.name.value.trim(),
+    price: Number(f.elements.price.value),
+    regularPrice: Number(f.elements.regularPrice.value) || 0,
+    quantity: Number(f.elements.quantity.value),
+    unit: f.elements.unit.value,
+    validFrom: f.elements.validFrom.value || null,
+    validTo: f.elements.validTo.value || null,
+    card: f.elements.card.checked,
+  };
+  try {
+    const r = await api("/api/promos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    await renderPromos(r);
+    const added = r.promos.find((p) => p.name === body.name && p.store === body.store);
+    toast(added ? `Akció felvéve – ${added.statusText}.` : "Akció felvéve.");
+    f.elements.name.value = "";
+    f.elements.price.value = "";
+    f.elements.regularPrice.value = "";
+    await reloadAll();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function importPromos() {
+  const text = $("#promo-import").value.trim();
+  if (!text) { toast("Előbb illeszd be az akciókat."); return; }
+  try {
+    const r = await api("/api/promos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
+    await renderPromos(r);
+    toast(`${r.added} akció felvéve${r.skipped.length ? `, ${r.skipped.length} sor kimaradt` : ""}.`);
+    if (r.skipped.length) {
+      const w = $("#promo-warnings");
+      w.hidden = false;
+      w.textContent = r.skipped.join(" · ");
+    }
+    if (r.added) $("#promo-import").value = "";
+    await reloadAll();
+  } catch (err) {
+    toast(err.message);
+  }
 }
 
 // ---------- események ----------
@@ -663,9 +934,7 @@ function bind() {
     loadStore().catch((err) => showError(err.message));
   });
 
-  $("#onlyIngredients").addEventListener("change", () => {
-    loadDeals().catch((err) => toast(err.message));
-  });
+  $("#onlyIngredients").addEventListener("change", () => loadDeals().catch((err) => toast(err.message)));
 
   let searchTimer;
   $("#search").addEventListener("input", () => {
@@ -688,10 +957,24 @@ function bind() {
     renderMore();
   });
 
-  $("#item-dialog").addEventListener("click", (e) => {
+  for (const dlg of $$("dialog")) {
     // a háttérre kattintás bezárja
-    if (e.target === e.currentTarget) e.currentTarget.close();
-  });
+    dlg.addEventListener("click", (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); });
+  }
+
+  $("#open-settings").addEventListener("click", openSettings);
+  $("#open-promos").addEventListener("click", () => openPromos().catch((e) => toast(e.message)));
+  $("#promo-form").addEventListener("submit", submitPromo);
+  $("#promo-import-btn").addEventListener("click", importPromos);
+
+  for (const r of $$('#settings-dialog input[name="pack"]')) {
+    r.addEventListener("change", () => {
+      state.prefs.bulk = r.value === "bulk" && r.checked;
+      savePrefs();
+      state.swapped = new Set();
+      reloadAll().catch((e) => toast(e.message));
+    });
+  }
 
   $("#refresh").addEventListener("click", async () => {
     const btn = $("#refresh");
@@ -699,8 +982,7 @@ function bind() {
     btn.textContent = "Frissítés…";
     try {
       await api("/api/refresh", { method: "POST" });
-      await loadStatus();
-      await loadStore(state.current?.recipe.id);
+      await reloadAll();
       btn.textContent = "Árak frissítve";
     } catch (err) {
       btn.textContent = "Frissítés sikertelen";
@@ -722,17 +1004,15 @@ function syncFilterButtons() {
 }
 
 async function init() {
+  loadPrefs();
   bind();
   const h = readHash();
   if (h.store) state.store = h.store;
   if (h.tag) { state.tag = h.tag; syncFilterButtons(); }
+  if (h.servings) state.servings = h.servings;
   try {
     await loadStatus();
     await loadStore(h.recipe);
-    if (h.servings && state.current && h.servings !== state.current.servings) {
-      state.servings = h.servings;
-      await showRecipe(state.current.recipe.id, true);
-    }
   } catch (e) {
     $("#source").textContent = "Az adatok nem tölthetők be.";
     showError(e.message);

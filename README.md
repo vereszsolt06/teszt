@@ -2,13 +2,15 @@
 
 [![Build és tesztek](https://github.com/vereszsolt06/teszt/actions/workflows/build.yml/badge.svg)](https://github.com/vereszsolt06/teszt/actions/workflows/build.yml)
 
-Böngészős receptajánló, ami a **GVH Árfigyelő** napi árai alapján megmondja: *ha ma ebben a boltban vásárolsz, mit érdemes főzni?* Kiválasztod a boltot, és az app olyan recepteket „dobál”, amelyekhez ott épp kiemelkedően jó áron kapod az alapanyagokat. Minden hozzávalónál látod, melyik konkrét terméket vedd meg, mennyibe kerül, és miért jó az ára. Van hozzá kipipálható bevásárlólista is, és egy összevetés arról, mennyibe kerülne ugyanez a többi láncban.
+Böngészős receptajánló, ami a **GVH Árfigyelő** napi árai alapján megmondja: *ha ma ebben a boltban vásárolsz, mit érdemes főzni?* Kiválasztod a boltot, és az app olyan recepteket „dobál”, amelyekhez ott épp kiemelkedően jó áron kapod az alapanyagokat. Minden hozzávalónál látod, melyik konkrét terméket vedd meg, mennyibe kerül, és miért jó az ára. Van hozzá kipipálható bevásárlólista is, és egy összevetés arról, mennyibe kerülne ugyanez a többi láncban. A nem kedvelt boltok kizárhatók. Alapból háztartási kiszerelésben vásárol, a nagy kiszerelést csak alternatívaként ajánlja. A láncok saját akciói (újság, app, hűségkártya) is felvihetők.
 
 Java 21-ben írva, **külső függőség nélkül** (beépített JDK webszerver, saját JSON- és xlsx-olvasó), így egyetlen JAR-ként fut.
 
 ![Asztali nézet](docs/kepernyokep.png)
 
-<img src="docs/kepernyokep-mobil.png" alt="Mobil nézet" width="300"> <img src="docs/termek-osszehasonlitas.png" alt="Egy termék ára a láncokban" width="480">
+<img src="docs/kepernyokep-mobil.png" alt="Mobil nézet" width="260"> <img src="docs/beallitasok-mobil.png" alt="Beállítások: boltjaim, kiszerelés, hűségkártyák" width="260">
+
+<img src="docs/akciok.png" alt="A láncok saját akciói" width="640"> <img src="docs/termek-osszehasonlitas.png" alt="Egy termék ára a láncokban" width="400">
 
 ## Indítás
 
@@ -43,15 +45,20 @@ Parancssorból (`-Dport=9000`), környezeti változóval (`PORT=9000`) vagy egy 
 | `arfigyelo.url` | `ARFIGYELO_URL` | GVH CDN | a napi Excel címe |
 | `data.dir` | `DATA_DIR` | `data` | letöltött Excel és árelőzmények helye |
 | `refresh.hours` | `REFRESH_HOURS` | `6` | ennyi óránként tölti újra az árakat |
+| `promo.dir` | `PROMO_DIR` | `data/akciok` | a láncok saját akcióinak mappája (`*.json`, `*.csv`) |
+| `promo.feeds` | `PROMO_FEEDS` | – | akció-feedek URL-jei vesszővel elválasztva (ugyanilyen JSON/CSV) |
 
 ## Mit tud
 
 - **Boltválasztó** a hat élelmiszerlánccal; a „ma itt a legjobb” címke azt a boltot jelöli, ahol ma a legjobb receptet lehet összevásárolni.
+- **Boltjaim** (Beállítások): a nem kedvelt láncok kizárhatók. Ilyenkor nem jelennek meg, és a „mennyibe kerülne máshol”, a megtakarítás, valamint a „ma itt a legjobb” is csak a választott boltokhoz számol. A beállítás a böngészőben megmarad.
+- **Kiszerelés** (Beállítások): alapból háztartási kiszerelés, alternatívaként a nagy kiszerelés (lásd lent); átkapcsolható „nagy kiszerelés is jöhet” módra.
+- **A láncok saját akciói** („Akciók” gomb): kézzel vagy CSV/JSON-ból felvihetők, és a hűségkártyás/appos akciók csak bekapcsolt kártyával számítanak (lásd lent).
 - **Receptdobáló:** elsőre a legjobb recept, a „Másik receptet kérek” gomb a legjobb 8 közül húz súlyozott véletlennel, ismétlés nélkül. Szűrők: gyors, olcsó, húsmentes, magyaros, leves, főzelék, húsos, hal, édes.
 - **Hozzávalók:** minden hozzávalónál a választott konkrét termék, a receptre jutó ár, és ha épp jó áron van, annak oka.
-- **Bevásárlólista:** egész csomagokkal (pl. „2 × 450 g”), mérlegelős áruknál a szükséges tömeggel, kipipálható tételekkel, megosztással vagy vágólapra másolással. Az olaj, a liszt és a cukor külön, „ha nincs otthon” tételként szerepel.
+- **Bevásárlólista:** egész csomagokkal (pl. „2 × 450 g”), mérlegelős áruknál a szükséges tömeggel és darabszámmal („kb. 250 g (≈ 2 db)”). Minden sornál kiírja, mire szól az ár (Ft/kg, Ft/db vagy Ft/csomag). Kipipálható, megosztható. Ahol nagy kiszerelésben olcsóbb, ott soronként „Ezt veszem” gombbal átváltható, és a végösszeg azonnal frissül. Az olaj, a liszt és a cukor külön, „ha nincs otthon” tételként szerepel.
 - **Adagszám** állítása 1–20 adag között, minden ár újraszámolva.
-- **„Mennyibe kerülne máshol?”**: a recept ára mind a hat láncban; egy koppintással átváltasz a másik boltra ugyanazzal a recepttel.
+- **„Mennyibe kerülne a többi boltodban?”**: a recept ára a választott láncokban; egy koppintással átváltasz a másik boltra ugyanazzal a recepttel.
 - **Termékrészletek:** bármelyik termékre koppintva látod az árát minden láncban, hány boltjukban kapható, és mennyi a legdrágább boltjukban.
 - **Keresés** a kiválasztott bolt termékei között, egységár szerint rendezve.
 - **Összes recept** böngészése ajánlás, ár (adagonként) vagy elkészítési idő szerint.
@@ -85,12 +92,53 @@ Ha a termék a lánc boltjainak kevesebb mint felében kapható, a pontszám ar�
 ### 3. Receptajánlás és bevásárlás
 55 hétköznapi, főleg magyaros recept van beépítve (`src/main/resources/data/recipes.json`): levesek, főzelékek, egytálételek, sült húsok, halak, saláták, desszertek. Minden hozzávaló abszolút mennyiséggel szerepel (kg / l / db). Az alapanyagok az Árfigyelő **kategóriáihoz** vannak kötve (`products.json`), pl. „darált hús” → 85-ös kategória, „spagetti” → 50-es kategória + „spagett” a névben.
 
-A `RecipeRecommender` minden receptet „megvásárol” minden boltban:
+A `RecipeRecommender` minden receptet „megvásárol” minden boltban.
 
-- **Egységátváltás:** kg ↔ l (élelmiszernél ≈ azonos), darab ↔ kg a darabtömeggel (1 paprika ≈ 0,15 kg, 1 uborka ≈ 0,4 kg), csomós zöldségnél a csomag tömegével.
-- **Csomagok:** mérlegelős áru (lédig, Ft/kg, pultos) esetén annyit veszel, amennyi kell. A kilós árú, de fix tömegű csomagoknál a névből olvassa ki a tömeget („ca. 500g”). Egyébként egész csomagokat vesz, 15% tűréssel: 0,5 kg pulykamellhez elég egy 450 g-os tálca.
-- **Választás:** hozzávalónként a felhasznált rész ára számít, plusz a kényszerűen megvett maradék 35%-a. Így nem javasol 30-as tojástálcát 6 tojáshoz csak azért, mert darabra 2 forinttal olcsóbb. A ritkán kapható termékek hátrébb kerülnek. Ha van jó áron lévő termék, ami legfeljebb 20%-kal drágább a legolcsóbbnál, azt választja.
-- **Pontozás:** **45%** mennyire épül jó árakra (a jel erősségével súlyozva), **35%** mennyivel olcsóbb itt, mint a többi bolt mediánjával, **20%** hány hozzávalóra van valós bolti ár.
+#### Darab vagy kiló? (`Packaging`)
+Az Árfigyelő ugyanazt a fajta árut háromféleképpen adja meg, és ezeket szigorúan külön kell kezelni:
+
+| Fajta | Példa a fájlból | Mire szól az ár | Mit veszel |
+|---|---|---|---|
+| **mérlegelős** | „Paprika tv lédig”, „Csirkecomb Ft/kg”, „Húsmester csirkecomb egész kg vákuumcsomagolt” | 1 kg | annyit, amennyi kell, de legalább egy darabot (1 dkg fokhagymához egy egész fejet) |
+| **csomagolt** | „Zöldborsó 450 g”, „Tojás 10 db”, „TV paprika 3 db”, „Karfiol db”, „Zsemle 52 g” | a csomag | egész csomagot; 15% tűréssel (0,5 kg-hoz elég egy 450 g-os) |
+| **kilós árú csomag** | „Füstölt szalonna, ca. 500g”, „Trappista sajt ca1,4kg” | 1 kg | egész csomagot, a névben szereplő tömeggel |
+| **csomós** | „Sárgarépa csomós”, „Csomós petrezselyemgyökér 5 db” | egy csomó | egész csomót (kb. 50 dkg), az egységtől függetlenül |
+
+A darab és a kiló között a katalógus átlagos darabtömegeivel vált (paprika 15 dkg, uborka 40 dkg, hagyma 12 dkg, karfiol 1 kg, zsemle 5,5 dkg). Az alapanyagok egy része **csak csomagolva kapható** (liszt, tej, tejföl, kenyér, tészta stb.). Ezeknél egy kilós egységű, tömeg nélküli sor (pl. „Penny finomliszt”, 178 Ft) egy 1 kg-os csomag, nem 3 dkg lisztre lebontható kilóár.
+
+#### Háztartási kiszerelés, nagy kiszerelés alternatívaként
+Minden alapanyagnak van egy **háztartási felső határa** (`maxPack`: burgonya 2,5 kg, tojás 15 db, liszt 1 kg, trappista 60 dkg…). Az ennél nagyobb csomag (5 kg krumpli, 30 tojás, 1,4 kg-os sajttömb) csak akkor nem számít nagy kiszerelésnek, ha a recept (pl. 20 adag) ennyit kér.
+
+- **Alapból** a háztartási kiszerelések közül választ: a felhasznált rész ára + a kényszerűen megvett maradék 35%-a számít. A recept ára ebből jön, így egy 10 kg-os zsák nem teszi olcsóbbá a receptet.
+- Ha egy nagy kiszerelés a receptre vetítve **legalább 10%-kal (és 15 Ft-tal) olcsóbb**, a bevásárlólistán alternatívaként jelenik meg. Mellette ott van, mennyivel olcsóbb a recept, és mennyivel többet fizetsz ma. A recept fejlécében egy összesítő is jelzi, mennyi lenne nagy kiszerelésekkel.
+- A **„Nagy kiszerelés is jöhet”** beállítással fordítva működik: a legolcsóbb egységárat választja, a háztartási pedig az alternatíva.
+- A ritkán kapható csomagokat (pl. a Tesco 5 kg-os, 981 Ft-os zsákja csak 6/197 boltjukban van) ilyenkor is hátrébb sorolja.
+
+#### Pontozás
+**45%** mennyire épül jó árakra (a jel erősségével súlyozva), **35%** mennyivel olcsóbb itt, mint a többi választott bolt mediánjával, **20%** hány hozzávalóra van valós bolti ár.
+
+### 4. A láncok saját akciói
+#### Mennyire lehetséges az integráció?
+Megvizsgáltam, mi van benne az Árfigyelőben, és mi nincs:
+
+- Az Árfigyelő **weboldala** üzletenként tárolja az árakat, és jelöli az akciót, valamint a „törzsvásárlói” árat ([GVH Árfigyelő GYIK](https://arfigyelo.gvh.hu/docs/arfigyelo_GYIK.pdf)). A **napi Excel** viszont csak láncszintű minimum/maximum árat ad, akciójelölés és hűségkártyás ár nélkül. Ha egy akció a polcárat csökkenti, az a minimum árban többnyire benne van (ezt jelzi az *Akciógyanús* jel). Az **appos és hűségkártyás árak** (Lidl Plus, Tesco Clubcard, SPAR/PENNY app) és az **újságos ajánlatok érvényessége** viszont nincs benne.
+- A láncok akcióit **nyilvános, dokumentált API nem** adja. Az akciós újság PDF vagy lapozható web, az ajánlatok a láncok weboldalain és webshopjaiban (Tesco, Auchan, Spar online) belső, dokumentálatlan végpontokon érhetők el. Ezek automatikus letöltése a felhasználási feltételekbe ütközhet, és bármikor eltörhet. Erről a fejlesztői gépről ráadásul nem is elérhetők, így nem lehetett volna megbízhatóan tesztelni.
+
+**A döntés:** az app egy **akcióréteget** kapott, ami bármilyen forrásból fogad akciókat. A lánc-specifikus letöltők így később külön, cserélhetően hozzáadhatók, a többi kódhoz nem kell nyúlni:
+
+1. **Kézzel** a felületen („Akciók” → Új akció): bolt, alapanyag, terméknév, ár, kiszerelés, rendes ár, érvényesség, kártyás-e.
+2. **Beillesztve** CSV-ből vagy JSON-ból („Több akció beillesztése”), pl. egy akciós újságból kimásolt listát. Minta: [`docs/akciok-minta.csv`](docs/akciok-minta.csv).
+3. **Fájlból:** minden `*.csv` és `*.json` a `data/akciok/` mappában (a kézi akciók a `sajat-akciok.json`-ba kerülnek).
+4. **Feedből:** `PROMO_FEEDS=https://…` – bármilyen URL, ami ugyanezt a JSON-t vagy CSV-t adja. Ez lehet egy közösen karbantartott lista, vagy egy saját szkript kimenete, ami egy lánc oldaláról gyűjt. A legutóbbi sikeres letöltést elmenti, így net nélkül is megmarad.
+
+CSV-fejléc: `bolt;termek;ar;egyseg;kiszereles;rendes_ar;tol;ig;alapanyag;vonalkod;kartya`. Az `alapanyag` lehet kulcs (`csirkemell`) vagy név („Csirkemellfilé”); a `vonalkod` az Árfigyelő „Termék azonosító” oszlopa.
+
+#### Összefésülés az Árfigyelővel (`PromoMerger`)
+- **Csak a ma érvényes** akció számít (`tol`–`ig`). A lejárt és a még el nem kezdődött akciókat az app mutatja, de nem számol velük.
+- **Hűségkártyás/appos** akció csak akkor számít, ha a Beállításokban bejelölted, hogy van ilyen kártyád vagy appod. A termék neve mellett jelzi is (pl. „(Lidl Plus ár)”).
+- Ha az akció **vonalkódhoz** tartozik, és az Árfigyelő ugyanabban a láncban már ennyiért vagy olcsóbban mutatja, akkor **már benne van**, és nem számolja kétszer. Ha drágábban mutatja, az akciós ár felülírja, és a régi ár lesz a viszonyítás.
+- Ha **alapanyaghoz** tartozik, és a láncban van olyan Árfigyelő-tétel, aminek a neve tartalmazza az akciós termék szavait, és legfeljebb ennyibe kerül, szintén „már benne van”. Különben új tételként kerül be, és azonnal használható a receptekben. Ez az Árfigyelőben nem követett alapanyagokra (tonhal, gomba, passata…) is működik.
+- Az akció új, **„Bolti akció”** jóár-jelet kap (legalább 0,6 pontszám, a megtakarítással arányosan több), és az indoklásban szerepel az érvényesség és a forrás.
 
 ### REST API
 
@@ -98,11 +146,17 @@ A `RecipeRecommender` minden receptet „megvásárol” minden boltban:
 |---|---|
 | `GET /api/status` | adatforrás, dátum, demó/elavult jelzés, élelmiszerláncok |
 | `GET /api/suggestions?store=lidl&tag=vega&limit=12` | rangsorolt receptek egy boltra, hozzávalókkal |
-| `GET /api/recipe?id=lecso&store=lidl&servings=6` | egy recept bevásárlólistával, és ára mind a hat láncban |
+| `GET /api/recipe?id=lecso&store=lidl&servings=6` | egy recept bevásárlólistával (kiszerelés-alternatívákkal), és ára a választott láncokban |
 | `GET /api/deals?store=lidl&limit=30&ingredients=true` | a bolt kiemelt árai (`ingredients=true`: csak recept-alapanyagok) |
 | `GET /api/item?id=<vonalkód>` | egy termék ára minden láncban |
 | `GET /api/search?q=tej&store=lidl&limit=30` | keresés a termékek között, egységár szerint |
+| `GET /api/ingredients` | a recept-alapanyagok listája (az akció-űrlaphoz) |
+| `GET /api/promos` | a láncok saját akciói és állapotuk (beépítve / már benne / lejárt / kártya kell…) |
+| `POST /api/promos` | új akció (JSON), vagy import: `{"text": "<CSV vagy JSON>"}` |
+| `DELETE /api/promos?id=…` | kézi akció törlése |
 | `POST /api/refresh` | árak újratöltése |
+
+Minden boltfüggő végpont elfogadja: `stores=aldi,lidl` (a választott boltok), `bulk=1` (nagy kiszerelés mód), `cards=lidl,tesco` (hűségkártyák).
 
 A válaszok gzip-pel tömörítve mennek, ha a böngésző kéri.
 
@@ -112,14 +166,17 @@ A válaszok gzip-pel tömörítve mennek, ha a böngésző kéri.
 src/main/java/hu/sporolos/
   App.java                       belépési pont, beállítások
   core/  Json                    függőség nélküli JSON olvasó/író
-         DealAnalyzer            „jó ár” felismerés (4 jel + elérhetőség)
-         RecipeRecommender       receptek beárazása, csomagok, rangsorolás
-         PriceRepository         forrásváltás, háttérfrissítés, hibatűrés
+         DealAnalyzer            „jó ár” felismerés (5 jel + elérhetőség)
+         Packaging               mérlegelős / csomagolt / csomós, darab ↔ kg, nagy kiszerelés
+         RecipeRecommender       receptek beárazása, háztartási és nagy kiszerelés, rangsorolás
+         PromoMerger             a láncok akcióinak összefésülése az Árfigyelővel
+         PriceRepository         forrásváltás, háttérfrissítés, elemzés kártyánként
   data/  ArfigyeloExcelProvider  napi Excel letöltése / beolvasása / gyorsítótár
          XlsxReader              folyamatos xlsx-olvasó (ZIP + StAX, XXE ellen védve)
          PriceHistory            napi árelőzmények
          DemoPriceProvider       tartalék demó árak
          Catalog                 alapanyagok, láncok, receptek, illesztés
+         Promo, PromoStore       akciók: kézi, fájl, feed; CSV/JSON
   model/ Models                  rekordok (PriceEntry, Deal, Recipe, Suggestion…)
   web/   WebServer, ApiMapper    REST API + statikus fájlok
 src/main/resources/
@@ -134,16 +191,18 @@ src/test/java/hu/sporolos/AllTests.java
 ./build.sh test        # Windows: build.cmd test
 ```
 
-21 teszt fut le:
+25 teszt fut le:
 - JSON- és xlsx-olvasás, az Árfigyelő-fejléc felismerése, egységátváltás;
 - mind a négy jó ár jel, valamint az elérhetőség hatása;
-- a csomagmodell: tojástálca vagy doboz, mérlegelős áru, „ca. 500g”, darab ↔ kg, tűrés;
+- a kiszerelés-modell: tojásdoboz vagy tálca, mérlegelős áru minimum egy darabbal, „ca. 500g”, csak csomagolt liszt, darab ↔ kg (paprika, zsemle), csomós zöldség, tűrés, a nagy kiszerelés határa;
+- háztartási mód nagy kiszerelés alternatívával és fordítva, valamint a boltszűrő hatása;
+- akciók: CSV-beolvasás, az összefésülés minden ága (felülír / már benne / új tétel / kártya kell / lejárt / még nem / ismeretlen bolt), és hogy egy akciós tonhal árazhatóvá teszi a tonhalas tésztát;
 - az ajánló rangsorolása és adagköltsége;
 - a letöltés, a gyorsítótár és a visszaesés egy helyi HTTP-szerverrel;
 - a hibás frissítés kezelése (a valós adat nem cserélődik demóra);
-- végponttól végpontig teszt, ami elindítja a webszervert, és végighívja az összes API-t.
+- végponttól végpontig teszt, ami elindítja a webszervert, és végighívja az összes API-t, a boltszűrővel, valamint az akciók felvitelével, importjával és törlésével együtt.
 
-Ha az `ARFIGYELO_TEST_FILE` környezeti változó egy valódi napi Excelre mutat, a teljes folyamatot azon is lefuttatja: mind a hat láncban legalább 10 árazható recept és életszerű árak kellenek. A 2026-10-28-i fájllal mind a 21 teszt sikeres, és mind a hat láncban mind az 55 recept árazható.
+Ha az `ARFIGYELO_TEST_FILE` környezeti változó egy valódi napi Excelre mutat, a teljes folyamatot azon is lefuttatja: mind a hat láncban legalább 10 árazható recept és életszerű árak kellenek. A 2026-10-28-i fájllal mind a 25 teszt sikeres, és mind a hat láncban mind az 55 recept árazható.
 
 ## Feltételezések és döntések
 
@@ -157,7 +216,10 @@ Ezeket kérdezés nélkül döntöttem el; bármelyik könnyen módosítható.
 - **Néhány alapanyagot az Árfigyelő nem követ** (tonhal, tortilla, passata, gomba, cukkini, spenót, kókusztej, lekvár, tarhonya, zabpehely stb.). Ezek becsült árral (*) szerepelnek, és nem számítanak jó árnak. A recepteket úgy válogattam, hogy főleg követett alapanyagokra épüljenek.
 - **Kamraáru:** a fűszerek (só, bors, pirospaprika) „otthon vannak”, nem árazom őket. Az olaj, a liszt és a cukor árazott, de a bevásárlólistán külön, „ha nincs otthon” tételként szerepel.
 - **A „Tartósan olcsó” jel kisebb súlyú**, mert a sajátmárkás termékek szinte mindig a kategória aljára esnek. Ettől még nem „épp most” akciósak.
-- **Darabtömegek** átlagos értékek (paprika 15 dkg, uborka 40 dkg, hagyma 12 dkg, karfiol 1 kg); a `products.json`-ban állíthatók.
+- **Darabtömegek és háztartási határok** átlagos értékek (paprika 15 dkg, uborka 40 dkg; burgonya legfeljebb 2,5 kg, tojás 15 db). Ezek a `products.json`-ban állíthatók (`pieceWeight`, `bunchWeight`, `maxPack`, `packaged`).
+- **Nagy kiszerelés küszöbe:** a receptre vetítve legalább 10% és 15 Ft megtakarítás kell, hogy alternatívaként megjelenjen; ennél kisebb különbségért nem éri meg többet fizetni.
+- **A láncok akcióit nem gyűjti automatikusan** a láncok oldalairól (lásd a 4. pontot). Helyette egy általános akcióréteg fogad kézi, fájlos és feedes akciókat. A kártyás akciók alapból ki vannak kapcsolva, amíg nem jelölöd be, hogy van ilyen kártyád.
+- **A boltszűrő és a beállítások** a böngészőben tárolódnak (eszközönként), nem a szerveren. A felvitt akciók viszont a szerveren vannak, így minden eszközről látszanak.
 - **Betűtípusok** a Google Fontsról töltődnek; offline a rendszer betűtípusára vált, a működést nem érinti.
 
 ## Ismert korlátok, továbbfejlesztési ötletek
@@ -165,7 +227,9 @@ Ezeket kérdezés nélkül döntöttem el; bármelyik könnyen módosítható.
 - Az első napokban nincs előzmény, ezért az *Olcsóbb a szokásosnál* jel kb. 3 napi futás után jelenik meg.
 - Bolt (nem lánc) szintű árakat az Excel nem tartalmaz; egy térképes boltválasztóhoz az Árfigyelő belső API-ja kellene.
 - Néhány zöldséget a láncok következetlenül adnak meg (pl. „csomós petrezselyemgyökér” egyszer darabra, egyszer kilóra); ezeknél az ár közelítő.
-- Ötletek: heti menütervező egy bevásárlással, kedvenc receptek, saját recept felvétele a felületről.
+- A kiszerelés-összesítő és a soronkénti csere csak a kiválasztott boltra vonatkozik; a „többi boltodban” összevetés az alapbeállítás szerinti (háztartási vagy nagy) kiszereléssel számol.
+- Ha a felületet `HOST=0.0.0.0`-val a helyi hálózatra nyitod, a hálózaton bárki felvihet és törölhet kézi akciót.
+- Ötletek: lánc-specifikus akció-letöltők külön feedként, heti menütervező egy bevásárlással, kedvenc receptek, saját recept felvétele a felületről.
 
 ---
 Az árak forrása: [GVH Árfigyelő](https://arfigyelo.gvh.hu). A boltban kiírt ár az irányadó.

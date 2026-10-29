@@ -25,7 +25,11 @@
         <p class="source" id="source">Árak betöltése…</p>
       </div>
     </div>
-    <button class="ghost" id="refresh" type="button" title="Árak újratöltése az Árfigyelőből">Árak frissítése</button>
+    <div class="top-actions">
+      <button class="ghost" id="open-promos" type="button">Akciók</button>
+      <button class="ghost" id="open-settings" type="button">Beállítások</button>
+      <button class="ghost" id="refresh" type="button" title="Árak újratöltése az Árfigyelőből">Árak frissítése</button>
+    </div>
   </header>
 
   <div class="banner" id="banner" hidden></div>
@@ -101,6 +105,64 @@
     <h2 id="item-title"></h2>
     <p class="item-cat" id="item-cat"></p>
     <ul class="offers" id="item-offers"></ul>
+  </dialog>
+
+  <dialog class="sheet" id="settings-dialog" aria-labelledby="settings-title">
+    <form method="dialog" class="dialog-close"><button type="submit" class="ghost" aria-label="Bezárás">Kész</button></form>
+    <h2 id="settings-title">Beállítások</h2>
+
+    <fieldset class="setting">
+      <legend>Boltjaim</legend>
+      <p class="hint">Csak ezek a láncok jelennek meg, és a „mennyibe kerülne a többi boltodban” összevetés, a megtakarítás és a „ma itt a legjobb” is csak ezekhez számol.</p>
+      <div class="chips" id="set-stores"></div>
+    </fieldset>
+
+    <fieldset class="setting">
+      <legend>Kiszerelés</legend>
+      <label class="radio"><input type="radio" name="pack" value="home" checked>
+        <span><b>Háztartási kiszerelés</b><br><span class="hint">Annyit veszel, amennyi a recepthez kell, vagy a legkisebb szokásos csomagot. A nagyobb kiszerelést alternatívaként mutatja, ha jóval olcsóbb.</span></span></label>
+      <label class="radio"><input type="radio" name="pack" value="bulk">
+        <span><b>Nagy kiszerelés is jöhet, ha olcsóbb</b><br><span class="hint">Például 5 kg krumpli vagy 30 tojás, ha a receptre vetítve legalább 10%-kal olcsóbb. Most többet fizetsz, de a maradék a későbbi főzéshez jó.</span></span></label>
+    </fieldset>
+
+    <fieldset class="setting">
+      <legend>Hűségkártyáim és appjaim</legend>
+      <p class="hint">A kártyás vagy appos akciók csak akkor számítanak, ha itt bejelölöd, hogy van ilyened.</p>
+      <div class="chips" id="set-cards"></div>
+    </fieldset>
+  </dialog>
+
+  <dialog class="sheet wide-sheet" id="promo-dialog" aria-labelledby="promo-title">
+    <form method="dialog" class="dialog-close"><button type="submit" class="ghost" aria-label="Bezárás">Bezárás</button></form>
+    <h2 id="promo-title">A láncok saját akciói</h2>
+    <p class="hint">Az Árfigyelő napi fájlja a polcárakat tartalmazza. Az akciós újság, az appos és a hűségkártyás árak nincsenek benne. Itt felviheted őket; ha egy akció már benne van az Árfigyelő áraiban, az app nem számolja kétszer.</p>
+
+    <ul class="promo-list" id="promo-list"></ul>
+    <p class="note" id="promo-warnings" hidden></p>
+
+    <details class="promo-add" id="promo-add" open>
+      <summary>Új akció</summary>
+      <form id="promo-form" class="promo-form">
+        <label>Bolt<select name="store" required></select></label>
+        <label>Alapanyag<select name="ingredient" required></select></label>
+        <label class="span2">Termék neve (ahogy az újságban szerepel)<input name="name" required maxlength="120" placeholder="pl. Csirkemellfilé, tálcás"></label>
+        <label>Akciós ár (Ft)<input name="price" type="number" min="1" step="1" required inputmode="numeric"></label>
+        <label>Rendes ár (Ft, ha tudod)<input name="regularPrice" type="number" min="0" step="1" inputmode="numeric"></label>
+        <label>Kiszerelés<input name="quantity" type="number" min="0.001" step="any" value="1" required inputmode="decimal"></label>
+        <label>Egység<select name="unit"><option value="kg">kg (Ft/kg vagy kg-os csomag)</option><option value="g">g</option><option value="l">l</option><option value="ml">ml</option><option value="db">db</option></select></label>
+        <label>Érvényes ettől<input name="validFrom" type="date"></label>
+        <label>Eddig<input name="validTo" type="date"></label>
+        <label class="check span2"><input name="card" type="checkbox"> Csak hűségkártyával / appal érvényes</label>
+        <div class="span2 form-actions"><button class="primary" type="submit">Akció felvétele</button></div>
+      </form>
+    </details>
+
+    <details class="promo-add">
+      <summary>Több akció beillesztése (CSV vagy JSON)</summary>
+      <p class="hint">Fejléc: <code>bolt;termek;ar;egyseg;kiszereles;rendes_ar;tol;ig;alapanyag;vonalkod;kartya</code>. Az alapanyag a listában szereplő név vagy kulcs (pl. <code>csirkemell</code>), a vonalkód az Árfigyelőből.</p>
+      <textarea id="promo-import" rows="6" placeholder="bolt;termek;ar;egyseg;kiszereles;tol;ig;alapanyag&#10;Lidl;Csirkemellfilé;1499;kg;1;2026-10-30;2026-11-05;csirkemell"></textarea>
+      <div class="form-actions"><button class="ghost" id="promo-import-btn" type="button">Beillesztett akciók felvétele</button></div>
+    </details>
   </dialog>
 
   <template id="tpl-tag">
