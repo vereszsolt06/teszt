@@ -2,6 +2,8 @@ package hu.sporolos;
 
 import hu.sporolos.core.DealAnalyzer;
 import hu.sporolos.core.Json;
+import hu.sporolos.core.Packaging;
+import hu.sporolos.core.PromoMerger;
 import hu.sporolos.core.PriceRepository;
 import hu.sporolos.core.RecipeRecommender;
 import hu.sporolos.data.ArfigyeloExcelProvider;
@@ -9,6 +11,8 @@ import hu.sporolos.data.Catalog;
 import hu.sporolos.data.DemoPriceProvider;
 import hu.sporolos.data.PriceHistory;
 import hu.sporolos.data.PriceProvider;
+import hu.sporolos.data.Promo;
+import hu.sporolos.data.PromoStore;
 import hu.sporolos.data.XlsxReader;
 import hu.sporolos.model.Models.Deal;
 import hu.sporolos.model.Models.DealType;
@@ -30,8 +34,10 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -258,48 +264,122 @@ public final class AllTests {
     }
 
     static void testPackageWeightFromName() {
-        eq(0.5, RecipeRecommender.packageWeightFromName("Pikok Pure Füstölt szalonna, ca. 500g"), "ca. 500g");
-        eq(1.4, RecipeRecommender.packageWeightFromName("Pilos Trappista sajt ca1,4kg"), "1,4kg");
-        eq(0.25, RecipeRecommender.packageWeightFromName("Kalifa lencse 25 dkg"), "dkg");
-        check(Double.isNaN(RecipeRecommender.packageWeightFromName("Friss csirkecomb , kg")), "nincs tömeg");
-        check(Double.isNaN(RecipeRecommender.packageWeightFromName("Tej 2,8% 1 l")), "liter nem tömeg");
+        eq(0.5, Packaging.packageWeightFromName("Pikok Pure Füstölt szalonna, ca. 500g"), "ca. 500g");
+        eq(1.4, Packaging.packageWeightFromName("Pilos Trappista sajt ca1,4kg"), "1,4kg");
+        eq(0.25, Packaging.packageWeightFromName("Kalifa lencse 25 dkg"), "dkg");
+        check(Double.isNaN(Packaging.packageWeightFromName("Friss csirkecomb , kg")), "nincs tömeg");
+        check(Double.isNaN(Packaging.packageWeightFromName("Tej 2,8% 1 l")), "liter nem tömeg");
+    }
+
+    static PriceEntry pe(String name, int cat, double price, String unit, double qty) {
+        return new PriceEntry(name, name, cat, "kat", "x", price, price, unit, qty, price / qty, 1, 100, 100);
     }
 
     static void testPurchaseModel() {
         Catalog.Product tojas = CATALOG.products().get("tojas");
         // 6 tojás: a 10-es doboz jobb választás, mint a 30-as tálca, pedig darabra drágább
-        PriceEntry tiz = new PriceEntry("t10", "Tojás 10 db", 14, "Tojás", "x", 600, 600, "db", 10, 60, 1, 1, 1);
-        PriceEntry harminc = new PriceEntry("t30", "Tojás 30 db", 14, "Tojás", "x", 1650, 1650, "db", 30, 55, 1, 1, 1);
-        var a = RecipeRecommender.buy(tojas, tiz, 0.6, 6);
-        var b = RecipeRecommender.buy(tojas, harminc, 0.6, 6);
+        var a = RecipeRecommender.buy(tojas, pe("Tojás 10 db", 14, 600, "db", 10), 6);
+        var b = RecipeRecommender.buy(tojas, pe("Tojás 30 db", 14, 1650, "db", 30), 6);
         eq(1, a.packages(), "egy 10-es doboz");
         eq(600.0, a.pay(), "pénztári ár");
         eq(360.0, Math.round(a.cost() * 100) / 100.0, "receptre jutó rész");
+        check(!a.bulk(), "a 10-es doboz háztartási méret");
+        check(b.bulk(), "a 30-as tálca nagy kiszerelés");
         check(a.effective() < b.effective(), "a 10-es doboz a jobb választás");
 
         // mérlegelős áru: annyit fizetsz, amennyi kell
         Catalog.Product hagyma = CATALOG.products().get("voroshagyma");
-        PriceEntry ledig = new PriceEntry("h", "Vöröshagyma lédig", 40, "Vöröshagyma", "x", 250, 250, "kg", 1, 250, 1, 1, 1);
-        var c = RecipeRecommender.buy(hagyma, ledig, 0.25, 0.25);
+        var c = RecipeRecommender.buy(hagyma, pe("Vöröshagyma lédig", 40, 250, "kg", 1), 0.25);
         eq(0, c.packages(), "mérlegelős");
         eq(62.5, c.pay(), "0,25 kg × 250 Ft");
+        check(c.buyText().contains("2 db"), "darabszám is: " + c.buyText());
+
+        // mérlegelősnél legalább egy darabot veszel: 1 dkg fokhagymához egy egész fejet
+        Catalog.Product fok = CATALOG.products().get("fokhagyma");
+        var f = RecipeRecommender.buy(fok, pe("Fokhagyma lédig", 39, 1500, "kg", 1), 0.01);
+        eq(15.0, Math.round(f.cost() * 100) / 100.0, "a receptre jutó rész 1 dkg");
+        eq(75.0, Math.round(f.pay() * 100) / 100.0, "de egy 5 dkg-os fejet fizetsz");
 
         // kilós árú, de a névben szereplő csomagtömegű termék: egész csomagot veszel
         Catalog.Product bacon = CATALOG.products().get("bacon");
-        PriceEntry ca = new PriceEntry("b", "Füstölt szalonna, ca. 500g", 89, "Császárszalonna", "x", 2400, 2400, "kg", 1, 2400, 1, 1, 1);
-        var d = RecipeRecommender.buy(bacon, ca, 1.0, 0.2);
+        var d = RecipeRecommender.buy(bacon, pe("Füstölt szalonna, ca. 500g", 89, 2400, "kg", 1), 0.2);
         eq(1, d.packages(), "egy csomag");
         eq(1200.0, d.pay(), "0,5 kg × 2400 Ft");
 
-        // darab <-> kg: 0,15 kg paprika darabos kiszerelésből (1 db ≈ 0,15 kg)
+        // csomagolt áru kilós egységgel, tömeg nélkül (pl. "Penny finomliszt"): 1 kg-os csomag, nem mérlegelős
+        Catalog.Product liszt = CATALOG.products().get("liszt");
+        var l = RecipeRecommender.buy(liszt, pe("Penny finomliszt", 52, 178, "kg", 1), 0.03);
+        eq(1, l.packages(), "egy csomag liszt");
+        eq(178.0, l.pay(), "a teljes csomagot fizeted, nem 3 dkg-ot");
+
+        // darab ↔ kg: 0,15 kg paprika a "3 db"-os csomagból = 1 csomag, a receptre 1 db ára jut
         Catalog.Product paprika = CATALOG.products().get("paprika");
-        PriceEntry darab = new PriceEntry("p", "TV paprika 3 db", 35, "Zöldpaprika", "x", 300, 300, "db", 3, 100, 1, 1, 1);
-        eq(1.0, Math.round(RecipeRecommender.amountInItemUnit(paprika, darab, 0.15) * 1000) / 1000.0, "1 darab");
+        var pp = RecipeRecommender.buy(paprika, pe("TV paprika 3 db", 35, 300, "db", 3), 0.15);
+        eq(1, pp.packages(), "egy 3 db-os csomag");
+        eq(100.0, Math.round(pp.cost() * 100) / 100.0, "1 db = 100 Ft jut a receptre");
+
+        // kg ↔ darab: az 52 g-os zsemle 1 db; 3 zsemléhez 3-at veszel
+        Catalog.Product zsemle = CATALOG.products().get("zsemle");
+        var z = RecipeRecommender.buy(zsemle, pe("Zsemle 52 g", 94, 65, "kg", 0.052), 3);
+        eq(3, z.packages(), "3 zsemle");
+        eq(195.0, z.pay(), "3 × 65 Ft");
+
+        // csomós zöldség: az ár egy csomóra szól, függetlenül attól, hogy a sor kg-ot vagy 5 db-ot ír
+        Catalog.Product petr = CATALOG.products().get("petrezselyem");
+        var cs = RecipeRecommender.buy(petr, pe("Petrezselyemgyökér csomós", 37, 689, "kg", 1), 0.1);
+        eq(1, cs.packages(), "egy csomó");
+        eq(689.0, cs.pay(), "egy csomó ára");
+        eq("1 csomó", cs.buyText(), "szöveg");
 
         // 15% tűrés: 0,5 kg-hoz elég egy 0,45 kg-os csomag
         Catalog.Product pulyka = CATALOG.products().get("pulykamell");
-        PriceEntry p45 = new PriceEntry("pu", "Pulykamellfilé 450 g", 21, "Pulyka", "x", 1400, 1400, "kg", 0.45, 3111, 1, 1, 1);
-        eq(1, RecipeRecommender.buy(pulyka, p45, 0.5, 0.5).packages(), "nem veszünk két csomagot");
+        eq(1, RecipeRecommender.buy(pulyka, pe("Pulykamellfilé 450 g", 21, 1400, "kg", 0.45), 0.5).packages(),
+                "nem veszünk két csomagot");
+
+        // nagy kiszerelés: 5 kg burgonya 1,5 kg-hoz nagy, 2 kg háztartási; 20 adagnál (7,5 kg) az 5 kg sem nagy
+        Catalog.Product krumpli = CATALOG.products().get("burgonya");
+        check(RecipeRecommender.buy(krumpli, pe("Burgonya 5 kg", 41, 981, "kg", 5), 1.5).bulk(), "5 kg nagy");
+        check(!RecipeRecommender.buy(krumpli, pe("Burgonya 2 kg", 41, 620, "kg", 2), 1.5).bulk(), "2 kg háztartási");
+        check(!RecipeRecommender.buy(krumpli, pe("Burgonya 5 kg", 41, 981, "kg", 5), 7.5).bulk(), "sok adaghoz nem nagy");
+    }
+
+    static void testHouseholdDefaultWithBulkAlternative() {
+        // egy boltban: 10-es tojás 600 Ft és 30-as tálca 1350 Ft (45 Ft/db), 1,5 kg krumplihoz lédig és 5 kg-os zsák
+        List<PriceEntry> l = new ArrayList<>(List.of(
+                new PriceEntry("t10", "Tojás 10 db", 14, "Tojás", "lidl", 600, 600, "db", 10, 60, 1, 100, 100),
+                new PriceEntry("t30", "Tojás 30 db", 14, "Tojás", "lidl", 1350, 1350, "db", 30, 45, 1, 100, 100),
+                new PriceEntry("k1", "Burgonya lédig", 41, "Burgonya", "lidl", 300, 300, "kg", 1, 300, 1, 100, 100),
+                new PriceEntry("k5", "Burgonya 5 kg", 41, "Burgonya", "lidl", 900, 900, "kg", 5, 180, 1, 100, 100)));
+        RecipeRecommender rec = new RecipeRecommender(CATALOG, l, new DealAnalyzer(l, null), List.of("lidl"));
+        Suggestion home = rec.suggestion("rakott-krumpli", "lidl", 0, null, false);
+        var egg = home.items().stream().filter(pi -> pi.ingredient().productKey().equals("tojas")).findFirst().orElseThrow();
+        eq("t10", egg.entry().itemId(), "alapból a 10-es doboz");
+        check(egg.alternative() != null && egg.alternative().entry().itemId().equals("t30"), "a tálca alternatívaként");
+        check(egg.alternative().bulk(), "az alternatíva nagy kiszerelés");
+        var potato = home.items().stream().filter(pi -> pi.ingredient().productKey().equals("burgonya")).findFirst().orElseThrow();
+        eq("k1", potato.entry().itemId(), "alapból lédig krumpli");
+        eq("k5", potato.alternative().entry().itemId(), "az 5 kg-os zsák alternatíva");
+        check(home.altTotalCost() < home.totalCost(), "nagy kiszerelésekkel olcsóbb a recept");
+        check(home.altCheckoutTotal() > home.checkoutTotal(), "de most többet fizetsz");
+
+        Suggestion bulk = rec.suggestion("rakott-krumpli", "lidl", 0, null, true);
+        var egg2 = bulk.items().stream().filter(pi -> pi.ingredient().productKey().equals("tojas")).findFirst().orElseThrow();
+        eq("t30", egg2.entry().itemId(), "nagy kiszerelés módban a tálca");
+        eq("t10", egg2.alternative().entry().itemId(), "és a doboz az alternatíva");
+        eq(Math.round(home.altTotalCost()), Math.round(bulk.totalCost()), "a két mód összegei egymás tükrei");
+    }
+
+    static void testStoreFilterChangesComparison() {
+        List<PriceEntry> base = new ArrayList<>(new DemoPriceProvider(CATALOG, LocalDate.of(2026, 1, 1)).load().entries());
+        List<String> stores = List.of("aldi", "lidl", "penny", "auchan", "tesco", "spar");
+        RecipeRecommender rec = new RecipeRecommender(CATALOG, base, new DealAnalyzer(base, null), stores);
+        Suggestion all = rec.suggestion("lecso", "lidl", 0, null, false);
+        Suggestion two = rec.suggestion("lecso", "lidl", 0, List.of("lidl", "spar"), false);
+        Suggestion spar = rec.suggestion("lecso", "spar", 0, null, false);
+        eq(Math.round(spar.totalCost()), Math.round(two.otherStoresCost()), "csak a Sparhoz hasonlít");
+        check(all.otherStoresCost() != two.otherStoresCost() || Math.round(spar.totalCost()) == Math.round(all.otherStoresCost()),
+                "a szűrés megváltoztatja a viszonyítást");
+        check(!rec.suggestionsFor("lidl", List.of("lidl", "spar"), false).isEmpty(), "szűrt rangsor");
     }
 
     static void testAvailabilityLowersDeal() {
@@ -364,6 +444,88 @@ public final class AllTests {
         }
     }
 
+    static void testPromoCsvParsing() {
+        String csv = "bolt;termek;ar;egyseg;kiszereles;rendes_ar;tol;ig;alapanyag;vonalkod;kartya\n"
+                + "Lidl;Csirkemellfilé tálcás;1499;kg;1;1999;2026.10.30.;2026.11.05.;csirkemell;;nem\n"
+                + "SPAR;Tojás M 10 db;499;db;10;;2026-10-30;2026-11-05;tojas;;igen\n"
+                + "Lidl;hibás sor;;kg;1;;;;csirkemell;;\n";
+        List<String> warnings = new ArrayList<>();
+        List<Promo> ps = parsePromos(csv, warnings);
+        eq(2, ps.size(), "két érvényes sor");
+        eq(1, warnings.size(), "egy hibás sor");
+        Promo a = ps.get(0);
+        eq("lidl", a.storeId(), "bolt normalizálva");
+        eq(LocalDate.of(2026, 10, 30), a.validFrom(), "pontos dátum");
+        eq("csirkemell", a.ingredientKey(), "alapanyag");
+        check(!a.card(), "nem kártyás");
+        check(ps.get(1).card() && ps.get(1).storeId().equals("spar"), "kártyás Spar akció");
+    }
+
+    /** A PromoStore csomagszintű parse metódusa reflexióval (a tesztek a hu.sporolos csomagban vannak). */
+    static List<Promo> parsePromos(String text, List<String> warnings) {
+        try {
+            var m = PromoStore.class.getDeclaredMethod("parse", String.class, boolean.class, String.class, List.class);
+            m.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            List<Promo> r = (List<Promo>) m.invoke(null, text, true, "teszt", warnings);
+            return r;
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    static Promo promo(String id, String store, String name, String ingredient, String itemId, double price,
+                       double regular, String unit, double qty, boolean card, LocalDate from, LocalDate to) {
+        return new Promo(id, store, name, ingredient, itemId, price, regular, unit, qty, from, to, card, "teszt");
+    }
+
+    static void testPromoMergeRules() {
+        LocalDate today = LocalDate.of(2026, 10, 31);
+        List<PriceEntry> base = List.of(
+                new PriceEntry("599", "Pilos vaj 250 g", 12, "Vaj", "lidl", 499, 499, "kg", 0.25, 1996, 1, 200, 200),
+                new PriceEntry("cs1", "Húsfarm csirkemellfilé, kg", 18, "Csirkemellfilé", "lidl", 1999, 1999, "kg", 1, 1999, 1, 200, 200),
+                new PriceEntry("cs2", "Csirkemell tokány, kg", 18, "Csirkemellfilé", "lidl", 1859, 1859, "kg", 1, 1859, 1, 200, 200));
+        List<Promo> promos = List.of(
+                promo("a", "lidl", "Pilos vaj", "vaj", "599", 399, 0, "kg", 0.25, false, null, null),          // felülírja
+                promo("b", "lidl", "Pilos vaj", "vaj", "599", 520, 0, "kg", 0.25, false, null, null),          // drágább: már benne
+                promo("c", "lidl", "Csirkemellfilé friss", "csirkemell", null, 1499, 1999, "kg", 1, false, null, null), // új tétel
+                promo("d", "lidl", "Csirkemell tokány", "csirkemell", null, 1899, 0, "kg", 1, false, null, null),   // már benne (1859)
+                promo("e", "lidl", "Tonhal", "tonhal", null, 599, 849, "kg", 0.16, true, null, null),         // kártyás, nincs kártya
+                promo("f", "lidl", "Csirkecomb", "csirkecomb", null, 699, 0, "kg", 1, false, null, today.minusDays(1)), // lejárt
+                promo("g", "lidl", "Csirkecomb", "csirkecomb", null, 699, 0, "kg", 1, false, today.plusDays(1), null),  // még nem
+                promo("h", "aldi2", "x", "vaj", null, 1, 0, "db", 1, false, null, null));                        // ismeretlen bolt
+        PromoMerger.Result r = PromoMerger.merge(CATALOG, base, promos, today, Set.of());
+        Map<String, PromoMerger.Status> st = new HashMap<>();
+        for (var x : r.statuses()) st.put(x.promo().id(), x.status());
+        eq(PromoMerger.Status.ACTIVE, st.get("a"), "a: beépítve");
+        eq(PromoMerger.Status.ALREADY_LISTED, st.get("b"), "b: már benne");
+        eq(PromoMerger.Status.ACTIVE, st.get("c"), "c: új tétel");
+        eq(PromoMerger.Status.ALREADY_LISTED, st.get("d"), "d: az Árfigyelőben olcsóbb");
+        eq(PromoMerger.Status.CARD_OFF, st.get("e"), "e: kártya kell");
+        eq(PromoMerger.Status.EXPIRED, st.get("f"), "f: lejárt");
+        eq(PromoMerger.Status.NOT_STARTED, st.get("g"), "g: még nem kezdődött");
+        eq(PromoMerger.Status.NO_MATCH, st.get("h"), "h: ismeretlen bolt");
+        PriceEntry vaj = r.entries().stream().filter(e -> e.itemId().equals("599")).findFirst().orElseThrow();
+        eq(399.0, vaj.price(), "a vaj akciós ára");
+        eq(4, r.entries().size(), "3 eredeti + 1 új tétel");
+        check(r.forcedIngredient().containsValue("csirkemell"), "az új tétel a csirkemellhez kötve");
+
+        // kártyával az "e" is bekerül, és a tonhal (amit az Árfigyelő nem követ) árazhatóvá válik
+        PromoMerger.Result withCard = PromoMerger.merge(CATALOG, base, promos, today, Set.of("lidl"));
+        check(withCard.statuses().stream().anyMatch(x -> x.promo().id().equals("e") && x.status() == PromoMerger.Status.ACTIVE),
+                "kártyával aktív");
+        DealAnalyzer deals = new DealAnalyzer(withCard.entries(), null, withCard.promoInfo());
+        PriceEntry tonhal = withCard.entries().stream().filter(e -> e.itemId().equals("promo:e")).findFirst().orElseThrow();
+        Deal d = deals.dealFor(tonhal);
+        check(d != null && d.type() == DealType.PROMO, "akció-jel");
+        check(d.reason().contains("Hűségkártyás"), "kártyás akció indoklása: " + d.reason());
+        check(tonhal.productName().contains("Lidl Plus"), "a név jelzi a kártyát: " + tonhal.productName());
+        RecipeRecommender rec = new RecipeRecommender(CATALOG, withCard.entries(), deals, List.of("lidl"), withCard.forcedIngredient());
+        Suggestion ts = rec.suggestion("tonhalas-teszta", "lidl", 0);
+        check(ts.items().stream().anyMatch(pi -> pi.entry() != null && pi.entry().itemId().equals("promo:e")),
+                "a tonhalas tészta az akciós tonhalat használja");
+    }
+
     // ---------- teljes rendszer ----------
 
     static void testWebServerEndToEnd() throws Exception {
@@ -371,7 +533,8 @@ public final class AllTests {
         PriceRepository repo = new PriceRepository(CATALOG,
                 List.of(new ArfigyeloExcelProvider(CATALOG, null, dir.resolve("nincs.xlsx"), null), // nem létezik → demóra vált
                         new DemoPriceProvider(CATALOG, LocalDate.now())),
-                new PriceHistory(dir.resolve("history"), 28), Duration.ofHours(1));
+                new PriceHistory(dir.resolve("history"), 28), new PromoStore(dir.resolve("akciok"), List.of()),
+                Duration.ofHours(1));
         WebServer server = new WebServer(repo);
         int port = server.start("127.0.0.1", 0);
         try {
@@ -418,6 +581,38 @@ public final class AllTests {
             check(!hits.isEmpty(), "a keresés talál tojást");
             get(c, base + "/api/search?q=x", 400);
             get(c, base + "/api/refresh", 405);
+
+            // boltszűrő: a recept összehasonlítása csak a választott boltokat tartalmazza
+            Map<String, Object> filtered = Json.obj(Json.parse(get(c, base + "/api/recipe?id=" + firstId + "&store=lidl&stores=lidl,spar", 200)));
+            eq(2, Json.arr(filtered.get("stores")).size(), "csak a Lidl és a Spar");
+            get(c, base + "/api/suggestions?store=lidl&bulk=1", 200);
+
+            // akciók: felvitel, lista, törlés
+            List<Object> ings = Json.arr(Json.parse(get(c, base + "/api/ingredients", 200)));
+            check(ings.size() > 50, "alapanyag-lista");
+            String body = "{\"store\":\"lidl\",\"name\":\"Akciós csirkemell\",\"ingredient\":\"csirkemell\",\"price\":999,\"unit\":\"kg\",\"quantity\":1}";
+            HttpResponse<String> add = c.send(HttpRequest.newBuilder(URI.create(base + "/api/promos"))
+                    .POST(HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.ofString());
+            eq(200, add.statusCode(), "akció felvétele: " + add.body());
+            List<Object> promos = Json.arr(Json.obj(Json.parse(add.body())).get("promos"));
+            eq(1, promos.size(), "egy akció");
+            Map<String, Object> pr = Json.obj(promos.get(0));
+            eq("ACTIVE", pr.get("status"), "beépítve");
+            List<Object> dl = Json.arr(Json.parse(get(c, base + "/api/deals?store=lidl&limit=200", 200)));
+            check(dl.stream().anyMatch(o -> "PROMO".equals(Json.obj(o).get("type"))), "megjelenik a jó árak közt");
+            HttpResponse<String> csvImport = c.send(HttpRequest.newBuilder(URI.create(base + "/api/promos"))
+                    .POST(HttpRequest.BodyPublishers.ofString("{\"text\":\"bolt;termek;ar;egyseg;kiszereles;alapanyag\\nSpar;Tojás 10 db;399;db;10;tojas\"}")).build(),
+                    HttpResponse.BodyHandlers.ofString());
+            eq(200, csvImport.statusCode(), "CSV import: " + csvImport.body());
+            eq(1L, Json.obj(Json.parse(csvImport.body())).get("added"), "egy sor importálva");
+            HttpResponse<String> del = c.send(HttpRequest.newBuilder(URI.create(base + "/api/promos?id=" + pr.get("id")))
+                    .DELETE().build(), HttpResponse.BodyHandlers.ofString());
+            eq(200, del.statusCode(), "törlés");
+            eq(1, Json.arr(Json.obj(Json.parse(del.body())).get("promos")).size(), "maradt a Spar-akció");
+            HttpResponse<String> bad = c.send(HttpRequest.newBuilder(URI.create(base + "/api/promos"))
+                    .POST(HttpRequest.BodyPublishers.ofString("{\"store\":\"lidl\",\"name\":\"x\"}")).build(),
+                    HttpResponse.BodyHandlers.ofString());
+            eq(400, bad.statusCode(), "ár nélkül hiba");
             get(c, base + "/api/deals?store=nincsilyen", 400);
             get(c, base + "/api/ismeretlen", 404);
             check(get(c, base + "/", 200).contains("Spórolós Konyha"), "főoldal");

@@ -76,32 +76,41 @@ final class ApiMapper {
         m.put("recipe", recipe(s.recipe()));
         m.put("store", s.storeId());
         m.put("servings", s.servings());
+        m.put("bulkMode", s.bulkMode());
         m.put("totalCost", s.totalCost());
         m.put("otherStoresCost", s.otherStoresCost());
         m.put("savings", s.savings());
         m.put("checkoutTotal", s.checkoutTotal());
         m.put("staplesTotal", s.staplesTotal());
+        m.put("altTotalCost", s.altTotalCost());
+        m.put("altCheckoutTotal", s.altCheckoutTotal());
         m.put("dealCount", s.dealCount());
         m.put("coverage", Math.round(s.coverage() * 100) / 100.0);
         m.put("score", Math.round(s.score() * 1000) / 1000.0);
         List<Object> items = new ArrayList<>();
-        for (PricedIngredient pi : s.items()) {
-            Map<String, Object> i = new LinkedHashMap<>();
-            i.put("label", pi.ingredient().label());
-            i.put("amount", pi.ingredient().amount());
-            i.put("pantry", pi.ingredient().pantry());
-            i.put("staple", pi.ingredient().staple());
-            i.put("cost", pi.cost());
-            i.put("estimated", pi.estimated());
-            i.put("packages", pi.packages());
-            i.put("buyAmount", Math.round(pi.buyAmount() * 1000) / 1000.0);
-            i.put("checkoutCost", pi.checkoutCost());
-            i.put("item", entry(pi.entry()));
-            i.put("deal", dealSummary(pi.deal()));
-            items.add(i);
-        }
+        for (PricedIngredient pi : s.items()) items.add(ingredient(pi));
         m.put("ingredients", items);
         return m;
+    }
+
+    static Map<String, Object> ingredient(PricedIngredient pi) {
+        Map<String, Object> i = new LinkedHashMap<>();
+        i.put("label", pi.ingredient().label());
+        i.put("amount", pi.ingredient().amount());
+        i.put("pantry", pi.ingredient().pantry());
+        i.put("staple", pi.ingredient().staple());
+        i.put("cost", pi.cost());
+        i.put("estimated", pi.estimated());
+        i.put("packages", pi.packages());
+        i.put("buyAmount", Math.round(pi.buyAmount() * 1000) / 1000.0);
+        i.put("checkoutCost", pi.checkoutCost());
+        i.put("bulk", pi.bulk());
+        i.put("buyText", pi.buyText());
+        i.put("priceText", pi.priceText());
+        i.put("item", entry(pi.entry()));
+        i.put("deal", dealSummary(pi.deal()));
+        i.put("alternative", pi.alternative() == null ? null : ingredient(pi.alternative()));
+        return i;
     }
 
     /** Rövid változat listákhoz (hozzávalók nélkül). */

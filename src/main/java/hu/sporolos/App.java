@@ -6,6 +6,7 @@ import hu.sporolos.data.Catalog;
 import hu.sporolos.data.DemoPriceProvider;
 import hu.sporolos.data.PriceHistory;
 import hu.sporolos.data.PriceProvider;
+import hu.sporolos.data.PromoStore;
 import hu.sporolos.web.WebServer;
 
 import java.io.IOException;
@@ -29,6 +30,8 @@ import java.util.Properties;
  *   arfigyelo.file  (ARFIGYELO_FILE)  – helyi Excel; ha létezik, ezt használja letöltés helyett
  *   data.dir        (DATA_DIR)        – ide menti a letöltött Excelt és az árelőzményeket (alap: ./data)
  *   refresh.hours   (REFRESH_HOURS)   – ennyi óra után tölti újra az árakat (alap: 6)
+ *   promo.dir       (PROMO_DIR)       – a láncok saját akcióinak mappája (*.json, *.csv; alap: data/akciok)
+ *   promo.feeds     (PROMO_FEEDS)     – akció-feedek URL-jei vesszővel elválasztva (ugyanilyen JSON/CSV)
  */
 public final class App {
 
@@ -54,8 +57,14 @@ public final class App {
         }
         if (!source.equals("arfigyelo")) providers.add(new DemoPriceProvider(catalog, LocalDate.now()));
 
+        String feeds = get(cfg, "promo.feeds", "PROMO_FEEDS", "");
+        List<String> feedList = feeds.isBlank() ? List.of()
+                : java.util.Arrays.stream(feeds.split("[,\\s]+")).filter(x -> !x.isBlank()).toList();
+        Path promoDir = Path.of(get(cfg, "promo.dir", "PROMO_DIR", dataDir.resolve("akciok").toString()));
+        PromoStore promos = new PromoStore(promoDir, feedList);
+
         PriceRepository repo = new PriceRepository(catalog, providers,
-                new PriceHistory(dataDir.resolve("history"), 28), Duration.ofHours(refreshHours));
+                new PriceHistory(dataDir.resolve("history"), 28), promos, Duration.ofHours(refreshHours));
         repo.reload();
 
         WebServer server = new WebServer(repo);

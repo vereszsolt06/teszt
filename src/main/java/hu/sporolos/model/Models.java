@@ -10,7 +10,12 @@ public final class Models {
     private Models() {}
 
     /** Egy üzletlánc. */
-    public record Store(String id, String name, String color) {}
+    /**
+     * Egy üzletlánc.
+     *
+     * @param cardName a lánc hűségprogramjának / appjának neve (pl. "Lidl Plus"), vagy null
+     */
+    public record Store(String id, String name, String color, String cardName) {}
 
     /**
      * Egy termék ára egy üzletláncban – a GVH Árfigyelő napi Excel egy sora.
@@ -46,9 +51,10 @@ public final class Models {
      *  CHAIN    – ugyanez a termék más láncokban drágább,
      *  HISTORY  – olcsóbb, mint az elmúlt napok szokásos ára (helyi előzményekből),
      *  SPREAD   – a lánc egyes boltjaiban jóval olcsóbb, mint a legdrágábbakban (jellemzően akció),
-     *  CATEGORY – egységárban a kategória legolcsóbbjai között van.
+     *  CATEGORY – egységárban a kategória legolcsóbbjai között van,
+     *  PROMO    – a lánc saját akciója (akciós újság, app, hűségkártya), amit a felhasználó vagy egy feed adott meg.
      */
-    public enum DealType { CHAIN, HISTORY, SPREAD, CATEGORY }
+    public enum DealType { CHAIN, HISTORY, SPREAD, CATEGORY, PROMO }
 
     /**
      * Egy kiemelkedően jó ár.
@@ -79,32 +85,51 @@ public final class Models {
     /**
      * Egy hozzávaló árazva egy adott boltban.
      *
-     * @param entry       a választott bolti termék, vagy null, ha a boltban nincs / az Árfigyelő nem követi
-     * @param deal        ha a választott termék épp jó áron van
-     * @param cost        a receptre jutó költség (Ft) – a felhasznált mennyiség ára
-     * @param estimated   true, ha a költség becsült (nincs bolti adat)
-     * @param packages    hány csomagot kell venni (0 = mérlegelős áru, annyit veszel, amennyi kell)
-     * @param buyAmount   összesen mennyit veszel a termék egységében (kg / l / db)
+     * @param entry        a választott bolti termék, vagy null, ha a boltban nincs / az Árfigyelő nem követi
+     * @param deal         ha a választott termék épp jó áron van
+     * @param cost         a receptre jutó költség (Ft) – a felhasznált mennyiség ára
+     * @param estimated    true, ha a költség becsült (nincs bolti adat)
+     * @param packages     hány csomagot kell venni (0 = mérlegelős áru, annyit veszel, amennyi kell)
+     * @param buyAmount    összesen mennyit veszel az alapanyag egységében (kg / l / db)
      * @param checkoutCost amennyit a pénztárnál fizetsz érte (egész csomagokkal)
+     * @param bulk         a választott tétel nagy (a háztartási méretnél nagyobb) kiszerelés
+     * @param buyText      mit vegyél, emberi nyelven ("2 × 450 g", "kb. 25 dkg (≈ 2 db)")
+     * @param priceText    mire szól az ár ("599 Ft/kg", "549 Ft/db", "449 Ft / 450 g · 998 Ft/kg")
+     * @param alternative  a másik lehetőség: háztartási módban a nagy kiszerelés (ha jóval olcsóbb),
+     *                     nagy kiszerelés módban a háztartási; null, ha nincs érdemi alternatíva
      */
     public record PricedIngredient(Ingredient ingredient, PriceEntry entry, Deal deal, double cost,
-                                   boolean estimated, int packages, double buyAmount, double checkoutCost) {}
+                                   boolean estimated, int packages, double buyAmount, double checkoutCost,
+                                   boolean bulk, String buyText, String priceText, PricedIngredient alternative) {}
 
     /**
      * Egy recept beárazva egy boltban.
      *
      * @param totalCost        a felhasznált mennyiségek ára ebben a boltban
-     * @param otherStoresCost  ugyanez a többi bolt mediánjával számolva
+     * @param otherStoresCost  ugyanez a többi (választott) bolt mediánjával számolva
      * @param checkoutTotal    a bevásárlás összege egész csomagokkal, az alap kamraáruk nélkül
      * @param staplesTotal     az alap kamraáruk (olaj, liszt, cukor) ára egész csomagokkal, ha nincs otthon
      * @param coverage         a nem-kamraáru hozzávalók hányad részére van valós bolti ár (0..1)
      * @param servings         hány adagra van számolva
+     * @param altTotalCost     a recept ára, ha minden alternatívát választod (háztartási módban: nagy kiszerelésekkel)
+     * @param altCheckoutTotal a pénztári összeg ugyanekkor
+     * @param bulkMode         nagy kiszerelés módban számolva
      */
     public record Suggestion(Recipe recipe, String storeId, List<PricedIngredient> items,
                              double totalCost, double otherStoresCost, double checkoutTotal, double staplesTotal,
-                             int dealCount, double coverage, double score, int servings) {
+                             int dealCount, double coverage, double score, int servings,
+                             double altTotalCost, double altCheckoutTotal, boolean bulkMode) {
         public double savings() {
             return Math.max(0, otherStoresCost - totalCost);
+        }
+
+        Suggestion withScore(double others, double newScore) {
+            return new Suggestion(recipe, storeId, items, totalCost, others, checkoutTotal, staplesTotal,
+                    dealCount, coverage, newScore, servings, altTotalCost, altCheckoutTotal, bulkMode);
+        }
+
+        public Suggestion rescored(double others, double newScore) {
+            return withScore(others, newScore);
         }
     }
 }

@@ -21,7 +21,8 @@ import java.util.Set;
  *   <li>HISTORY – olcsóbb, mint a saját szokásos ára az elmúlt napokban (helyi előzmények);</li>
  *   <li>SPREAD – a lánc legolcsóbb boltjában jóval kevesebb, mint a legdrágábban (jellemzően helyi akció);</li>
  *   <li>CATEGORY – egységárban a kategória legolcsóbb 5%-ában van, és messze a medián alatt
- *       (ez "tartósan olcsó" jel, ezért kisebb súllyal számít).</li>
+ *       (ez "tartósan olcsó" jel, ezért kisebb súllyal számít);</li>
+ *   <li>PROMO – a lánc saját akciója (akciós újság, app, hűségkártya), amit a felhasználó vagy egy feed adott meg.</li>
  * </ol>
  * A ritkán kapható (a lánc boltjainak kevesebb mint felében lévő) termékek pontszáma arányosan csökken.
  */
@@ -33,6 +34,13 @@ public final class DealAnalyzer {
     private final Map<String, Deal> dealsByKey = new HashMap<>();
 
     public DealAnalyzer(List<PriceEntry> entries, PriceHistory history) {
+        this(entries, history, Map.of());
+    }
+
+    /**
+     * @param promos "vonalkód|lánc" → a lánc saját akciója (akciós újság, app, hűségkártya)
+     */
+    public DealAnalyzer(List<PriceEntry> entries, PriceHistory history, Map<String, PromoMerger.PromoInfo> promos) {
         Map<String, List<PriceEntry>> byItem = new HashMap<>();
         Map<String, List<Double>> byCategoryUnit = new HashMap<>();
         for (PriceEntry e : entries) {
@@ -47,6 +55,10 @@ public final class DealAnalyzer {
 
         for (PriceEntry e : entries) {
             List<Deal> candidates = new ArrayList<>();
+
+            // 0. a lánc saját akciója
+            PromoMerger.PromoInfo pi = promos.get(key(e));
+            if (pi != null) candidates.add(promoDeal(e, pi));
 
             // 1. másik láncokhoz képest
             List<Double> others = new ArrayList<>();
@@ -102,6 +114,26 @@ public final class DealAnalyzer {
                     .map(DealAnalyzer::withAvailability)
                     .ifPresent(d -> dealsByKey.put(key(e), d));
         }
+    }
+
+    private static final java.time.format.DateTimeFormatter DAY =
+            java.time.format.DateTimeFormatter.ofPattern("MMM d.", java.util.Locale.forLanguageTag("hu"));
+
+    /** Akció-jel: legalább 0,6 pontszám (a lánc maga hirdeti), a megtakarítással arányosan több. */
+    static Deal promoDeal(PriceEntry e, PromoMerger.PromoInfo pi) {
+        var p = pi.promo();
+        double ref = pi.referencePrice();
+        double s = !Double.isNaN(ref) && ref > e.price() ? (ref - e.price()) / ref : 0;
+        String what = p.card() ? "Hűségkártyás/appos akció" : "Bolti akció";
+        StringBuilder reason = new StringBuilder(what);
+        if (p.validTo() != null) {
+            reason.append(" ").append(p.validFrom() == null ? "" : DAY.format(p.validFrom()) + "–")
+                    .append(DAY.format(p.validTo()));
+        }
+        if (s > 0) reason.append(", ").append(pct(s)).append("-kal olcsóbb (rendesen ").append(ft(ref)).append(")");
+        reason.append(" · forrás: ").append(p.source());
+        double score = Math.max(0.6, Stats.clamp01(s / 0.30));
+        return new Deal(e, DealType.PROMO, Double.isNaN(ref) ? e.price() : ref, s, score, reason.toString());
     }
 
     /**

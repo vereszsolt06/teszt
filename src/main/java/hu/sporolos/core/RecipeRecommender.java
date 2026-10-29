@@ -11,111 +11,156 @@ import hu.sporolos.model.Models.Recipe;
 import hu.sporolos.model.Models.Suggestion;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Receptajánló: minden receptet "megvásárol" minden boltban, és azokat rangsorolja előre,
  * amelyekhez az adott boltban épp kiemelkedően jó áron kapni az alapanyagokat.
  *
- * Hozzávalónként a legkedvezőbb terméket választja: a receptre jutó költség alapján,
- * a ritkán kapható (a lánc kevés boltjában lévő) termékeket hátrébb sorolva, és egy jó áron
- * lévő terméket akkor is előnyben részesítve, ha legfeljebb 20%-kal drágább a legolcsóbbnál.
+ * <h3>Kiszerelés</h3>
+ * Alapból <b>háztartási kiszerelésben</b> vásárol: a háztartási méretnél nagyobb csomagot (5 kg burgonya,
+ * 30 tojás, 1,4 kg-os sajttömb) nem választ csak azért, mert egységárban olcsóbb. Ha egy nagy kiszerelés
+ * a recept adagjára vetítve legalább 10%-kal (és 15 Ft-tal) olcsóbb, alternatívaként felajánlja.
+ * Nagy kiszerelés módban fordítva: a legolcsóbb egységárat választja, és a háztartási a lehetőség.
  *
- * Pontszám (0..1):
+ * <h3>Választás</h3>
+ * Hozzávalónként a felhasznált rész ára + a kényszerűen megvett maradék 35%-a számít, a ritkán kapható
+ * (a lánc kevés boltjában lévő) termékek hátrébb kerülnek, és egy jó áron lévő terméket akkor is választ,
+ * ha legfeljebb 20%-kal drágább a legolcsóbbnál.
+ *
+ * <h3>Pontszám (0..1)</h3>
  *  45% – mekkora részét adják a recept költségének jó áron lévő alapanyagok (a jó ár erősségével súlyozva),
- *  35% – mennyivel olcsóbb a recept itt, mint a többi bolt mediánjával,
+ *  35% – mennyivel olcsóbb a recept itt, mint a többi (választott) bolt mediánjával,
  *  20% – mennyi alapanyagra van valós bolti ár.
  */
 public final class RecipeRecommender {
 
-    /** Ha egy jó áron lévő termék adagja legfeljebb ennyiszer drágább a legolcsóbbnál, azt választjuk. */
+    /** Ha egy jó áron lévő termék legfeljebb ennyiszer drágább a legolcsóbbnál, azt választjuk. */
     static final double DEAL_PREFERENCE = 1.20;
     static final double MIN_COVERAGE = 0.40;
     /** Ennyi elérhetőség alatt (a lánc boltjainak 30%-a) büntetjük a termék választását. */
     static final double AVAILABILITY_OK = 0.30;
-    /** Ha a recept legfeljebb ennyivel (15%) kér többet egész csomagoknál, nem veszünk még egyet. */
-    static final double PACKAGE_TOLERANCE = 0.15;
-
-    private static final Pattern BY_WEIGHT = Pattern.compile("(ledig|ft kg|pult|(^|\\s)[a-z]+ kg(\\s|$))");
+    /** A nagy kiszerelés akkor érdemes alternatíva, ha legalább ennyivel olcsóbb a receptre vetítve. */
+    static final double BULK_MIN_SAVING_RATIO = 0.10;
+    static final double BULK_MIN_SAVING_FT = 15;
 
     private final Catalog catalog;
     private final DealAnalyzer deals;
     private final List<String> storeIds;
     /** lánc → alapanyag-kulcs → illeszkedő bolti termékek */
     private final Map<String, Map<String, List<PriceEntry>>> index = new HashMap<>();
-    /** alapanyag-kulcs → becsült egységár (minden lánc mediánja) a hiányzó tételekhez */
+    /** alapanyag-kulcs → becsült ár az alapanyag egységére (háztartási kiszerelések mediánja) */
     private final Map<String, Double> fallbackUnitPrice = new HashMap<>();
     /** bolti termék (vonalkód|lánc) → melyik recept-alapanyagnak felel meg */
     private final Map<String, String> ingredientOf = new HashMap<>();
-    /** recept → lánc → beárazott recept (alapadagra) */
-    private final Map<String, Map<String, Suggestion>> priced = new HashMap<>();
-    /** lánc → rangsorolt ajánlatok */
-    private final Map<String, List<Suggestion>> ranked = new HashMap<>();
+    /** mód (false = háztartási, true = nagy kiszerelés) → recept → lánc → beárazott recept (alapadagra) */
+    private final Map<Boolean, Map<String, Map<String, Suggestion>>> priced = new HashMap<>();
+    /** rangsor-gyorsítótár: "lánc|választott láncok|mód" → rangsor */
+    private final Map<String, List<Suggestion>> rankCache = new ConcurrentHashMap<>();
 
     public RecipeRecommender(Catalog catalog, List<PriceEntry> entries, DealAnalyzer deals, List<String> storeIds) {
-        this.catalog = catalog;
-        this.deals = deals;
-        this.storeIds = List.copyOf(storeIds);
-        Map<String, List<Double>> allUnitPrices = new HashMap<>();
-        for (PriceEntry e : entries) {
-            for (Catalog.Product p : catalog.products().values()) {
-                if (p.tracked() && catalog.matches(p, e)) {
-                    ingredientOf.putIfAbsent(e.itemId() + "|" + e.storeId(), p.name());
-                    index.computeIfAbsent(e.storeId(), k -> new HashMap<>())
-                            .computeIfAbsent(p.key(), k -> new ArrayList<>()).add(e);
-                    double amount = amountInItemUnit(p, e, p.qty());
-                    if (!Double.isNaN(amount) && amount > 0) {
-                        // a katalógus-egységre vetített ár, hogy a különböző kiszerelések összevethetők legyenek
-                        allUnitPrices.computeIfAbsent(p.key(), k -> new ArrayList<>()).add(e.unitPrice() * amount / p.qty());
-                    }
-                }
-            }
-        }
-        allUnitPrices.forEach((k, v) -> fallbackUnitPrice.put(k, Stats.median(v)));
-
-        for (Recipe r : catalog.recipes()) {
-            Map<String, Suggestion> perStore = new LinkedHashMap<>();
-            for (String s : storeIds) perStore.put(s, price(r, s, 1.0));
-            priced.put(r.id(), perStore);
-        }
-        for (String s : storeIds) {
-            List<Suggestion> list = new ArrayList<>();
-            for (Recipe r : catalog.recipes()) {
-                Suggestion base = priced.get(r.id()).get(s);
-                if (base.coverage() < MIN_COVERAGE) continue;
-                list.add(score(base, othersCost(r.id(), s, 1.0)));
-            }
-            list.sort(Comparator.comparingDouble(Suggestion::score).reversed());
-            ranked.put(s, list);
-        }
-    }
-
-    /** A bolt rangsorolt receptjei (legjobb elöl). */
-    public List<Suggestion> suggestionsFor(String storeId) {
-        return ranked.getOrDefault(storeId, List.of());
+        this(catalog, entries, deals, storeIds, Map.of());
     }
 
     /**
-     * Egy recept egy boltban, tetszőleges adagszámra (a többi bolthoz viszonyított pontszámmal).
+     * @param forcedIngredient vonalkód → alapanyag-kulcs: kézzel/fájlból felvitt akciók, amelyek
+     *                         nem kategória szerint, hanem közvetlenül egy alapanyaghoz tartoznak
+     */
+    public RecipeRecommender(Catalog catalog, List<PriceEntry> entries, DealAnalyzer deals, List<String> storeIds,
+                             Map<String, String> forcedIngredient) {
+        this.catalog = catalog;
+        this.deals = deals;
+        this.storeIds = List.copyOf(storeIds);
+        Map<String, List<Double>> householdUnitPrices = new HashMap<>();
+        for (PriceEntry e : entries) {
+            String forced = forcedIngredient.get(e.itemId());
+            for (Catalog.Product p : catalog.products().values()) {
+                boolean match = forced != null ? forced.equals(p.key()) : p.tracked() && catalog.matches(p, e);
+                if (!match) continue;
+                ingredientOf.putIfAbsent(e.itemId() + "|" + e.storeId(), p.name());
+                index.computeIfAbsent(e.storeId(), k -> new HashMap<>())
+                        .computeIfAbsent(p.key(), k -> new ArrayList<>()).add(e);
+                Packaging.Pack pack = Packaging.of(p, e);
+                if (pack != null && (pack.kind() == Packaging.Kind.WEIGHED || pack.content() <= p.householdMax())) {
+                    householdUnitPrices.computeIfAbsent(p.key(), k -> new ArrayList<>()).add(pack.perUnit());
+                }
+            }
+        }
+        householdUnitPrices.forEach((k, v) -> fallbackUnitPrice.put(k, Stats.median(v)));
+
+        for (boolean bulk : new boolean[]{false, true}) {
+            Map<String, Map<String, Suggestion>> byRecipe = new HashMap<>();
+            for (Recipe r : catalog.recipes()) {
+                Map<String, Suggestion> perStore = new LinkedHashMap<>();
+                for (String s : storeIds) perStore.put(s, price(r, s, 1.0, bulk));
+                byRecipe.put(r.id(), perStore);
+            }
+            priced.put(bulk, byRecipe);
+        }
+    }
+
+    // ---------- lekérdezések ----------
+
+    /** A bolt rangsorolt receptjei (legjobb elöl), minden lánccal összevetve, háztartási kiszereléssel. */
+    public List<Suggestion> suggestionsFor(String storeId) {
+        return suggestionsFor(storeId, null, false);
+    }
+
+    /**
+     * A bolt rangsorolt receptjei.
+     *
+     * @param allowed a felhasználó által választott láncok (ezekhez hasonlítunk); null = mind
+     * @param bulk    nagy kiszerelések is jöhetnek
+     */
+    public List<Suggestion> suggestionsFor(String storeId, Collection<String> allowed, boolean bulk) {
+        if (!storeIds.contains(storeId)) return List.of();
+        Set<String> allow = normalizeAllowed(allowed);
+        String key = storeId + "|" + String.join(",", allow) + "|" + bulk;
+        return rankCache.computeIfAbsent(key, k -> {
+            List<Suggestion> list = new ArrayList<>();
+            for (Recipe r : catalog.recipes()) {
+                Suggestion base = priced.get(bulk).get(r.id()).get(storeId);
+                if (base.coverage() < MIN_COVERAGE) continue;
+                list.add(score(base, othersCost(r.id(), storeId, 1.0, allow, bulk)));
+            }
+            list.sort(Comparator.comparingDouble(Suggestion::score).reversed());
+            return List.copyOf(list);
+        });
+    }
+
+    /** Egy recept egy boltban, tetszőleges adagszámra, minden lánccal összevetve, háztartási kiszereléssel. */
+    public Suggestion suggestion(String recipeId, String storeId, int servings) {
+        return suggestion(recipeId, storeId, servings, null, false);
+    }
+
+    /**
+     * Egy recept egy boltban, tetszőleges adagszámra (a választott boltokhoz viszonyított pontszámmal).
      *
      * @return null, ha nincs ilyen recept vagy bolt
      */
-    public Suggestion suggestion(String recipeId, String storeId, int servings) {
-        Recipe r = catalog.recipes().stream().filter(x -> x.id().equals(recipeId)).findFirst().orElse(null);
+    public Suggestion suggestion(String recipeId, String storeId, int servings, Collection<String> allowed, boolean bulk) {
+        Recipe r = recipe(recipeId);
         if (r == null || !storeIds.contains(storeId)) return null;
         double factor = servings <= 0 ? 1.0 : servings / (double) r.servings();
-        Suggestion base = factor == 1.0 ? priced.get(r.id()).get(storeId) : price(r, storeId, factor);
-        return score(base, othersCost(r.id(), storeId, factor));
+        Suggestion base = factor == 1.0 ? priced.get(bulk).get(r.id()).get(storeId) : price(r, storeId, factor, bulk);
+        return score(base, othersCost(r.id(), storeId, factor, normalizeAllowed(allowed), bulk));
     }
 
-    /** Ugyanaz a recept minden láncban (alapadagra), a láncok sorrendjében. */
+    /** Ugyanaz a recept minden láncban (alapadagra), háztartási kiszereléssel. */
     public Map<String, Suggestion> acrossStores(String recipeId) {
-        return priced.getOrDefault(recipeId, Map.of());
+        return acrossStores(recipeId, false);
+    }
+
+    public Map<String, Suggestion> acrossStores(String recipeId, boolean bulk) {
+        return priced.get(bulk).getOrDefault(recipeId, Map.of());
     }
 
     /** Ha a bolti termék valamelyik recept alapanyaga, annak neve; különben null. */
@@ -123,69 +168,116 @@ public final class RecipeRecommender {
         return ingredientOf.get(e.itemId() + "|" + e.storeId());
     }
 
-    private double othersCost(String recipeId, String storeId, double factor) {
+    private Recipe recipe(String id) {
+        return catalog.recipes().stream().filter(x -> x.id().equals(id)).findFirst().orElse(null);
+    }
+
+    private Set<String> normalizeAllowed(Collection<String> allowed) {
+        Set<String> s = new TreeSet<>();
+        if (allowed != null) for (String a : allowed) if (storeIds.contains(a)) s.add(a);
+        if (s.isEmpty()) s.addAll(storeIds);
+        return s;
+    }
+
+    private double othersCost(String recipeId, String storeId, double factor, Set<String> allowed, boolean bulk) {
         List<Double> otherTotals = new ArrayList<>();
-        for (Map.Entry<String, Suggestion> o : priced.get(recipeId).entrySet()) {
-            if (!o.getKey().equals(storeId) && o.getValue().coverage() >= MIN_COVERAGE) {
+        for (Map.Entry<String, Suggestion> o : priced.get(bulk).get(recipeId).entrySet()) {
+            if (!o.getKey().equals(storeId) && allowed.contains(o.getKey()) && o.getValue().coverage() >= MIN_COVERAGE) {
                 otherTotals.add(o.getValue().totalCost() * factor);
             }
         }
         return otherTotals.isEmpty() ? Double.NaN : Stats.median(otherTotals);
     }
 
+    // ---------- beárazás ----------
+
+    /** Egy jelölt: bolti termék + kiszerelés + vásárlás. */
+    private record Option(PriceEntry entry, Packaging.Pack pack, Packaging.Purchase buy, Deal deal) {}
+
     /** Egy recept beárazása egy boltban (pontszám nélkül); factor = adagszám-szorzó. */
-    Suggestion price(Recipe r, String storeId, double factor) {
+    Suggestion price(Recipe r, String storeId, double factor, boolean bulkMode) {
         List<PricedIngredient> items = new ArrayList<>();
-        double total = 0, checkout = 0, staples = 0;
-        int priced = 0, real = 0, dealCount = 0;
+        double total = 0, checkout = 0, staples = 0, altTotal = 0, altCheckout = 0;
+        int pricedCount = 0, real = 0, dealCount = 0;
         Map<String, List<PriceEntry>> storeIndex = index.getOrDefault(storeId, Map.of());
         for (Ingredient ing : r.ingredients()) {
             if (ing.pantry()) {
-                items.add(new PricedIngredient(ing, null, null, 0, false, 0, 0, 0));
+                items.add(new PricedIngredient(ing, null, null, 0, false, 0, 0, 0, false, "", "", null));
                 continue;
             }
             Catalog.Product p = catalog.products().get(ing.productKey());
-            double share = ing.share() * factor;
-            double needed = share * p.qty();
-            priced++;
+            double needed = ing.share() * factor * p.qty();
+            pricedCount++;
 
-            PriceEntry best = null, bestDealEntry = null;
-            Purchase bestBuy = null, bestDealBuy = null;
-            double bestScore = Double.MAX_VALUE, bestDealScore = Double.MAX_VALUE;
+            List<Option> options = new ArrayList<>();
             for (PriceEntry e : storeIndex.getOrDefault(p.key(), List.of())) {
-                Purchase buy = buy(p, e, share, needed);
-                double s = buy.effective() / availabilityWeight(e);
-                if (s < bestScore) { bestScore = s; best = e; bestBuy = buy; }
-                if (deals.dealFor(e) != null && s < bestDealScore) { bestDealScore = s; bestDealEntry = e; bestDealBuy = buy; }
-            }
-            if (bestDealEntry != null && bestDealScore <= bestScore * DEAL_PREFERENCE) {
-                best = bestDealEntry;
-                bestBuy = bestDealBuy;
+                Packaging.Pack pack = Packaging.of(p, e);
+                if (pack == null) continue;
+                options.add(new Option(e, pack, Packaging.buy(p, pack, needed), deals.dealFor(e)));
             }
 
-            if (best != null) {
-                Deal d = deals.dealFor(best);
-                if (d != null) dealCount++;
+            PricedIngredient main;
+            if (!options.isEmpty()) {
+                List<Option> household = options.stream().filter(o -> !o.buy().bulk()).toList();
+                Option cheapest = pick(options, false);
+                Option home = household.isEmpty() ? cheapest : pick(household, true);
+                Option bulkAlt = cheapest.buy().bulk()
+                        && cheapest.buy().cost() <= home.buy().cost() * (1 - BULK_MIN_SAVING_RATIO)
+                        && home.buy().cost() - cheapest.buy().cost() >= BULK_MIN_SAVING_FT * factor
+                        ? cheapest : null;
+                Option chosen = bulkMode && bulkAlt != null ? bulkAlt : home;
+                Option other = bulkMode ? (bulkAlt != null ? home : null) : bulkAlt;
+                main = toPriced(ing, chosen, other == null ? null : toPriced(ing, other, null));
+                if (chosen.deal() != null) dealCount++;
                 real++;
-                total += bestBuy.cost();
-                if (ing.staple()) staples += bestBuy.pay();
-                else checkout += bestBuy.pay();
-                items.add(new PricedIngredient(ing, best, d, bestBuy.cost(), false,
-                        bestBuy.packages(), bestBuy.amount(), bestBuy.pay()));
             } else {
                 Double up = fallbackUnitPrice.get(p.key());
-                double est = up != null ? up * needed : p.basePrice() * share;
-                int packages = Math.max(1, (int) Math.ceil(share - PACKAGE_TOLERANCE));
-                double pay = up != null ? up * p.qty() * packages : p.basePrice() * packages;
-                total += est;
-                if (ing.staple()) staples += pay;
-                else checkout += pay;
-                items.add(new PricedIngredient(ing, null, null, est, true, packages, packages * p.qty(), pay));
+                double perUnit = up != null ? up : p.basePrice() / p.qty();
+                double est = perUnit * needed;
+                int packages = Math.max(1, (int) Math.ceil(needed / p.qty() - Packaging.PACKAGE_TOLERANCE));
+                double pay = perUnit * p.qty() * packages;
+                String text = packages + " × " + Packaging.Qty.fmt(p.qty(), p.unit()) + " (becsült)";
+                main = new PricedIngredient(ing, null, null, est, true, packages, packages * p.qty(), pay,
+                        false, text, "kb. " + Packaging.Money.ft(perUnit) + "/" + p.unit(), null);
+            }
+            items.add(main);
+            PricedIngredient alt = main.alternative() != null ? main.alternative() : main;
+            total += main.cost();
+            altTotal += alt.cost();
+            if (ing.staple()) {
+                staples += main.checkoutCost();
+            } else {
+                checkout += main.checkoutCost();
+                altCheckout += alt.checkoutCost();
             }
         }
-        double coverage = priced == 0 ? 0 : real / (double) priced;
+        double coverage = pricedCount == 0 ? 0 : real / (double) pricedCount;
         int servings = (int) Math.round(r.servings() * factor);
-        return new Suggestion(r, storeId, items, total, total, checkout, staples, dealCount, coverage, 0, servings);
+        return new Suggestion(r, storeId, items, total, total, checkout, staples, dealCount, coverage, 0, servings,
+                altTotal, altCheckout, bulkMode);
+    }
+
+    /**
+     * A legjobb jelölt. Háztartási módban a felhasznált rész + a maradék 35%-a számít,
+     * nagy kiszerelés módban csak a felhasznált rész ára. Mindkettőt az elérhetőséggel súlyozzuk,
+     * és a jó áron lévő terméket előnyben részesítjük.
+     */
+    private static Option pick(List<Option> options, boolean household) {
+        Option best = null, bestDeal = null;
+        double bestScore = Double.MAX_VALUE, bestDealScore = Double.MAX_VALUE;
+        for (Option o : options) {
+            double base = household ? o.buy().effective() : o.buy().cost();
+            double s = base / availabilityWeight(o.entry());
+            if (s < bestScore) { bestScore = s; best = o; }
+            if (o.deal() != null && s < bestDealScore) { bestDealScore = s; bestDeal = o; }
+        }
+        return bestDeal != null && bestDealScore <= bestScore * DEAL_PREFERENCE ? bestDeal : best;
+    }
+
+    private static PricedIngredient toPriced(Ingredient ing, Option o, PricedIngredient alternative) {
+        Packaging.Purchase b = o.buy();
+        return new PricedIngredient(ing, o.entry(), o.deal(), b.cost(), false, b.packages(), b.amount(), b.pay(),
+                b.bulk(), b.buyText(), o.pack().priceText(), alternative);
     }
 
     private Suggestion score(Suggestion s, double othersCost) {
@@ -203,8 +295,7 @@ public final class RecipeRecommender {
         double dealPart = realCost > 0 ? Stats.clamp01(2.0 * dealWeighted / realCost) : 0;
         double savingPart = others > 0 ? Stats.clamp01((others - s.totalCost()) / others / 0.25) : 0;
         double score = 0.45 * dealPart + 0.35 * savingPart + 0.20 * s.coverage();
-        return new Suggestion(s.recipe(), s.storeId(), s.items(), s.totalCost(), others, s.checkoutTotal(),
-                s.staplesTotal(), s.dealCount(), s.coverage(), score, s.servings());
+        return s.rescored(others, score);
     }
 
     /** Ritkán kapható termék (a lánc boltjainak kis részében) kevésbé jó választás: 0,5..1 közötti súly. */
@@ -212,108 +303,12 @@ public final class RecipeRecommender {
         return 0.5 + 0.5 * Math.min(1.0, e.availability() / AVAILABILITY_OK);
     }
 
-    /**
-     * A szükséges mennyiség a bolti termék egységében (kg / l / db), vagy NaN, ha nem váltható át.
-     * kg és l élelmiszernél jó közelítéssel felcserélhető; darab ↔ kg a katalógus darabtömegével.
-     */
-    public static double amountInItemUnit(Catalog.Product p, PriceEntry e, double needed) {
-        String a = p.unit(), b = e.unit();
-        boolean aMass = a.equals("kg") || a.equals("l"), bMass = b.equals("kg") || b.equals("l");
-        if (a.equals(b) || (aMass && bMass)) return needed;
-        if (aMass && b.equals("db")) {
-            double perUnit = isBunch(p, e) ? p.bunchWeight() / e.quantity() : p.pieceWeight();
-            return perUnit > 0 ? needed / perUnit : Double.NaN;
-        }
-        if (a.equals("db") && bMass) {
-            return p.pieceWeight() > 0 ? needed * p.pieceWeight() : Double.NaN;
-        }
-        return Double.NaN;
-    }
+    // ---------- kompatibilitás a régebbi tesztekkel / hívókkal ----------
 
-    private static boolean isBunch(Catalog.Product p, PriceEntry e) {
-        return p.bunchWeight() > 0 && Catalog.normalize(e.productName()).contains("csomo");
-    }
-
-    /**
-     * Egy termék megvásárlása a recepthez.
-     *
-     * @param cost     a felhasznált mennyiség ára
-     * @param packages hány csomag (0 = mérlegelős)
-     * @param amount   összesen megvett mennyiség a termék egységében
-     * @param pay      a pénztárnál fizetendő
-     */
-    public record Purchase(double cost, int packages, double amount, double pay) {
-        /**
-         * Választási súly: a felhasznált rész ára + a kényszerűen megvett maradék 35%-a.
-         * Így nem javasol 30 tojásos tálcát 6 tojáshoz csak azért, mert darabra 2 forinttal olcsóbb,
-         * de egy jóval kedvezőbb egységárú nagyobb kiszerelést továbbra is választhat.
-         */
-        public double effective() {
-            return cost + 0.35 * Math.max(0, pay - cost);
-        }
-    }
-
-    public static Purchase buy(Catalog.Product p, PriceEntry e, double share, double needed) {
-        double amount = amountInItemUnit(p, e, needed);
-        boolean known = !Double.isNaN(amount) && e.unitPrice() > 0;
-        double cost = known ? e.unitPrice() * amount : e.price() * share;
-
-        if (e.unit().equals("kg") && Math.abs(e.quantity() - 1) < 1e-9) {
-            // kilós árú termék: vagy mérlegelős, vagy a névben szereplő tömegű csomag (pl. "ca. 500g")
-            if (soldByWeight(e)) return new Purchase(cost, 0, known ? amount : share, cost);
-            double w = packageWeightFromName(e.productName());
-            if (known && !Double.isNaN(w)) {
-                int n = Math.max(1, (int) Math.ceil(amount / w - PACKAGE_TOLERANCE));
-                return new Purchase(cost, n, n * w, n * w * e.unitPrice());
-            }
-        }
-        double ratio = known ? amount / e.quantity() : share;
-        // 15% tűrés: ha a recept csak kicsit többet kér egy csomagnál, nem veszünk még egyet
-        int n = Math.max(1, (int) Math.ceil(ratio - PACKAGE_TOLERANCE));
-        return new Purchase(cost, n, n * e.quantity(), n * e.price());
-    }
-
-    /** A receptre jutó költség: egységár × szükséges mennyiség; ha nem váltható át, csomagár × hányad. */
-    static double portionCost(Catalog.Product p, PriceEntry e, double share, double needed) {
-        return buy(p, e, share, needed).cost();
-    }
-
-    /** Mérlegelős (lédig, Ft/kg, pultos) áru: annyit veszel, amennyi kell. */
-    static boolean soldByWeight(PriceEntry e) {
-        if (!(e.unit().equals("kg") && Math.abs(e.quantity() - 1) < 1e-9)) return false;
-        String n = Catalog.normalize(e.productName());
-        if (BY_WEIGHT.matcher(n).find()) return true;
-        // kilós egységű, de a névben nincs csomagtömeg: Ft/kg-os, mérlegelős áru
-        return Double.isNaN(packageWeightFromName(e.productName()));
-    }
-
-    private static final Pattern WEIGHT_IN_NAME =
-            Pattern.compile("(\\d+(?:[.,]\\d+)?)\\s*(kg|dkg|g|gr)(?![a-z])", Pattern.CASE_INSENSITIVE);
-
-    /** A terméknévben szereplő csomagtömeg kg-ban ("ca. 500g" → 0,5; "1,4kg" → 1,4), vagy NaN. */
-    public static double packageWeightFromName(String name) {
-        java.util.regex.Matcher m = WEIGHT_IN_NAME.matcher(name == null ? "" : name);
-        double found = Double.NaN;
-        while (m.find()) {
-            double v;
-            try {
-                v = Double.parseDouble(m.group(1).replace(',', '.'));
-            } catch (NumberFormatException ex) {
-                continue;
-            }
-            String u = m.group(2).toLowerCase();
-            double kg = switch (u) {
-                case "kg" -> v;
-                case "dkg" -> v / 100;
-                default -> v / 1000;
-            };
-            if (kg > 0.005 && kg <= 10) found = kg; // az utolsó értelmes tömeg számít
-        }
-        return found;
-    }
-
-    /** Hány csomagot kell megvenni (0 = mérlegelős). */
-    static int packages(Catalog.Product p, PriceEntry e, double share, double needed) {
-        return buy(p, e, share, needed).packages();
+    /** A szükséges mennyiség ára egy tételből (lásd {@link Packaging}). */
+    public static Packaging.Purchase buy(Catalog.Product p, PriceEntry e, double needed) {
+        Packaging.Pack pack = Packaging.of(p, e);
+        if (pack == null) throw new IllegalArgumentException("Nem értelmezhető kiszerelés: " + e.productName());
+        return Packaging.buy(p, pack, needed);
     }
 }

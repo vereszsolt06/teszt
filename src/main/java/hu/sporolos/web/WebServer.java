@@ -4,7 +4,10 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import hu.sporolos.core.Json;
 import hu.sporolos.core.PriceRepository;
+import hu.sporolos.core.PromoMerger;
 import hu.sporolos.data.Catalog;
+import hu.sporolos.data.Promo;
+import hu.sporolos.data.PromoStore;
 import hu.sporolos.model.Models.PriceEntry;
 import hu.sporolos.model.Models.Store;
 import hu.sporolos.model.Models.Suggestion;
@@ -24,6 +27,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.zip.GZIPOutputStream;
@@ -31,16 +36,27 @@ import java.util.zip.GZIPOutputStream;
 /**
  * Beépített JDK HTTP szerver: REST API a /api alatt, statikus fájlok (resources/static) minden máshol.
  *
+ * Közös paraméterek (minden boltfüggő végpontnál):
+ *   stores=aldi,lidl,…  a felhasználó boltjai (az összehasonlítás és a megtakarítás csak ezekhez számol)
+ *   bulk=1              nagy kiszerelések is jöhetnek
+ *   cards=lidl,tesco    van hűségkártyája/appja ezekhez a láncokhoz (a kártyás akciók csak így számítanak)
+ *
  * Végpontok:
- *  GET  /api/status                                   – adatforrás, dátum, boltok
- *  GET  /api/suggestions?store=lidl&tag=vega&limit=12 – rangsorolt receptek egy boltra
- *  GET  /api/recipe?id=lecso&store=lidl&servings=6    – egy recept bevásárlólistával + ára minden láncban
- *  GET  /api/deals?store=lidl&limit=30&ingredients=true – a bolt kiemelt árai
- *  GET  /api/item?id=5998…                            – egy termék ára minden láncban
- *  GET  /api/search?q=tej&store=lidl&limit=30         – keresés a termékek között
- *  POST /api/refresh                                  – árak újratöltése
+ *  GET    /api/status                                   – adatforrás, dátum, boltok
+ *  GET    /api/suggestions?store=lidl&tag=vega&limit=12 – rangsorolt receptek egy boltra
+ *  GET    /api/recipe?id=lecso&store=lidl&servings=6    – egy recept bevásárlólistával + ára a boltjaidban
+ *  GET    /api/deals?store=lidl&limit=30&ingredients=true – a bolt kiemelt árai
+ *  GET    /api/item?id=5998…                            – egy termék ára minden láncban
+ *  GET    /api/search?q=tej&store=lidl&limit=30         – keresés a termékek között
+ *  GET    /api/ingredients                              – a recept-alapanyagok listája (akció felviteléhez)
+ *  GET    /api/promos                                   – a láncok saját akciói és állapotuk
+ *  POST   /api/promos                                   – új akció (JSON), vagy import: {"text": "<CSV vagy JSON>"}
+ *  DELETE /api/promos?id=…                              – kézi akció törlése
+ *  POST   /api/refresh                                  – árak újratöltése
  */
 public final class WebServer {
+
+    private static final int MAX_BODY = 1_000_000;
 
     private final PriceRepository repo;
     private HttpServer server;
@@ -65,24 +81,37 @@ public final class WebServer {
         if (executor != null) executor.shutdownNow();
     }
 
+    /** A kérés közös beállításai. */
+    private record Prefs(Set<String> stores, boolean bulk, Set<String> cards) {}
+
     private void api(HttpExchange ex) throws IOException {
         try {
             String path = ex.getRequestURI().getPath();
+            String method = ex.getRequestMethod();
             Map<String, String> q = query(ex.getRequestURI().getRawQuery());
-            boolean post = "POST".equals(ex.getRequestMethod());
-            if (path.equals("/api/refresh") != post) {
-                send(ex, 405, "application/json; charset=utf-8",
-                        Json.write(Map.of("error", path.equals("/api/refresh") ? "POST kérés kell" : "GET kérés kell")));
+            boolean isRefresh = path.equals("/api/refresh");
+            boolean isPromos = path.equals("/api/promos");
+            boolean allowed = method.equals("GET") && !isRefresh
+                    || method.equals("POST") && (isRefresh || isPromos)
+                    || method.equals("DELETE") && isPromos;
+            if (!allowed) {
+                send(ex, 405, "application/json; charset=utf-8", Json.write(Map.of("error", "Nem támogatott kérés: " + method)));
                 return;
             }
             Object body = switch (path) {
-                case "/api/status" -> status(repo.get());
-                case "/api/deals" -> deals(repo.get(), q);
-                case "/api/suggestions" -> suggestions(repo.get(), q);
-                case "/api/recipe" -> recipe(repo.get(), q);
-                case "/api/item" -> item(repo.get(), q);
-                case "/api/search" -> search(repo.get(), q);
-                case "/api/refresh" -> status(repo.reload());
+                case "/api/status" -> status(repo.get(), prefs(q));
+                case "/api/deals" -> deals(repo.get(), q, prefs(q));
+                case "/api/suggestions" -> suggestions(repo.get(), q, prefs(q));
+                case "/api/recipe" -> recipe(repo.get(), q, prefs(q));
+                case "/api/item" -> item(repo.get(), q, prefs(q));
+                case "/api/search" -> search(repo.get(), q, prefs(q));
+                case "/api/ingredients" -> ingredients();
+                case "/api/promos" -> switch (method) {
+                    case "POST" -> addPromo(readBody(ex), prefs(q));
+                    case "DELETE" -> deletePromo(q, prefs(q));
+                    default -> promos(repo.get(), prefs(q));
+                };
+                case "/api/refresh" -> status(repo.reload(), prefs(q));
                 default -> throw new NotFound("Ismeretlen végpont: " + path);
             };
             send(ex, 200, "application/json; charset=utf-8", Json.write(body));
@@ -97,9 +126,21 @@ public final class WebServer {
         }
     }
 
+    private static Prefs prefs(Map<String, String> q) {
+        return new Prefs(csv(q.get("stores")), "1".equals(q.get("bulk")) || "true".equals(q.get("bulk")), csv(q.get("cards")));
+    }
+
+    private static Set<String> csv(String s) {
+        Set<String> out = new TreeSet<>();
+        if (s == null) return out;
+        for (String x : s.split(",")) if (!x.isBlank()) out.add(x.trim());
+        return out;
+    }
+
     // ---------- végpontok ----------
 
-    private static Map<String, Object> status(PriceRepository.State s) {
+    private Map<String, Object> status(PriceRepository.State s, Prefs p) {
+        var a = s.analysis(p.cards());
         Map<String, Object> m = new LinkedHashMap<>();
         LocalDate date = s.snapshot().date();
         m.put("source", s.snapshot().source());
@@ -110,15 +151,17 @@ public final class WebServer {
         m.put("historyDays", s.historyDays());
         m.put("loadedAt", s.loadedAt().toString());
         m.put("warnings", s.warnings());
+        m.put("activePromos", a.promoStatuses().stream().filter(x -> x.status() == PromoMerger.Status.ACTIVE).count());
         List<Object> stores = new ArrayList<>();
         for (Store st : s.stores()) {
             Map<String, Object> sm = new LinkedHashMap<>();
             sm.put("id", st.id());
             sm.put("name", st.name());
             sm.put("color", st.color());
+            sm.put("cardName", st.cardName());
             sm.put("itemCount", s.itemCounts().getOrDefault(st.id(), 0));
-            sm.put("dealCount", s.deals().dealCount(st.id()));
-            List<Suggestion> sug = s.recommender().suggestionsFor(st.id());
+            sm.put("dealCount", a.deals().dealCount(st.id()));
+            List<Suggestion> sug = a.recommender().suggestionsFor(st.id(), p.stores(), p.bulk());
             sm.put("recipeCount", sug.size());
             sm.put("topScore", sug.isEmpty() ? 0 : Math.round(sug.get(0).score() * 1000) / 1000.0);
             stores.add(sm);
@@ -127,39 +170,41 @@ public final class WebServer {
         return m;
     }
 
-    private static Object deals(PriceRepository.State s, Map<String, String> q) {
+    private static Object deals(PriceRepository.State s, Map<String, String> q, Prefs p) {
         String store = requireStore(s, q);
+        var a = s.analysis(p.cards());
         int limit = intParam(q, "limit", 30, 1, 200);
         boolean onlyIngredients = "true".equals(q.get("ingredients"));
-        var rec = s.recommender();
-        return s.deals().dealsForStore(store, onlyIngredients ? 100_000 : limit).stream()
+        var rec = a.recommender();
+        return a.deals().dealsForStore(store, onlyIngredients ? 100_000 : limit).stream()
                 .filter(d -> !onlyIngredients || rec.ingredientFor(d.entry()) != null)
                 .limit(limit)
                 .map(d -> ApiMapper.deal(d, rec.ingredientFor(d.entry())))
                 .toList();
     }
 
-    private static Object suggestions(PriceRepository.State s, Map<String, String> q) {
+    private static Object suggestions(PriceRepository.State s, Map<String, String> q, Prefs p) {
         String store = requireStore(s, q);
         int limit = intParam(q, "limit", 12, 1, 200);
         String tag = q.getOrDefault("tag", "");
-        return s.recommender().suggestionsFor(store).stream()
+        return s.analysis(p.cards()).recommender().suggestionsFor(store, p.stores(), p.bulk()).stream()
                 .filter(x -> tag.isBlank() || x.recipe().tags().contains(tag))
                 .limit(limit)
                 .map(ApiMapper::suggestion).toList();
     }
 
-    private static Object recipe(PriceRepository.State s, Map<String, String> q) {
+    private static Object recipe(PriceRepository.State s, Map<String, String> q, Prefs p) {
         String store = requireStore(s, q);
         String id = q.getOrDefault("id", "");
         int servings = intParam(q, "servings", 0, 0, 40);
-        var rec = s.recommender();
-        Suggestion main = rec.suggestion(id, store, servings);
+        var rec = s.analysis(p.cards()).recommender();
+        Suggestion main = rec.suggestion(id, store, servings, p.stores(), p.bulk());
         if (main == null) throw new NotFound("Nincs ilyen recept: " + id);
         Map<String, Object> m = new LinkedHashMap<>(ApiMapper.suggestion(main));
         List<Object> stores = new ArrayList<>();
         for (Store st : s.stores()) {
-            Suggestion other = rec.suggestion(id, st.id(), main.servings());
+            if (!p.stores().isEmpty() && !p.stores().contains(st.id()) && !st.id().equals(store)) continue;
+            Suggestion other = rec.suggestion(id, st.id(), main.servings(), p.stores(), p.bulk());
             Map<String, Object> b = ApiMapper.suggestionBrief(other);
             b.put("name", st.name());
             b.put("color", st.color());
@@ -169,9 +214,10 @@ public final class WebServer {
         return m;
     }
 
-    private static Object item(PriceRepository.State s, Map<String, String> q) {
+    private static Object item(PriceRepository.State s, Map<String, String> q, Prefs p) {
         String id = q.getOrDefault("id", "");
-        List<PriceEntry> offers = s.byItem().get(id);
+        var a = s.analysis(p.cards());
+        List<PriceEntry> offers = a.byItem().get(id);
         if (offers == null || offers.isEmpty()) throw new NotFound("Nincs ilyen termék: " + id);
         Map<String, Object> m = new LinkedHashMap<>();
         PriceEntry first = offers.get(0);
@@ -182,21 +228,23 @@ public final class WebServer {
         offers.stream().sorted(Comparator.comparingDouble(PriceEntry::price)).forEach(e -> {
             Map<String, Object> o = ApiMapper.entry(e);
             o.put("storeName", storeName(s, e.storeId()));
-            o.put("deal", ApiMapper.dealSummary(s.deals().dealFor(e)));
+            o.put("mine", p.stores().isEmpty() || p.stores().contains(e.storeId()));
+            o.put("deal", ApiMapper.dealSummary(a.deals().dealFor(e)));
             list.add(o);
         });
         m.put("offers", list);
         return m;
     }
 
-    private static Object search(PriceRepository.State s, Map<String, String> q) {
+    private static Object search(PriceRepository.State s, Map<String, String> q, Prefs p) {
         String query = Catalog.normalize(q.getOrDefault("q", ""));
         if (query.length() < 2) throw new IllegalArgumentException("Legalább 2 karakteres keresőszó kell");
         String store = q.get("store");
+        var a = s.analysis(p.cards());
         int limit = intParam(q, "limit", 30, 1, 100);
         List<String> tokens = Arrays.asList(query.split(" "));
         List<PriceEntry> hits = new ArrayList<>();
-        for (List<PriceEntry> offers : s.byItem().values()) {
+        for (List<PriceEntry> offers : a.byItem().values()) {
             for (PriceEntry e : offers) {
                 if (store != null && !store.isBlank() && !e.storeId().equals(store)) continue;
                 String n = Catalog.normalize(e.productName() + " " + e.categoryName());
@@ -207,12 +255,94 @@ public final class WebServer {
         return hits.stream().limit(limit).map(e -> {
             Map<String, Object> o = ApiMapper.entry(e);
             o.put("storeName", storeName(s, e.storeId()));
-            o.put("deal", ApiMapper.dealSummary(s.deals().dealFor(e)));
+            o.put("deal", ApiMapper.dealSummary(a.deals().dealFor(e)));
             return o;
         }).toList();
     }
 
+    private Object ingredients() {
+        List<Object> out = new ArrayList<>();
+        for (Catalog.Product p : repo.catalog().products().values()) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("key", p.key());
+            m.put("name", p.name());
+            m.put("unit", p.unit());
+            m.put("qty", p.qty());
+            m.put("tracked", p.tracked());
+            out.add(m);
+        }
+        out.sort(Comparator.comparing(o -> String.valueOf(((Map<?, ?>) o).get("name")), java.text.Collator.getInstance(java.util.Locale.forLanguageTag("hu"))));
+        return out;
+    }
+
+    private Object promos(PriceRepository.State s, Prefs p) {
+        List<Object> list = new ArrayList<>();
+        for (PromoMerger.PromoStatus ps : s.analysis(p.cards()).promoStatuses()) {
+            Map<String, Object> m = new LinkedHashMap<>(ps.promo().toJson());
+            m.put("storeName", storeName(s, ps.promo().storeId()));
+            Catalog.Product prod = ps.promo().ingredientKey() == null ? null : repo.catalog().products().get(ps.promo().ingredientKey());
+            m.put("ingredientName", prod == null ? null : prod.name());
+            m.put("status", ps.status().name());
+            m.put("statusText", ps.status().label);
+            m.put("matchedName", ps.matchedName());
+            m.put("deletable", "kézi".equals(ps.promo().source()));
+            list.add(m);
+        }
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("promos", list);
+        out.put("warnings", s.warnings().stream().filter(w -> w.startsWith("Akció")).toList());
+        out.put("enabled", repo.promoStore() != null);
+        return out;
+    }
+
+    private Object addPromo(String body, Prefs p) throws IOException {
+        PromoStore store = requirePromoStore();
+        Map<String, Object> in = Json.obj(Json.parse(body));
+        List<String> skipped = new ArrayList<>();
+        int added;
+        if (in.containsKey("text")) {
+            PromoStore.Loaded r = store.importText(String.valueOf(in.get("text")));
+            added = r.promos().size();
+            skipped.addAll(r.warnings());
+        } else {
+            Promo promo = Promo.fromJson(in, "kézi");
+            if (!repo.catalog().stores().containsKey(promo.storeId())) {
+                throw new IllegalArgumentException("Ismeretlen bolt: " + promo.storeId());
+            }
+            if (promo.ingredientKey() == null && promo.itemId() == null) {
+                throw new IllegalArgumentException("Válaszd ki, melyik alapanyaghoz tartozik az akció");
+            }
+            store.add(promo);
+            added = 1;
+        }
+        PriceRepository.State s = repo.reloadPromos();
+        Map<String, Object> out = new LinkedHashMap<>(Json.obj(promos(s, p)));
+        out.put("added", added);
+        out.put("skipped", skipped);
+        return out;
+    }
+
+    private Object deletePromo(Map<String, String> q, Prefs p) throws IOException {
+        PromoStore store = requirePromoStore();
+        String id = q.getOrDefault("id", "");
+        if (!store.remove(id)) throw new NotFound("Nincs ilyen kézi akció: " + id);
+        return promos(repo.reloadPromos(), p);
+    }
+
+    private PromoStore requirePromoStore() {
+        if (repo.promoStore() == null) throw new IllegalArgumentException("Az akciók kezelése nincs bekapcsolva");
+        return repo.promoStore();
+    }
+
     // ---------- segédek ----------
+
+    private static String readBody(HttpExchange ex) throws IOException {
+        try (InputStream in = ex.getRequestBody()) {
+            byte[] data = in.readNBytes(MAX_BODY + 1);
+            if (data.length > MAX_BODY) throw new IllegalArgumentException("Túl nagy kérés (legfeljebb 1 MB)");
+            return new String(data, StandardCharsets.UTF_8);
+        }
+    }
 
     private static String storeName(PriceRepository.State s, String id) {
         return s.stores().stream().filter(x -> x.id().equals(id)).map(Store::name).findFirst().orElse(id);

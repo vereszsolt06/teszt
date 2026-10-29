@@ -24,21 +24,28 @@ import java.util.stream.Collectors;
  */
 public final class Catalog {
 
-    /** Recept-alapanyag. Ha categoryIds üres, az Árfigyelő nem követi, ilyenkor basePrice a becslés. */
     /**
-     * Recept-alapanyag.
+     * Recept-alapanyag. Ha categoryIds üres, az Árfigyelő nem követi, ilyenkor basePrice a becslés.
      *
      * @param keywords        ha nem üres, a bolti termék nevének tartalmaznia kell valamelyiket
      * @param excludeKeywords ha a bolti termék neve ezek valamelyikét tartalmazza, nem illeszkedik
      * @param pieceWeight     egy darab tömege kg-ban (darabos ↔ kilós termékek átváltásához; 0 = ismeretlen)
      * @param bunchWeight     egy "csomós" (1 db-os) kiszerelés tömege kg-ban (pl. csomós répa); 0 = nincs
      * @param staple          alapvető kamraáru (olaj, liszt, cukor), ami többnyire otthon van
+     * @param packaged        csak csomagolva kapható (sosem mérlegelős)
+     * @param maxPack         a háztartási kiszerelés felső határa az alapanyag egységében; 0 = qty × 1,5
      */
     public record Product(String key, String name, double qty, String unit, double basePrice,
                           Set<Integer> categoryIds, List<String> keywords, List<String> excludeKeywords,
-                          double pieceWeight, double bunchWeight, boolean staple) {
+                          double pieceWeight, double bunchWeight, boolean staple, boolean packaged,
+                          double maxPack) {
         public boolean tracked() {
             return !categoryIds.isEmpty();
+        }
+
+        /** A háztartási kiszerelés felső határa. */
+        public double householdMax() {
+            return maxPack > 0 ? maxPack : qty * 1.5;
         }
     }
 
@@ -63,7 +70,8 @@ public final class Catalog {
         foodCategoryMaxId = (int) Json.num(root.get("foodCategoryMaxId"), 122);
         for (Object o : Json.arr(root.get("stores"))) {
             Map<String, Object> s = Json.obj(o);
-            Store st = new Store(Json.str(s.get("id")), Json.str(s.get("name")), Json.str(s.get("color")));
+            Store st = new Store(Json.str(s.get("id")), Json.str(s.get("name")), Json.str(s.get("color")),
+                    Json.str(s.get("card")));
             stores.put(st.id(), new StoreInfo(st, Json.num(s.get("factor"), 1.0)));
         }
         for (Object o : Json.arr(root.get("products"))) {
@@ -75,7 +83,8 @@ public final class Catalog {
             Product prod = new Product(Json.str(p.get("key")), Json.str(p.get("name")),
                     Json.num(p.get("qty"), 1), Json.str(p.get("unit")), Json.num(p.get("basePrice"), 0),
                     cats, kws, excl, Json.num(p.get("pieceWeight"), 0), Json.num(p.get("bunchWeight"), 0),
-                    Boolean.TRUE.equals(p.get("staple")));
+                    Boolean.TRUE.equals(p.get("staple")), Boolean.TRUE.equals(p.get("packaged")),
+                    Json.num(p.get("maxPack"), 0));
             if (products.containsKey(prod.key())) throw new IllegalStateException("Duplikált alapanyag: " + prod.key());
             products.put(prod.key(), prod);
         }
@@ -149,7 +158,7 @@ public final class Catalog {
         }
         String id = n.replace(' ', '-');
         String[] palette = {"#5b6b5f", "#7a4e8c", "#a0522d", "#2f6f73", "#8a6d1d"};
-        stores.put(id, new StoreInfo(new Store(id, raw.trim(), palette[Math.floorMod(id.hashCode(), palette.length)]), 1.0));
+        stores.put(id, new StoreInfo(new Store(id, raw.trim(), palette[Math.floorMod(id.hashCode(), palette.length)], null), 1.0));
         return id;
     }
 
