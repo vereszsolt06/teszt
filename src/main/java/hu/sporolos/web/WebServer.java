@@ -3,6 +3,7 @@ package hu.sporolos.web;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import hu.sporolos.core.Json;
+import hu.sporolos.core.Packaging;
 import hu.sporolos.core.PriceRepository;
 import hu.sporolos.core.PromoMerger;
 import hu.sporolos.data.Catalog;
@@ -49,6 +50,9 @@ import java.util.zip.GZIPOutputStream;
  *  GET    /api/item?id=5998…                            – egy termék ára minden láncban
  *  GET    /api/search?q=tej&store=lidl&limit=30         – keresés a termékek között
  *  GET    /api/ingredients                              – a recept-alapanyagok listája (akció felviteléhez)
+ *  GET    /api/plan?store=lidl&people=2&dinners=5&budget=15000&diets=vega&equipment=tuzhely,suto
+ *              &liked=a,b&disliked=c&keep=a,_,b&exclude=d&seed=42 – heti vacsoraterv közös bevásárlólistával
+ *  GET    /api/recipes?store=lidl&diets=…&equipment=…    – az összes recept (képpel, tápértékkel, árral)
  *  GET    /api/promos                                   – a láncok saját akciói és állapotuk
  *  POST   /api/promos                                   – új akció (JSON), vagy import: {"text": "<CSV vagy JSON>"}
  *  DELETE /api/promos?id=…                              – kézi akció törlése
@@ -59,11 +63,14 @@ public final class WebServer {
     private static final int MAX_BODY = 1_000_000;
 
     private final PriceRepository repo;
+    private final RecipeArt art;
     private HttpServer server;
     private ExecutorService executor;
 
     public WebServer(PriceRepository repo) {
         this.repo = repo;
+        this.art = new RecipeArt(repo.catalog());
+        ApiMapper.catalog = repo.catalog();
     }
 
     public int start(String host, int port) throws IOException {
@@ -106,6 +113,8 @@ public final class WebServer {
                 case "/api/item" -> item(repo.get(), q, prefs(q));
                 case "/api/search" -> search(repo.get(), q, prefs(q));
                 case "/api/ingredients" -> ingredients();
+                case "/api/plan" -> plan(repo.get(), q, prefs(q));
+                case "/api/recipes" -> recipes(repo.get(), q, prefs(q));
                 case "/api/promos" -> switch (method) {
                     case "POST" -> addPromo(readBody(ex), prefs(q));
                     case "DELETE" -> deletePromo(q, prefs(q));
@@ -260,6 +269,81 @@ public final class WebServer {
         }).toList();
     }
 
+    private Object plan(PriceRepository.State s, Map<String, String> q, Prefs p) {
+        String store = requireStore(s, q);
+        var a = s.analysis(p.cards());
+        List<String> keep = new ArrayList<>();
+        for (String x : q.getOrDefault("keep", "").split(",", -1)) keep.add(x.equals("_") || x.isBlank() ? null : x.trim());
+        var req = new hu.sporolos.core.WeeklyPlanner.Request(
+                intParam(q, "people", 2, 1, 12), intParam(q, "dinners", 5, 1, 7), intParam(q, "budget", 0, 0, 1_000_000),
+                csv(q.get("diets")), csv(q.get("equipment")), csv(q.get("liked")), csv(q.get("disliked")),
+                keep, csv(q.get("exclude")), longParam(q, "seed", 1), p.stores(), p.bulk());
+        var plan = new hu.sporolos.core.WeeklyPlanner(repo.catalog(), a.recommender()).plan(store, req);
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("store", store);
+        m.put("storeName", storeName(s, store));
+        m.put("people", req.people());
+        m.put("budget", plan.budget());
+        m.put("checkoutTotal", plan.checkoutTotal());
+        m.put("staplesTotal", plan.staplesTotal());
+        m.put("overBudget", plan.overBudget());
+        m.put("avgKcal", Math.round(plan.avgKcal()));
+        m.put("avgProtein", Math.round(plan.avgProtein()));
+        m.put("candidates", plan.candidateCount());
+        m.put("notes", plan.notes());
+        m.put("pantry", plan.pantry());
+        List<Object> days = new ArrayList<>();
+        for (var d : plan.days()) {
+            Map<String, Object> dm = new LinkedHashMap<>();
+            dm.put("label", d.label());
+            dm.put("kept", d.kept());
+            dm.put("shareOfList", d.shareOfList());
+            dm.put("suggestion", ApiMapper.suggestion(d.suggestion()));
+            days.add(dm);
+        }
+        m.put("days", days);
+        List<Object> aisles = new ArrayList<>();
+        for (var e : hu.sporolos.core.WeeklyPlanner.byAisle(plan).entrySet()) {
+            Map<String, Object> am = new LinkedHashMap<>();
+            am.put("aisle", e.getKey());
+            List<Object> items = new ArrayList<>();
+            for (var it : e.getValue()) {
+                Map<String, Object> im = new LinkedHashMap<>(ApiMapper.ingredient(it.priced()));
+                im.put("label", it.product().name());
+                im.put("needed", Packaging.Qty.fmt(it.needed(), it.product().unit()));
+                im.put("usedIn", it.usedIn());
+                im.put("leftover", it.leftover() > 0.0001 ? Packaging.Qty.fmt(it.leftover(), it.product().unit()) : null);
+                items.add(im);
+            }
+            am.put("items", items);
+            aisles.add(am);
+        }
+        m.put("aisles", aisles);
+        return m;
+    }
+
+    private Object recipes(PriceRepository.State s, Map<String, String> q, Prefs p) {
+        String store = requireStore(s, q);
+        var rec = s.analysis(p.cards()).recommender();
+        Set<String> diets = csv(q.get("diets")), equipment = csv(q.get("equipment"));
+        List<Object> out = new ArrayList<>();
+        for (var r : repo.catalog().recipes()) {
+            var meta = repo.catalog().meta(r.id());
+            if (meta != null && (!meta.fits(diets) || !meta.cookableWith(equipment))) continue;
+            Suggestion sug = rec.suggestion(r.id(), store, 0, p.stores(), p.bulk());
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("recipe", ApiMapper.recipe(r));
+            if (sug != null) {
+                m.put("totalCost", sug.totalCost());
+                m.put("checkoutTotal", sug.checkoutTotal());
+                m.put("dealCount", sug.dealCount());
+                m.put("coverage", Math.round(sug.coverage() * 100) / 100.0);
+            }
+            out.add(m);
+        }
+        return out;
+    }
+
     private Object ingredients() {
         List<Object> out = new ArrayList<>();
         for (Catalog.Product p : repo.catalog().products().values()) {
@@ -356,6 +440,14 @@ public final class WebServer {
         return store;
     }
 
+    private static long longParam(Map<String, String> q, String name, long def) {
+        try {
+            return Long.parseLong(q.getOrDefault(name, String.valueOf(def)));
+        } catch (NumberFormatException e) {
+            return def;
+        }
+    }
+
     private static int intParam(Map<String, String> q, String name, int def, int min, int max) {
         try {
             return Math.max(min, Math.min(max, Integer.parseInt(q.getOrDefault(name, String.valueOf(def)))));
@@ -382,6 +474,17 @@ public final class WebServer {
 
     private void staticFile(HttpExchange ex) throws IOException {
         String path = ex.getRequestURI().getPath();
+        if (path.startsWith("/img/recipe/") && path.endsWith(".svg")) {
+            String id = path.substring("/img/recipe/".length(), path.length() - 4);
+            String svg = id.matches("[a-z0-9-]{1,60}") ? art.svg(id) : null;
+            if (svg == null) {
+                send(ex, 404, "text/plain; charset=utf-8", "Nincs ilyen recept: " + id);
+                return;
+            }
+            ex.getResponseHeaders().set("Cache-Control", "public, max-age=86400");
+            sendBytes(ex, 200, "image/svg+xml; charset=utf-8", svg.getBytes(StandardCharsets.UTF_8));
+            return;
+        }
         if (path.equals("/") || path.isEmpty()) path = "/index.html";
         if (path.contains("..") || path.contains("\\")) {
             send(ex, 400, "text/plain; charset=utf-8", "Hibás útvonal");

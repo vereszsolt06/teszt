@@ -208,37 +208,10 @@ public final class RecipeRecommender {
             Catalog.Product p = catalog.products().get(ing.productKey());
             double needed = ing.share() * factor * p.qty();
             pricedCount++;
-
-            List<Option> options = new ArrayList<>();
-            for (PriceEntry e : storeIndex.getOrDefault(p.key(), List.of())) {
-                Packaging.Pack pack = Packaging.of(p, e);
-                if (pack == null) continue;
-                options.add(new Option(e, pack, Packaging.buy(p, pack, needed), deals.dealFor(e)));
-            }
-
-            PricedIngredient main;
-            if (!options.isEmpty()) {
-                List<Option> household = options.stream().filter(o -> !o.buy().bulk()).toList();
-                Option cheapest = pick(options, false);
-                Option home = household.isEmpty() ? cheapest : pick(household, true);
-                Option bulkAlt = cheapest.buy().bulk()
-                        && cheapest.buy().cost() <= home.buy().cost() * (1 - BULK_MIN_SAVING_RATIO)
-                        && home.buy().cost() - cheapest.buy().cost() >= BULK_MIN_SAVING_FT * factor
-                        ? cheapest : null;
-                Option chosen = bulkMode && bulkAlt != null ? bulkAlt : home;
-                Option other = bulkMode ? (bulkAlt != null ? home : null) : bulkAlt;
-                main = toPriced(ing, chosen, other == null ? null : toPriced(ing, other, null));
-                if (chosen.deal() != null) dealCount++;
+            PricedIngredient main = priceNeed(storeId, ing, p, needed, bulkMode, factor);
+            if (!main.estimated()) {
                 real++;
-            } else {
-                Double up = fallbackUnitPrice.get(p.key());
-                double perUnit = up != null ? up : p.basePrice() / p.qty();
-                double est = perUnit * needed;
-                int packages = Math.max(1, (int) Math.ceil(needed / p.qty() - Packaging.PACKAGE_TOLERANCE));
-                double pay = perUnit * p.qty() * packages;
-                String text = packages + " × " + Packaging.Qty.fmt(p.qty(), p.unit()) + " (becsült)";
-                main = new PricedIngredient(ing, null, null, est, true, packages, packages * p.qty(), pay,
-                        false, text, "kb. " + Packaging.Money.ft(perUnit) + "/" + p.unit(), null);
+                if (main.deal() != null) dealCount++;
             }
             items.add(main);
             PricedIngredient alt = main.alternative() != null ? main.alternative() : main;
@@ -255,6 +228,43 @@ public final class RecipeRecommender {
         int servings = (int) Math.round(r.servings() * factor);
         return new Suggestion(r, storeId, items, total, total, checkout, staples, dealCount, coverage, 0, servings,
                 altTotal, altCheckout, bulkMode);
+    }
+
+    /**
+     * Egy alapanyag adott mennyiségének beárazása egy boltban (a recepten kívül is, pl. a heti
+     * bevásárlólista összesített mennyiségeire).
+     *
+     * @param factor a minimum-megtakarítás küszöbének szorzója (adagszám-arány); 1 = egy recept
+     */
+    public PricedIngredient priceNeed(String storeId, Ingredient ing, Catalog.Product p, double needed,
+                                      boolean bulkMode, double factor) {
+        Map<String, List<PriceEntry>> storeIndex = index.getOrDefault(storeId, Map.of());
+        List<Option> options = new ArrayList<>();
+        for (PriceEntry e : storeIndex.getOrDefault(p.key(), List.of())) {
+            Packaging.Pack pack = Packaging.of(p, e);
+            if (pack == null) continue;
+            options.add(new Option(e, pack, Packaging.buy(p, pack, needed), deals.dealFor(e)));
+        }
+        if (!options.isEmpty()) {
+            List<Option> household = options.stream().filter(o -> !o.buy().bulk()).toList();
+            Option cheapest = pick(options, false);
+            Option home = household.isEmpty() ? cheapest : pick(household, true);
+            Option bulkAlt = cheapest.buy().bulk()
+                    && cheapest.buy().cost() <= home.buy().cost() * (1 - BULK_MIN_SAVING_RATIO)
+                    && home.buy().cost() - cheapest.buy().cost() >= BULK_MIN_SAVING_FT * factor
+                    ? cheapest : null;
+            Option chosen = bulkMode && bulkAlt != null ? bulkAlt : home;
+            Option other = bulkMode ? (bulkAlt != null ? home : null) : bulkAlt;
+            return toPriced(ing, chosen, other == null ? null : toPriced(ing, other, null));
+        }
+        Double up = fallbackUnitPrice.get(p.key());
+        double perUnit = up != null ? up : p.basePrice() / p.qty();
+        double est = perUnit * needed;
+        int packages = Math.max(1, (int) Math.ceil(needed / p.qty() - Packaging.PACKAGE_TOLERANCE));
+        double pay = perUnit * p.qty() * packages;
+        String text = packages + " × " + Packaging.Qty.fmt(p.qty(), p.unit()) + " (becsült)";
+        return new PricedIngredient(ing, null, null, est, true, packages, packages * p.qty(), pay,
+                false, text, "kb. " + Packaging.Money.ft(perUnit) + "/" + p.unit(), null);
     }
 
     /**

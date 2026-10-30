@@ -19,6 +19,7 @@ const state = {
   dealLimit: 12,     // ennyi jó árat mutatunk elsőre (telefonon ne legyen végtelen a lista)
   prefs: { stores: [], bulk: false, cards: [] }, // stores: üres = minden bolt
   ingredients: null, // az akció-űrlap alapanyag-listája
+  view: "ma",        // ma | terv | nom | receptek (views.js)
 };
 
 const DEAL_LABEL = {
@@ -114,13 +115,14 @@ function myStores() {
 
 function readHash() {
   const p = new URLSearchParams(location.hash.slice(1));
-  return { store: p.get("bolt"), recipe: p.get("recept"), servings: Number(p.get("adag")) || 0, tag: p.get("cimke") || "" };
+  return { store: p.get("bolt"), recipe: p.get("recept"), servings: Number(p.get("adag")) || 0, tag: p.get("cimke") || "", view: p.get("nezet") || "" };
 }
 
 function writeHash() {
   const p = new URLSearchParams();
+  if (state.view && state.view !== "ma") p.set("nezet", state.view);
   if (state.store) p.set("bolt", state.store);
-  if (state.current) p.set("recept", state.current.recipe.id);
+  if (state.current && state.view === "ma") p.set("recept", state.current.recipe.id);
   if (state.servings) p.set("adag", String(state.servings));
   if (state.tag) p.set("cimke", state.tag);
   const h = "#" + p.toString();
@@ -230,6 +232,7 @@ async function reloadAll() {
   const keep = state.current?.recipe.id;
   await loadStatus();
   await loadStore(keep);
+  if (typeof onStoreChanged === "function") onStoreChanged();
 }
 
 // ---------- receptválasztás ----------
@@ -295,9 +298,26 @@ function selectStore(id, recipe) {
   store("sporolos.store", id);
   renderStores();
   loadStore(recipe || state.current?.recipe.id).catch((e) => showError(e.message));
+  if (typeof onStoreChanged === "function") onStoreChanged();
 }
 
 // ---------- a kiválasztott recept ----------
+
+/** "35 perc · könnyű · 520 kcal · 32 g fehérje / adag" */
+function metaLine(r) {
+  const parts = [`${r.minutes} perc`, r.difficulty];
+  if (r.nutrition) parts.push(`${r.nutrition.kcal} kcal`, `${r.nutrition.protein} g fehérje / adag`);
+  return parts.join(" · ");
+}
+
+/** Diéta- és hangulatcímkék kis jelvényként. */
+function badges(r, max) {
+  const wrap = el("span", "badges");
+  const list = [...(r.diets || []), ...(r.moods || [])].slice(0, max || 9);
+  for (const b of list) wrap.appendChild(el("span", "badge" + (DIET_SET.has(b) ? " diet" : ""), b));
+  return wrap;
+}
+const DIET_SET = new Set(["vega", "gluténmentes", "laktózmentes"]);
 
 /** A hozzávalók a felhasználó kiszerelés-választásaival (alternatíva cserélve, ahol kérte). */
 function effectiveIngredients(s) {
@@ -333,12 +353,13 @@ function renderPick(animate) {
   const t = totals(items);
   const deals = items.filter((i) => i.deal);
 
+  pick.appendChild(el("img", "pick-img", null, { src: r.image, alt: "", width: "640", height: "400", decoding: "async" }));
   const head = el("div", "pick-head");
   const left = el("div");
   left.append(
-    el("span", "pick-emoji", r.emoji, { "aria-hidden": "true" }),
     el("h2", "pick-name", r.name, { id: "pick-title" }),
-    el("p", "pick-meta", `${r.minutes} perc · ${r.difficulty}`),
+    el("p", "pick-meta", metaLine(r)),
+    badges(r),
     el("p", "pick-why", whyText(s, deals)),
   );
   const pack = packNote(s, t);
@@ -662,7 +683,7 @@ function renderMore() {
     const cost = el("span", "m-cost");
     cost.appendChild(el("span", "m-total", ft(s.totalCost)));
     if (s.savings >= 20) cost.appendChild(el("span", "m-save", `−${ft(s.savings)}`));
-    b.append(el("span", "m-emoji", s.recipe.emoji, { "aria-hidden": "true" }), text, cost);
+    b.append(el("img", "m-img", null, { src: s.recipe.image, alt: "", width: "64", height: "40", loading: "lazy" }), text, cost);
     b.addEventListener("click", async () => {
       await showRecipe(s.recipe.id).catch((e) => toast(e.message));
       const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1010,9 +1031,11 @@ async function init() {
   if (h.store) state.store = h.store;
   if (h.tag) { state.tag = h.tag; syncFilterButtons(); }
   if (h.servings) state.servings = h.servings;
+  if (h.view) state.view = h.view;
   try {
     await loadStatus();
     await loadStore(h.recipe);
+    if (typeof initViews === "function") initViews();
   } catch (e) {
     $("#source").textContent = "Az adatok nem tölthetők be.";
     showError(e.message);

@@ -6,6 +6,7 @@ import hu.sporolos.core.Packaging;
 import hu.sporolos.core.PromoMerger;
 import hu.sporolos.core.PriceRepository;
 import hu.sporolos.core.RecipeRecommender;
+import hu.sporolos.core.WeeklyPlanner;
 import hu.sporolos.data.ArfigyeloExcelProvider;
 import hu.sporolos.data.Catalog;
 import hu.sporolos.data.DemoPriceProvider;
@@ -13,11 +14,13 @@ import hu.sporolos.data.PriceHistory;
 import hu.sporolos.data.PriceProvider;
 import hu.sporolos.data.Promo;
 import hu.sporolos.data.PromoStore;
+import hu.sporolos.data.RecipeMeta;
 import hu.sporolos.data.XlsxReader;
 import hu.sporolos.model.Models.Deal;
 import hu.sporolos.model.Models.DealType;
 import hu.sporolos.model.Models.PriceEntry;
 import hu.sporolos.model.Models.Suggestion;
+import hu.sporolos.web.RecipeArt;
 import hu.sporolos.web.WebServer;
 
 import java.io.ByteArrayInputStream;
@@ -617,6 +620,30 @@ public final class AllTests {
             get(c, base + "/api/ismeretlen", 404);
             check(get(c, base + "/", 200).contains("Spórolós Konyha"), "főoldal");
             check(get(c, base + "/app.js", 200).contains("nextRecipe"), "app.js");
+            check(get(c, base + "/views.js", 200).contains("loadPlan"), "views.js");
+
+            // heti terv, receptlista, képek
+            Map<String, Object> plan = Json.obj(Json.parse(get(c, base + "/api/plan?store=lidl&people=3&dinners=4&budget=20000&diets=vega", 200)));
+            List<Object> days = Json.arr(plan.get("days"));
+            eq(4, days.size(), "4 vacsora");
+            for (Object d : days) {
+                Map<String, Object> r = Json.obj(Json.obj(Json.obj(d).get("suggestion")).get("recipe"));
+                check(Json.arr(r.get("diets")).contains("vega"), "vega terv: " + r.get("id"));
+                check(String.valueOf(r.get("image")).startsWith("/img/recipe/"), "van kép");
+            }
+            check(!Json.arr(plan.get("aisles")).isEmpty(), "van bevásárlólista");
+            String keepId = String.valueOf(Json.obj(Json.obj(Json.obj(days.get(0)).get("suggestion")).get("recipe")).get("id"));
+            Map<String, Object> swapped = Json.obj(Json.parse(get(c, base + "/api/plan?store=lidl&people=3&dinners=2&keep=" + keepId + ",_", 200)));
+            eq(keepId, String.valueOf(Json.obj(Json.obj(Json.obj(Json.arr(swapped.get("days")).get(0)).get("suggestion")).get("recipe")).get("id")), "a megtartott recept marad");
+            get(c, base + "/api/plan?store=nincsilyen", 400);
+            List<Object> all = Json.arr(Json.parse(get(c, base + "/api/recipes?store=lidl", 200)));
+            eq(CATALOG.recipes().size(), all.size(), "minden recept a listában");
+            List<Object> gf = Json.arr(Json.parse(get(c, base + "/api/recipes?store=lidl&diets=gluténmentes", 200)));
+            check(gf.size() > 10 && gf.size() < all.size(), "gluténmentes szűrő: " + gf.size());
+            String svg = get(c, base + "/img/recipe/" + firstId + ".svg", 200);
+            check(svg.startsWith("<svg") && svg.endsWith("</svg>"), "SVG kép");
+            get(c, base + "/img/recipe/nincsilyen.svg", 404);
+            get(c, base + "/img/recipe/..%2Fpom.xml", 400);
             get(c, base + "/../pom.xml", 400);
         } finally {
             server.stop();
@@ -641,7 +668,94 @@ public final class AllTests {
             Suggestion top = l.get(0);
             check(top.totalCost() > 50 && top.totalCost() < 20000, store.id() + ": életszerű receptár " + top.totalCost());
             check(st.deals().dealCount(store.id()) > 0, store.id() + ": van jó ár");
+            var plan = new WeeklyPlanner(CATALOG, st.recommender()).plan(store.id(),
+                    req(2, 5, 15000, Set.of(), Set.of(), List.of(), Set.of(), 1));
+            eq(5, plan.days().size(), store.id() + ": teljes heti terv");
+            check(!plan.overBudget(), store.id() + ": belefér 15 000 Ft-ba (" + plan.checkoutTotal() + ")");
         }
+        int priced = 0;
+        for (var r : CATALOG.recipes()) if (st.recommender().suggestion(r.id(), "lidl", 0, null, false) != null) priced++;
+        eq(CATALOG.recipes().size(), priced, "minden recept árazható a Lidlben");
+    }
+
+    // ---------- receptadatok, képek, heti terv ----------
+
+    static void testRecipeMetaDiets() {
+        for (var r : CATALOG.recipes()) {
+            RecipeMeta m = CATALOG.meta(r.id());
+            check(m != null, "van meta: " + r.id());
+            check(m.kcal() > 50 && m.kcal() < 1600, r.id() + ": életszerű kalória " + m.kcal());
+            check(m.needsOven() || m.needsStove() || r.steps().size() <= 3, r.id() + ": valamivel készül");
+            if (r.tags().contains("vega")) check(m.diets().contains(RecipeMeta.VEGA), r.id() + ": vega címke ↔ húsmentes");
+            if (r.tags().contains("húsos") || r.tags().contains("hal")) check(!m.diets().contains(RecipeMeta.VEGA), r.id() + ": húsos nem vega");
+        }
+        RecipeMeta paprikas = CATALOG.meta("paprikas-csirke");
+        check(paprikas.diets().contains(RecipeMeta.GLUTEN_FREE) == false, "a nokedli nem gluténmentes");
+        check(paprikas.cookableWith(Set.of(RecipeMeta.STOVE)), "tűzhelyen elkészül");
+        check(!paprikas.cookableWith(Set.of(RecipeMeta.AIRFRYER)), "airfryerrel nem");
+        check(CATALOG.recipes().size() >= 150, "legalább 150 recept: " + CATALOG.recipes().size());
+    }
+
+    static void testRecipeArtForAll() {
+        RecipeArt art = new RecipeArt(CATALOG);
+        java.util.Set<String> distinct = new java.util.HashSet<>();
+        for (var r : CATALOG.recipes()) {
+            String svg = art.svg(r.id());
+            check(svg != null && svg.startsWith("<svg") && svg.endsWith("</svg>"), "SVG: " + r.id());
+            check(!svg.contains("NaN") && !svg.contains("<script"), "tiszta SVG: " + r.id());
+            distinct.add(svg);
+        }
+        eq(CATALOG.recipes().size(), distinct.size(), "minden kép más");
+        check(art.svg("nincsilyen") == null, "ismeretlen recept: nincs kép");
+    }
+
+    static void testWeeklyPlanner() {
+        List<PriceEntry> base = new DemoPriceProvider(CATALOG, LocalDate.of(2026, 1, 1)).load().entries();
+        List<String> stores = List.of("aldi", "lidl", "penny", "auchan", "tesco", "spar");
+        RecipeRecommender rec = new RecipeRecommender(CATALOG, base, new DealAnalyzer(base, null), stores);
+        WeeklyPlanner wp = new WeeklyPlanner(CATALOG, rec);
+        var plan = wp.plan("lidl", req(2, 5, 0, Set.of(), Set.of(), List.of(), Set.of(), 1));
+        eq(5, plan.days().size(), "5 vacsora");
+        java.util.Set<String> ids = new java.util.HashSet<>(), mains = new java.util.HashSet<>();
+        int soups = 0;
+        for (var d : plan.days()) {
+            check(ids.add(d.suggestion().recipe().id()), "nincs ismétlés");
+            check(mains.add(d.meta().mainKey()), "más-más fő alapanyag");
+            check(!d.suggestion().recipe().tags().contains("édes"), "nem desszert vacsorára");
+            eq(2, d.suggestion().servings(), "2 adag");
+            if (d.suggestion().recipe().tags().contains("leves")) soups++;
+        }
+        check(soups <= 1, "legfeljebb egy leves");
+        double sum = plan.items().stream().mapToDouble(i -> i.product().staple() ? 0 : i.priced().checkoutCost()).sum();
+        check(Math.abs(sum - plan.checkoutTotal()) < 1, "a lista összege = végösszeg");
+        double shares = plan.days().stream().mapToDouble(WeeklyPlanner.Day::shareOfList).sum();
+        check(Math.abs(shares - plan.checkoutTotal()) < plan.checkoutTotal() * 0.02 + 2, "a napok részei kiadják a listát");
+        // egy termék egyszer szerepel a listán, akkor is, ha több recept használja
+        java.util.Set<String> keys = new java.util.HashSet<>();
+        for (var i : plan.items()) check(keys.add(i.product().key()), "egy sor termékenként: " + i.product().key());
+
+        var vega = wp.plan("lidl", req(2, 5, 0, Set.of(RecipeMeta.VEGA, RecipeMeta.LACTOSE_FREE), Set.of(), List.of(), Set.of(), 1));
+        for (var d : vega.days()) check(d.meta().fits(Set.of(RecipeMeta.VEGA, RecipeMeta.LACTOSE_FREE)), "diéta: " + d.suggestion().recipe().id());
+
+        var noOven = wp.plan("lidl", req(2, 5, 0, Set.of(), Set.of(RecipeMeta.STOVE), List.of(), Set.of(), 1));
+        for (var d : noOven.days()) check(!d.meta().needsOven(), "sütő nélkül: " + d.suggestion().recipe().id());
+
+        String first = plan.days().get(0).suggestion().recipe().id(), second = plan.days().get(1).suggestion().recipe().id();
+        java.util.List<String> keep = new java.util.ArrayList<>(java.util.Arrays.asList(first, null));
+        var swapped = wp.plan("lidl", req(2, 2, 0, Set.of(), Set.of(), keep, Set.of(second), 1));
+        eq(first, swapped.days().get(0).suggestion().recipe().id(), "a megtartott nap marad");
+        check(!swapped.days().get(1).suggestion().recipe().id().equals(second), "a lecserélt nap más");
+
+        var tight = wp.plan("lidl", req(2, 5, plan.checkoutTotal() * 0.8, Set.of(), Set.of(), List.of(), Set.of(), 1));
+        check(tight.checkoutTotal() <= plan.checkoutTotal() * 0.8 + 1 || tight.overBudget(), "szűk keret: betartja vagy jelzi");
+        var other = wp.plan("lidl", req(2, 5, 0, Set.of(), Set.of(), List.of(), Set.of(), 7));
+        check(!other.days().stream().map(d -> d.suggestion().recipe().id()).toList()
+                .equals(plan.days().stream().map(d -> d.suggestion().recipe().id()).toList()), "más mag, más hét");
+    }
+
+    static WeeklyPlanner.Request req(int people, int dinners, double budget, Set<String> diets, Set<String> eq,
+                                     List<String> keep, Set<String> exclude, long seed) {
+        return new WeeklyPlanner.Request(people, dinners, budget, diets, eq, Set.of(), Set.of(), keep, exclude, seed, null, false);
     }
 
     // ---------- segédek ----------

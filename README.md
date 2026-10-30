@@ -4,11 +4,17 @@
 
 Böngészős receptajánló, ami a **GVH Árfigyelő** napi árai alapján megmondja: *ha ma ebben a boltban vásárolsz, mit érdemes főzni?* Kiválasztod a boltot, és az app olyan recepteket „dobál”, amelyekhez ott épp kiemelkedően jó áron kapod az alapanyagokat. Minden hozzávalónál látod, melyik konkrét terméket vedd meg, mennyibe kerül, és miért jó az ára. Van hozzá kipipálható bevásárlólista is, és egy összevetés arról, mennyibe kerülne ugyanez a többi láncban. A nem kedvelt boltok kizárhatók. Alapból háztartási kiszerelésben vásárol, a nagy kiszerelést csak alternatívaként ajánlja. A láncok saját akciói (újság, app, hűségkártya) is felvihetők.
 
+A [NomNom Planner](https://nomnomplanner.com/hu/) ötletei alapján van **heti vacsoraterv** (fő, vacsoraszám, heti keret, diéta, konyhai eszközök, egy nap vagy az egész hét cseréje, közös, osztályonként rendezett bevásárlólista), **„Nom vagy nem”** lapozós ízlés-tanító és **receptböngésző** tápértékkel. **170 recept**, mindegyikhez saját, generált illusztrációval.
+
 Java 21-ben írva, **külső függőség nélkül** (beépített JDK webszerver, saját JSON- és xlsx-olvasó), így egyetlen JAR-ként fut.
 
 ![Asztali nézet](docs/kepernyokep.png)
 
-<img src="docs/kepernyokep-mobil.png" alt="Mobil nézet" width="260"> <img src="docs/beallitasok-mobil.png" alt="Beállítások: boltjaim, kiszerelés, hűségkártyák" width="260">
+![Heti terv](docs/heti-terv.png)
+
+<img src="docs/nom-mobil.png" alt="Nom vagy nem" width="260"> <img src="docs/kepernyokep-mobil.png" alt="Mobil nézet" width="260"> <img src="docs/beallitasok-mobil.png" alt="Beállítások: boltjaim, kiszerelés, hűségkártyák" width="260">
+
+<img src="docs/receptek.png" alt="Receptböngésző" width="640">
 
 <img src="docs/akciok.png" alt="A láncok saját akciói" width="640"> <img src="docs/termek-osszehasonlitas.png" alt="Egy termék ára a láncokban" width="400">
 
@@ -62,6 +68,9 @@ Parancssorból (`-Dport=9000`), környezeti változóval (`PORT=9000`) vagy egy 
 - **Termékrészletek:** bármelyik termékre koppintva látod az árát minden láncban, hány boltjukban kapható, és mennyi a legdrágább boltjukban.
 - **Keresés** a kiválasztott bolt termékei között, egységár szerint rendezve.
 - **Összes recept** böngészése ajánlás, ár (adagonként) vagy elkészítési idő szerint.
+- **Heti terv** („Heti terv” fül): hány fő, hány vacsora (1–7), heti keret forintban, diéta (húsmentes, gluténmentes, laktózmentes), és ami a konyhában van (tűzhely, sütő, airfryer). Minden napnál kép, kalória, fehérje, a listából rá eső összeg és egy *Csere* gomb (a többi nap marad). Az *Új hetet kérek* az egész hetet újraválogatja. A bevásárlólista osztályonként (zöldség, pékáru, hús, tejtermék, száraz áru…) rendezett, kipipálható, megosztható, és soronként mutatja, melyik vacsorához kell és mennyi marad. Újratöltés után ugyanaz a hét marad meg.
+- **Nom vagy nem:** kártyás lapozó (húzás, gombok, ← / → billentyű). A *Nom* receptek előnyt kapnak a heti tervben, a *Nem* receptek kimaradnak. Az értékelés csak a böngészőben tárolódik.
+- **Receptek:** mind a 170 recept képpel, adagonkénti árral a választott boltban, kalóriával; szűrés diétára, „fehérjedús / könnyed / laktató” hangulatra, airfryerre és kedvencekre; rendezés ár, idő, kalória, fehérje szerint.
 - **Megosztható link:** a cím tartalmazza a boltot, a receptet és az adagszámot (pl. `#bolt=tesco&recept=gulyasleves&adag=8`).
 
 ## Hogyan működik
@@ -90,7 +99,7 @@ Minden bolti árra négy jelet néz, és a legerősebbet tartja meg (`DealAnalyz
 Ha a termék a lánc boltjainak kevesebb mint felében kapható, a pontszám arányosan csökken. Az Excel csak az adott napot tartalmazza, ezért az app **minden nap elmenti a láncok árait** (`data/history/ÉÉÉÉ-HH-NN.tsv`). Néhány nap futás után így azt is felismeri, ha valami *épp most* olcsóbb a szokásosnál.
 
 ### 3. Receptajánlás és bevásárlás
-55 hétköznapi, főleg magyaros recept van beépítve (`src/main/resources/data/recipes.json`): levesek, főzelékek, egytálételek, sült húsok, halak, saláták, desszertek. Minden hozzávaló abszolút mennyiséggel szerepel (kg / l / db). Az alapanyagok az Árfigyelő **kategóriáihoz** vannak kötve (`products.json`), pl. „darált hús” → 85-ös kategória, „spagetti” → 50-es kategória + „spagett” a névben.
+170 hétköznapi recept van beépítve (magyaros ételek mellett tészták, wokok, curryk, burgerek, tacók, saláták, airfryeres fogások) (`src/main/resources/data/recipes.json`): levesek, főzelékek, egytálételek, sült húsok, halak, saláták, desszertek. Minden hozzávaló abszolút mennyiséggel szerepel (kg / l / db). Az alapanyagok az Árfigyelő **kategóriáihoz** vannak kötve (`products.json`), pl. „darált hús” → 85-ös kategória, „spagetti” → 50-es kategória + „spagett” a névben.
 
 A `RecipeRecommender` minden receptet „megvásárol” minden boltban.
 
@@ -140,6 +149,23 @@ CSV-fejléc: `bolt;termek;ar;egyseg;kiszereles;rendes_ar;tol;ig;alapanyag;vonalk
 - Ha **alapanyaghoz** tartozik, és a láncban van olyan Árfigyelő-tétel, aminek a neve tartalmazza az akciós termék szavait, és legfeljebb ennyibe kerül, szintén „már benne van”. Különben új tételként kerül be, és azonnal használható a receptekben. Ez az Árfigyelőben nem követett alapanyagokra (tonhal, gomba, passata…) is működik.
 - Az akció új, **„Bolti akció”** jóár-jelet kap (legalább 0,6 pontszám, a megtakarítással arányosan több), és az indoklásban szerepel az érvényesség és a forrás.
 
+### 5. Heti terv (`WeeklyPlanner`)
+- **Jelöltek:** a bolt beárazott receptjei, desszertek és reggelik nélkül, a diétára és az eszközökre szűrve, a lecserélt/kizárt receptek nélkül.
+- **Mohó válogatás közös kosárral:** minden napra azt a receptet választja, amelynél a legjobb az *ajánlási pontszám + kedvenc-bónusz + kis véletlen − a kosárhoz adott pénztári többletköltség*. A többletköltség azt számolja, mennyivel nő a **közös** lista ára: ha hétfőn már vettél egy 2 kg-os zsák krumplit, a csütörtöki krumplis tészta krumplija ingyen van. Ezért a hét receptjei maguktól is egymásra épülnek.
+- **Keret:** minden napra a hátralévő keret arányos részét nézi, és tartalékot hagy a többi napra. Ha a keret túl szűk, a legolcsóbb lehetőséget veszi, és megjegyzésben jelzi.
+- **Változatosság:** egy fő alapanyag (pl. csirkecomb) egyszer, legfeljebb egy leves, egy tésztaétel és két halétel egy héten.
+- A „Csere” a többi napot megtartja (`keep`), a lecserélt receptet kizárja (`exclude`); az „Új hét” más véletlen magot kap.
+
+### 6. Tápérték, diéták, eszközök (`RecipeMeta`)
+Minden alapanyaghoz tápérték tartozik 100 g-ra (kcal, fehérje, szénhidrát, zsír, közelítő, tipikus értékek), plusz jelölés: hús, hal, glutén, laktóz. Ebből adagonként számol:
+- **Diéták:** húsmentes, ha nincs benne hús/hal; gluténmentes, ha nincs glutént tartalmazó alapanyag (liszt, tészta, kenyér…); laktózmentes, ha nincs tejtermék. A kamrából vett fűszerek nem számítanak, és a „gluténmentes” csak az alapanyagokra vonatkozik (a kész termékek nyomokban tartalmazhatják) – **orvosi diétához mindig a csomagolást kell nézni**.
+- **Eszközök:** a lépések szövegéből (sütő, tepsi, fokon… illetve főz, pirít, serpenyő…). Az airfryerben is elkészíthető receptek külön jelölést kaptak.
+- **Hangulat:** *fehérjedús* (≥ 30 g fehérje vagy a kalória ≥ 30%-a), *könnyed* (≤ 450 kcal), *laktató* (≥ 750 kcal vagy kiadós egytál).
+- Bő olajban sütésnél az olajnak csak 20%-át számolja (ennyi marad az ételben).
+
+### 7. Képek (`RecipeArt`)
+Képgeneráló modell nem érhető el ebben a környezetben, és más oldalak (pl. a NomNom) fotóit nem vettem át. Ezért minden recepthez **programból generált SVG-illusztráció** készül: felülnézeti tányér, tál, tepsi, serpenyő vagy pizzás deszka, a recept hozzávalóiból rajzolt elemekkel (krumplikocka, hagymakarika, csirkecomb, tészta, paradicsom…), receptenként más háttérszínnel és elrendezéssel. A képek a `/img/recipe/{id}.svg` címen érhetők el, kicsik (pár KB), és gyorsítótárazhatók. Ha később valódi fotók kellenek, elég a `static/` alá tenni őket és az `ApiMapper` `image` mezőjét átírni.
+
 ### REST API
 
 | Végpont | Leírás |
@@ -151,6 +177,9 @@ CSV-fejléc: `bolt;termek;ar;egyseg;kiszereles;rendes_ar;tol;ig;alapanyag;vonalk
 | `GET /api/item?id=<vonalkód>` | egy termék ára minden láncban |
 | `GET /api/search?q=tej&store=lidl&limit=30` | keresés a termékek között, egységár szerint |
 | `GET /api/ingredients` | a recept-alapanyagok listája (az akció-űrlaphoz) |
+| `GET /api/plan?store=lidl&people=2&dinners=5&budget=15000&diets=vega&equipment=tuzhely,suto&liked=…&disliked=…&keep=a,_,c&exclude=…&seed=3` | heti vacsoraterv közös, osztályonként rendezett bevásárlólistával |
+| `GET /api/recipes?store=lidl&diets=gluténmentes` | az összes recept képpel, tápértékkel, adagonkénti árral |
+| `GET /img/recipe/{id}.svg` | a recept generált illusztrációja |
 | `GET /api/promos` | a láncok saját akciói és állapotuk (beépítve / már benne / lejárt / kártya kell…) |
 | `POST /api/promos` | új akció (JSON), vagy import: `{"text": "<CSV vagy JSON>"}` |
 | `DELETE /api/promos?id=…` | kézi akció törlése |
@@ -169,6 +198,7 @@ src/main/java/hu/sporolos/
          DealAnalyzer            „jó ár” felismerés (5 jel + elérhetőség)
          Packaging               mérlegelős / csomagolt / csomós, darab ↔ kg, nagy kiszerelés
          RecipeRecommender       receptek beárazása, háztartási és nagy kiszerelés, rangsorolás
+         WeeklyPlanner           heti vacsoraterv közös kosárral, kerettel, diétával
          PromoMerger             a láncok akcióinak összefésülése az Árfigyelővel
          PriceRepository         forrásváltás, háttérfrissítés, elemzés kártyánként
   data/  ArfigyeloExcelProvider  napi Excel letöltése / beolvasása / gyorsítótár
@@ -176,12 +206,14 @@ src/main/java/hu/sporolos/
          PriceHistory            napi árelőzmények
          DemoPriceProvider       tartalék demó árak
          Catalog                 alapanyagok, láncok, receptek, illesztés
+         RecipeMeta              tápérték, diéták, eszközök, hangulat receptenként
          Promo, PromoStore       akciók: kézi, fájl, feed; CSV/JSON
   model/ Models                  rekordok (PriceEntry, Deal, Recipe, Suggestion…)
   web/   WebServer, ApiMapper    REST API + statikus fájlok
+         RecipeArt               SVG-illusztráció minden recepthez
 src/main/resources/
   data/products.json, recipes.json
-  static/index.html, app.css, app.js, favicon.svg, manifest.webmanifest
+  static/index.html, app.css, app.js, views.js, favicon.svg, manifest.webmanifest
 src/test/java/hu/sporolos/AllTests.java
 ```
 
@@ -191,22 +223,27 @@ src/test/java/hu/sporolos/AllTests.java
 ./build.sh test        # Windows: build.cmd test
 ```
 
-25 teszt fut le:
+28 teszt fut le:
 - JSON- és xlsx-olvasás, az Árfigyelő-fejléc felismerése, egységátváltás;
 - mind a négy jó ár jel, valamint az elérhetőség hatása;
 - a kiszerelés-modell: tojásdoboz vagy tálca, mérlegelős áru minimum egy darabbal, „ca. 500g”, csak csomagolt liszt, darab ↔ kg (paprika, zsemle), csomós zöldség, tűrés, a nagy kiszerelés határa;
 - háztartási mód nagy kiszerelés alternatívával és fordítva, valamint a boltszűrő hatása;
 - akciók: CSV-beolvasás, az összefésülés minden ága (felülír / már benne / új tétel / kártya kell / lejárt / még nem / ismeretlen bolt), és hogy egy akciós tonhal árazhatóvá teszi a tonhalas tésztát;
 - az ajánló rangsorolása és adagköltsége;
+- receptadatok (kalória, a vega címke és a hús egyezése, eszközök), mind a 170 kép érvényes és különböző SVG;
+- heti terv: nincs ismétlés, változatos fő alapanyag, nincs desszert, a lista összege egyezik, egy termék egy sor, diéta- és eszközszűrő, csere a többi nap megtartásával, keret, más mag más hetet ad;
 - a letöltés, a gyorsítótár és a visszaesés egy helyi HTTP-szerverrel;
 - a hibás frissítés kezelése (a valós adat nem cserélődik demóra);
 - végponttól végpontig teszt, ami elindítja a webszervert, és végighívja az összes API-t, a boltszűrővel, valamint az akciók felvitelével, importjával és törlésével együtt.
 
-Ha az `ARFIGYELO_TEST_FILE` környezeti változó egy valódi napi Excelre mutat, a teljes folyamatot azon is lefuttatja: mind a hat láncban legalább 10 árazható recept és életszerű árak kellenek. A 2026-10-28-i fájllal mind a 25 teszt sikeres, és mind a hat láncban mind az 55 recept árazható.
+Ha az `ARFIGYELO_TEST_FILE` környezeti változó egy valódi napi Excelre mutat, a teljes folyamatot azon is lefuttatja: mind a hat láncban legalább 10 árazható recept és életszerű árak kellenek. A 2026-10-28-i fájllal mind a 28 teszt sikeres, mind a 170 recept árazható, és mind a hat láncban kijön egy 5 vacsorás, 2 fős heti terv 15 000 Ft alatt (jellemzően 3–5 ezer Ft-ból).
 
 ## Feltételezések és döntések
 
 Ezeket kérdezés nélkül döntöttem el; bármelyik könnyen módosítható.
+
+- **Heti terv alapértékei:** 2 fő, 5 vacsora (hétfő–péntek), nincs keret, tűzhely és sütő van. Csak vacsorát tervez; desszert és reggeli nem kerül bele. A kamra-alapanyagok (olaj, liszt, cukor) a végösszegben nincsenek benne, külön sorban szerepelnek.
+- **„Nom vagy nem”:** az olcsóbb receptek jönnek előbb (kis keveréssel), az édességek a pakli végén. A kedvencek előnyt kapnak, de nem kerülnek be minden áron: az ár és a változatosság továbbra is számít.
 
 - **Böngészős app, nem natív mobilapp.** Egyszerűbb telepíteni (egy JAR), telefonon is jól működik, és kezdőképernyőre tehető.
 - **Java, külső könyvtár nélkül.** Spring Boot helyett a JDK beépített HTTP szervere: nincs függőségletöltés, és a build bárhol működik, ahol van JDK 21.
@@ -229,7 +266,11 @@ Ezeket kérdezés nélkül döntöttem el; bármelyik könnyen módosítható.
 - Néhány zöldséget a láncok következetlenül adnak meg (pl. „csomós petrezselyemgyökér” egyszer darabra, egyszer kilóra); ezeknél az ár közelítő.
 - A kiszerelés-összesítő és a soronkénti csere csak a kiválasztott boltra vonatkozik; a „többi boltodban” összevetés az alapbeállítás szerinti (háztartási vagy nagy) kiszereléssel számol.
 - Ha a felületet `HOST=0.0.0.0`-val a helyi hálózatra nyitod, a hálózaton bárki felvihet és törölhet kézi akciót.
-- Ötletek: lánc-specifikus akció-letöltők külön feedként, heti menütervező egy bevásárlással, kedvenc receptek, saját recept felvétele a felületről.
+- A tápértékek tipikus, kerekített értékekből számolt becslések; diétás vagy orvosi célra nem elég pontosak.
+- A heti terv mohó algoritmus, nem garantáltan a legolcsóbb kombináció; cserébe gyors (≈ 0,1 s) és jól érthető.
+- A kedvencek és a heti terv beállításai csak abban a böngészőben vannak meg (localStorage), fiók nincs.
+- A NomNom Planner ötletét vettem át (heti terv kerettel, diéták, eszközök, csere, lapozós ízlés-tanulás, osztályonkénti lista), a szövegeit, képeit és márkáját nem.
+- Ötletek: lánc-specifikus akció-letöltők külön feedként, saját recept felvétele a felületről, reggeli/ebéd tervezése is.
 
 ---
 Az árak forrása: [GVH Árfigyelő](https://arfigyelo.gvh.hu). A boltban kiírt ár az irányadó.

@@ -16,6 +16,9 @@ final class ApiMapper {
 
     private ApiMapper() {}
 
+    /** A receptek származtatott adataihoz (tápérték, diéták); a WebServer állítja be. */
+    static volatile hu.sporolos.data.Catalog catalog;
+
     static Map<String, Object> entry(PriceEntry e) {
         if (e == null) return null;
         Map<String, Object> m = new LinkedHashMap<>();
@@ -68,6 +71,22 @@ final class ApiMapper {
         m.put("difficulty", r.difficulty());
         m.put("tags", r.tags());
         m.put("steps", r.steps());
+        m.put("image", "/img/recipe/" + r.id() + ".svg");
+        hu.sporolos.data.RecipeMeta meta = catalog == null ? null : catalog.meta(r.id());
+        if (meta != null) {
+            Map<String, Object> n = new LinkedHashMap<>();
+            n.put("kcal", Math.round(meta.kcal()));
+            n.put("protein", Math.round(meta.protein()));
+            n.put("carbs", Math.round(meta.carbs()));
+            n.put("fat", Math.round(meta.fat()));
+            m.put("nutrition", n);
+            m.put("diets", meta.diets());
+            m.put("moods", meta.moods());
+            List<String> eq = new ArrayList<>();
+            if (meta.needsStove()) eq.add("tűzhely");
+            if (meta.needsOven()) eq.add(meta.airfryerOk() ? "sütő vagy airfryer" : "sütő");
+            m.put("equipment", eq);
+        }
         return m;
     }
 

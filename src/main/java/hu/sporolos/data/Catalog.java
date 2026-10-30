@@ -34,11 +34,23 @@ public final class Catalog {
      * @param staple          alapvető kamraáru (olaj, liszt, cukor), ami többnyire otthon van
      * @param packaged        csak csomagolva kapható (sosem mérlegelős)
      * @param maxPack         a háztartási kiszerelés felső határa az alapanyag egységében; 0 = qty × 1,5
+     * @param nutrition       [kcal, fehérje g, szénhidrát g, zsír g] 100 g-ra (folyadéknál 100 ml-re), vagy null
+     * @param aisle           bolti sor a bevásárlólistához ("Zöldség, gyümölcs", "Hús, hal"…)
+     * @param contains        "hus", "hal", "glutén", "laktóz" – a diétaszűrőkhöz
      */
     public record Product(String key, String name, double qty, String unit, double basePrice,
                           Set<Integer> categoryIds, List<String> keywords, List<String> excludeKeywords,
                           double pieceWeight, double bunchWeight, boolean staple, boolean packaged,
-                          double maxPack) {
+                          double maxPack, double[] nutrition, String aisle, Set<String> contains) {
+
+        /** Egy mennyiség (az alapanyag egységében) grammban; db-nál a darabtömeggel, ismeretlennél NaN. */
+        public double grams(double amount) {
+            return switch (unit) {
+                case "kg", "l" -> amount * 1000;
+                case "db" -> pieceWeight > 0 ? amount * pieceWeight * 1000 : Double.NaN;
+                default -> Double.NaN;
+            };
+        }
         public boolean tracked() {
             return !categoryIds.isEmpty();
         }
@@ -49,6 +61,14 @@ public final class Catalog {
         }
     }
 
+    private static double[] nutrition(Object o) {
+        List<Object> l = Json.arr(o);
+        if (l.size() != 4) return null;
+        double[] n = new double[4];
+        for (int i = 0; i < 4; i++) n[i] = Json.num(l.get(i), 0);
+        return n;
+    }
+
     /** Lánc a demó-szorzóval együtt. */
     public record StoreInfo(Store store, double factor) {}
 
@@ -56,6 +76,8 @@ public final class Catalog {
     private final Map<String, StoreInfo> stores = new LinkedHashMap<>();
     private final List<Recipe> recipes = new ArrayList<>();
     private final int foodCategoryMaxId;
+    private final List<String> aisles = new ArrayList<>();
+    private final Map<String, RecipeMeta> meta = new LinkedHashMap<>();
 
     public static Catalog loadDefault() {
         try {
@@ -68,6 +90,7 @@ public final class Catalog {
     public Catalog(String productsJson, String recipesJson) {
         Map<String, Object> root = Json.obj(Json.parse(productsJson));
         foodCategoryMaxId = (int) Json.num(root.get("foodCategoryMaxId"), 122);
+        for (Object a : Json.arr(root.get("aisles"))) aisles.add(Json.str(a));
         for (Object o : Json.arr(root.get("stores"))) {
             Map<String, Object> s = Json.obj(o);
             Store st = new Store(Json.str(s.get("id")), Json.str(s.get("name")), Json.str(s.get("color")),
@@ -84,7 +107,9 @@ public final class Catalog {
                     Json.num(p.get("qty"), 1), Json.str(p.get("unit")), Json.num(p.get("basePrice"), 0),
                     cats, kws, excl, Json.num(p.get("pieceWeight"), 0), Json.num(p.get("bunchWeight"), 0),
                     Boolean.TRUE.equals(p.get("staple")), Boolean.TRUE.equals(p.get("packaged")),
-                    Json.num(p.get("maxPack"), 0));
+                    Json.num(p.get("maxPack"), 0), nutrition(p.get("nutrition")),
+                    p.get("aisle") == null ? "Egyéb" : Json.str(p.get("aisle")),
+                    Json.arr(p.get("contains")).stream().map(Json::str).collect(Collectors.toUnmodifiableSet()));
             if (products.containsKey(prod.key())) throw new IllegalStateException("Duplikált alapanyag: " + prod.key());
             products.put(prod.key(), prod);
         }
@@ -118,13 +143,17 @@ public final class Catalog {
             if (recipes.stream().anyMatch(x -> x.id().equals(Json.str(r.get("id"))))) {
                 throw new IllegalStateException("Duplikált recept-azonosító: " + r.get("id"));
             }
-            recipes.add(new Recipe(Json.str(r.get("id")), Json.str(r.get("name")), Json.str(r.get("emoji")),
+            Recipe recipe = new Recipe(Json.str(r.get("id")), Json.str(r.get("name")), Json.str(r.get("emoji")),
                     (int) Json.num(r.get("minutes"), 30), (int) Json.num(r.get("servings"), 4),
-                    Json.str(r.get("difficulty")), tags, ings, steps));
+                    Json.str(r.get("difficulty")), tags, ings, steps);
+            recipes.add(recipe);
+            meta.put(recipe.id(), RecipeMeta.of(recipe, products, Boolean.TRUE.equals(r.get("airfryer"))));
         }
     }
 
     public Map<String, Product> products() { return products; }
+    public List<String> aisles() { return aisles; }
+    public RecipeMeta meta(String recipeId) { return meta.get(recipeId); }
     public Map<String, StoreInfo> stores() { return stores; }
     public List<Recipe> recipes() { return recipes; }
 

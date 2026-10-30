@@ -623,3 +623,187 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .offers li.not-mine { opacity: 0.55; }
 .setting legend { float: left; width: 100%; margin-bottom: 2px; }
 .setting legend + * { clear: both; }
+
+/* ---------- 4. kör: nézetek, képek, heti terv, Nom vagy nem, receptböngésző ---------- */
+
+.views { max-width: 1180px; margin: 0 auto; padding: 14px 20px 0; }
+.view-row {
+  display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none;
+  border-bottom: 1.5px solid var(--line);
+}
+.view-row button {
+  flex: none; border: 0; background: transparent;
+  padding: 10px 14px 9px; margin-bottom: -1.5px;
+  font-family: var(--display); font-weight: 600; font-size: 1rem; color: var(--muted);
+  border-bottom: 3px solid transparent;
+}
+.view-row button:hover { color: var(--ink); }
+.view-row button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--leaf); }
+
+.panel { max-width: 1180px; margin: 0 auto; padding: 20px; }
+.panel-title { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 800; letter-spacing: -0.02em; }
+
+/* képek */
+.pick-img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; max-height: 340px; background: var(--leaf-soft); }
+.more .m-img { width: 64px; height: 40px; border-radius: 6px; object-fit: cover; background: var(--leaf-soft); }
+
+.badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.badge {
+  font-size: 0.74rem; font-weight: 700; padding: 1px 8px; border-radius: 999px;
+  background: color-mix(in srgb, var(--tag) 35%, transparent); color: var(--ink);
+}
+.badge.diet { background: var(--leaf-soft); color: var(--leaf); }
+
+/* heti terv */
+.plan-setup {
+  background: var(--paper); border: 1.5px solid var(--line); border-radius: var(--radius-lg);
+  padding: 22px 26px;
+}
+.plan-fields { display: flex; flex-wrap: wrap; gap: 14px 28px; margin-top: 14px; align-items: flex-end; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field-label { display: block; font-size: 0.84rem; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+.field .field-label { margin-bottom: 0; }
+.money { display: inline-flex; align-items: center; gap: 6px; }
+.money input {
+  width: 130px; font: inherit; font-variant-numeric: tabular-nums; color: var(--ink); background: var(--paper);
+  border: 1.5px solid var(--line); border-radius: var(--radius-sm); padding: 7px 10px;
+}
+.money input:focus { border-color: var(--leaf); outline: none; box-shadow: 0 0 0 3px var(--leaf-soft); }
+.plan-chips { display: flex; flex-wrap: wrap; gap: 14px 32px; margin-top: 16px; }
+.plan-chips .chip { border-left-width: 1.5px; }
+
+.plan-grid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 28px; align-items: start; }
+@media (max-width: 920px) { .plan-grid { grid-template-columns: 1fr; } }
+
+.plan-total {
+  display: flex; gap: 22px; align-items: center; flex-wrap: wrap;
+  background: var(--paper); border: 1.5px solid var(--line); border-radius: var(--radius-lg); padding: 18px 22px;
+}
+.plan-facts { flex: 1; min-width: 220px; }
+.plan-facts p { margin: 0 0 4px; }
+.meter { height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; margin: 10px 0 4px; }
+.meter span { display: block; height: 100%; background: var(--leaf); border-radius: inherit; }
+.meter.over span { background: var(--red); }
+.meter-text { font-size: 0.86rem; color: var(--muted); }
+.plan-note {
+  margin: 10px 0 0; padding: 8px 12px; border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--tag) 22%, var(--paper)); font-size: 0.9rem;
+}
+
+.days { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 10px; }
+.day {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch;
+  background: var(--paper); border: 1.5px solid var(--line); border-radius: 14px; overflow: hidden;
+}
+.day:hover { border-color: var(--ink); }
+.day-open {
+  display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 16px; align-items: center;
+  border: 0; background: transparent; text-align: left; padding: 0 0 0 0;
+}
+.day-img { width: 160px; height: 100%; min-height: 108px; object-fit: cover; object-position: 30% 50%; display: block; background: var(--leaf-soft); }
+.day-text { padding: 12px 0; display: flex; flex-direction: column; }
+.day-label { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--leaf); }
+.day-name { font-family: var(--display); font-weight: 600; font-size: 1.15rem; line-height: 1.2; }
+.day-sub { font-size: 0.82rem; color: var(--muted); }
+.day-side {
+  display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 2px;
+  padding: 12px 16px; text-align: right;
+}
+.day-cost { font-family: var(--display); font-weight: 800; font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+.day-side small { color: var(--muted); font-size: 0.74rem; margin-bottom: 6px; }
+@media (max-width: 600px) {
+  .day { grid-template-columns: 1fr; }
+  .day-open { grid-template-columns: 104px minmax(0, 1fr); gap: 12px; }
+  .day-img { width: 104px; }
+  .day-side { flex-direction: row; align-items: center; justify-content: space-between; border-top: 1.5px dashed var(--line); padding: 8px 14px; }
+  .day-side small { margin: 0 auto 0 6px; }
+}
+
+.plan-list {
+  background: var(--paper); border: 1.5px solid var(--line); border-radius: var(--radius-lg);
+  padding: 4px 22px 20px; position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto;
+}
+@media (max-width: 920px) { .plan-list { position: static; max-height: none; } }
+.plan-list .section-title { margin: 16px 0 6px; }
+.aisle h3 {
+  font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
+  margin: 16px 0 2px; font-weight: 700;
+}
+.buy-use { font-size: 0.78rem; color: var(--muted); }
+.buy-deal {
+  grid-column: 2 / -1; justify-self: start; font-size: 0.72rem; font-weight: 700;
+  background: var(--tag); color: var(--tag-ink); padding: 0 6px; border-radius: 3px;
+}
+
+/* Nom vagy nem */
+.nom-head { max-width: 720px; }
+.nom-stage { display: flex; flex-direction: column; align-items: center; margin-top: 10px; }
+.nom-deck { position: relative; width: min(440px, 100%); height: 500px; touch-action: pan-y; }
+.nom-deck .empty { text-align: center; }
+.nom-card {
+  position: absolute; inset: 0;
+  background: var(--paper); border: 1.5px solid var(--line); border-radius: 22px; overflow: hidden;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.08);
+  transform: translateY(calc(var(--depth) * 10px)) scale(calc(1 - var(--depth) * 0.04));
+  transition: transform 200ms ease-out;
+  user-select: none; cursor: grab;
+  display: flex; flex-direction: column;
+}
+.nom-card:active { cursor: grabbing; }
+.nom-card img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; display: block; pointer-events: none; background: var(--leaf-soft); }
+.nom-body { padding: 16px 20px; display: flex; flex-direction: column; flex: 1; }
+.nom-body h3 { font-size: 1.45rem; font-weight: 800; letter-spacing: -0.02em; }
+.nom-body .pick-meta { margin-top: 6px; }
+.nom-price {
+  margin-top: auto; align-self: flex-start;
+  background: var(--tag); color: var(--tag-ink); font-family: var(--display); font-weight: 800;
+  padding: 4px 12px; border-radius: 4px; font-size: 1.1rem;
+}
+.stamp {
+  position: absolute; top: 22px; padding: 4px 12px; border: 4px solid; border-radius: 8px;
+  font-family: var(--display); font-weight: 800; font-size: 1.8rem; opacity: 0; transition: opacity 120ms;
+  background: var(--paper);
+}
+.stamp.yes { left: 18px; color: var(--leaf); transform: rotate(-12deg); }
+.stamp.no { right: 18px; color: var(--red); transform: rotate(12deg); }
+.nom-card.lean-yes .stamp.yes, .nom-card.lean-no .stamp.no { opacity: 1; }
+.nom-buttons { display: flex; gap: 14px; margin-top: 22px; align-items: center; }
+.nom-btn {
+  border: 2px solid var(--line); background: var(--paper); border-radius: 999px;
+  padding: 12px 22px; font-family: var(--display); font-weight: 800; font-size: 1.05rem;
+}
+.nom-btn.no { color: var(--red); border-color: color-mix(in srgb, var(--red) 50%, var(--line)); }
+.nom-btn.yes { color: #fff; background: var(--leaf); border-color: var(--leaf); }
+.nom-btn.later { font-weight: 600; font-size: 0.92rem; padding: 9px 16px; color: var(--muted); }
+.nom-btn[disabled] { opacity: 0.4; cursor: default; }
+.nom-liked { max-width: 760px; margin: 18px auto 0; }
+.liked { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.liked li { display: flex; align-items: center; gap: 10px; background: var(--paper); border: 1.5px solid var(--line); border-radius: 12px; padding: 6px 12px 6px 6px; }
+.liked-open { flex: 1; display: flex; align-items: center; gap: 12px; border: 0; background: transparent; text-align: left; font-family: var(--display); font-weight: 600; }
+.liked-open img { width: 72px; height: 45px; object-fit: cover; border-radius: 8px; }
+@media (max-width: 480px) { .nom-deck { height: 470px; } .nom-btn { padding: 10px 16px; } }
+
+/* receptböngésző */
+.browse-head .search { margin: 14px 0 12px; max-width: 520px; }
+.browse-head .sort { margin-bottom: 6px; }
+.cards {
+  list-style: none; margin: 10px 0 0; padding: 0;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px;
+}
+.card {
+  background: var(--paper); border: 1.5px solid var(--line); border-radius: 16px; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.card:hover { border-color: var(--ink); }
+.card-open { border: 0; background: transparent; padding: 0; text-align: left; display: flex; flex-direction: column; flex: 1; }
+.card-open img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; display: block; background: var(--leaf-soft); }
+.card-body { padding: 10px 14px 4px; display: flex; flex-direction: column; }
+.card-name { font-family: var(--display); font-weight: 600; font-size: 1.08rem; line-height: 1.2; }
+.card-sub { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+.card-foot { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px 10px 14px; }
+.card-price { font-weight: 700; font-variant-numeric: tabular-nums; }
+.heart {
+  border: 0; background: transparent; font-size: 1.4rem; line-height: 1; padding: 4px 8px; border-radius: 999px; color: var(--red);
+}
+.heart:hover { background: color-mix(in srgb, var(--red) 12%, transparent); }
+@media (max-width: 480px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .card-sub { display: none; } }
