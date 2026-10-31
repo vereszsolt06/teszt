@@ -1,0 +1,46 @@
+name: Képernyőképek (valódi fotókkal)
+
+# Kézi indítás: felépíti és elindítja az appot (docker compose), megvárja, hogy a receptfotók
+# letöltődjenek a Wikimedia Commonsról, képernyőképeket készít, és visszaírja őket a docs/ mappába.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: App indítása
+        run: |
+          docker compose up -d --build
+          for i in $(seq 1 60); do curl -fs http://127.0.0.1:8080/api/status >/dev/null && break; sleep 2; done
+      - name: Fotók letöltésének megvárása
+        run: |
+          for i in $(seq 1 90); do
+            n=$(docker compose exec -T db psql -U sporolos -d sporolos -tAc "select count(*) from recipe_photo")
+            echo "próbált receptek: $n"
+            [ "$n" -ge 170 ] && break
+            sleep 5
+          done
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Képernyőképek
+        run: |
+          cd .github/scripts
+          npm install --no-save playwright@1.48.2
+          npx playwright install --with-deps chromium
+          node screenshots.js ../../docs http://127.0.0.1:8080
+      - name: Visszaírás a repóba
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/*.png
+          git commit -m "Képernyőképek valódi receptfotókkal (automatikus)" || echo "nincs változás"
+          git push
+      - name: Leállítás
+        if: always()
+        run: docker compose down
