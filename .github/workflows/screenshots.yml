@@ -34,6 +34,15 @@ jobs:
           npm install --no-save playwright@1.48.2
           npx playwright install --with-deps chromium
           node screenshots.js ../../docs http://127.0.0.1:8080
+      - name: Fotók ellenőrzése
+        run: |
+          bad=""
+          for id in $(curl -fs "http://127.0.0.1:8080/api/recipes?store=lidl" | jq -r '.[].recipe | select(.image != null) | .id'); do
+            res=$(curl -s -o /tmp/f -w "%{http_code} %{content_type} %{size_download}" "http://127.0.0.1:8080/img/recipe/$id")
+            case "$res" in 200\ image/*) ;; *) bad="$bad $id=[$res]";; esac
+          done
+          echo "::notice title=Hibás fotók::${bad:-nincs}"
+          docker compose logs app | grep -iE "exception|hiba|fotó" | tail -30 || true
       - name: Visszaírás a repóba
         run: |
           git config user.name "github-actions[bot]"
