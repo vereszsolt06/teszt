@@ -60,6 +60,8 @@ public final class PhotoService {
     private static final Pattern COMMONS_FILE = Pattern.compile("/wikipedia/commons/(?:thumb/)?[0-9a-f]/[0-9a-f]{2}/([^/]+)");
     private static final Duration RETRY_AFTER = Duration.ofDays(7);
     private static final int WIDTH = 800;
+    /** A Wikimedia csak a szabványos bélyegkép-szélességeket szolgálja ki korlátozás nélkül (…, 500, 960, 1280…). */
+    private static final int FETCH_WIDTH = 960;
 
     private final Catalog catalog;
     private final Storage storage;
@@ -68,7 +70,7 @@ public final class PhotoService {
     private final Map<String, Boolean> index = new ConcurrentHashMap<>();
     private final Map<String, Boolean> pending = new ConcurrentHashMap<>();
     private final ExecutorService worker;
-    private volatile long delayMs = 400;
+    private volatile long delayMs = 1000;
     /** Egymás utáni hálózati hibák: ha sok, egy órára abbahagyja a próbálkozást (nincs net / tiltott a Wikimedia). */
     private volatile int networkFailures;
     private volatile Instant offlineUntil = Instant.EPOCH;
@@ -254,7 +256,7 @@ public final class PhotoService {
         if (file.toLowerCase(Locale.ROOT).endsWith(".svg")) return null;
 
         Http.Response info = http.get("https://commons.wikimedia.org/w/api.php?action=query&format=json"
-                + "&prop=imageinfo&iiprop=url%7Cextmetadata%7Cmime&iiurlwidth=" + WIDTH + "&titles=" + enc("File:" + file));
+                + "&prop=imageinfo&iiprop=url%7Cextmetadata%7Cmime&iiurlwidth=" + FETCH_WIDTH + "&titles=" + enc("File:" + file));
         if (info.status() != 200) throw new IOException("HTTP " + info.status());
         Map<String, Object> pages = Json.obj(Json.obj(Json.obj(Json.parse(new String(info.body(), StandardCharsets.UTF_8))).get("query")).get("pages"));
         if (pages.isEmpty()) return null;
@@ -268,6 +270,7 @@ public final class PhotoService {
         if (!freeLicense(license, metaValue(meta, "NonFree"))) return null;
         String url = i0.get("thumburl") != null ? Json.str(i0.get("thumburl")) : Json.str(i0.get("url"));
         Http.Response bin = http.get(url);
+        if (bin.status() == 429 || bin.status() >= 500) throw new IOException("HTTP " + bin.status()); // később újra
         if (bin.status() != 200 || bin.body().length < 2000) return null;
 
         byte[] bytes = bin.body();
@@ -276,8 +279,8 @@ public final class PhotoService {
         if (resized != null) {
             bytes = resized;
             type = "image/jpeg";
-        } else if (!type.startsWith("image/")) {
-            return null;
+        } else if (!type.equals("image/jpeg") && !type.equals("image/png") && !type.equals("image/webp")) {
+            return null; // a böngésző nem biztos, hogy megjeleníti (pl. TIFF)
         }
         String pageUrl = i0.get("descriptionurl") != null ? Json.str(i0.get("descriptionurl"))
                 : "https://commons.wikimedia.org/wiki/File:" + enc(file.replace(' ', '_'));

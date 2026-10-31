@@ -14,9 +14,11 @@ Java 21, **külső függőség nélkül** (beépített JDK webszerver, saját JS
 
 <img src="docs/lista.png" alt="Bevásárlólista bolti osztályok szerint" width="640"> <img src="docs/nom-mobil.png" alt="Nom vagy nem" width="250">
 
-<img src="docs/receptek.png" alt="Receptek: ma kifizetődő, most jó áron, összes recept" width="640">
+<img src="docs/receptek.png" alt="Receptek: ma kifizetődő, most jó áron, összes recept" width="640"> <img src="docs/receptek-racs.png" alt="Az összes recept fotóval" width="640">
 
-> A képernyőképeken a receptfotók helyén a fotó nélküli kártya látszik: a képek a futó app első indulásakor töltődnek le a Wikimedia Commonsról, és a képernyőképeket készítő gépről a Wikimedia nem volt elérhető. Lásd a [Képek](#7-képek-photoservice) részt.
+<img src="docs/recept.png" alt="Receptlap: fotó, adagár, makrók, hozzávalók a bolti termékkel" width="640">
+
+> A képernyőképeket a GitHub Actions készíti a futó appról (`Képernyőképek` workflow, kézzel indítható): a fotók valódi, szabad licencű Wikimedia Commons-képek, szerzőjük és licencük a receptlapon látszik. Ahol színes kártya és emoji van, ott (még) nincs fotó. Lásd a [Képek](#7-képek-photoservice) részt.
 
 ## Indítás
 
@@ -179,6 +181,8 @@ A korábbi, programból rajzolt illusztrációk kikerültek. Helyettük **valód
 3. Csak a **Wikimedia Commonson** lévő képet fogadja el, és csak szabad licenccel (CC0, CC BY, CC BY-SA, közkincs). A Wikipédiára helyben feltöltött, „fair use” képeket és a nem kereskedelmi (NC) licenceket kihagyja.
 4. A képet 800 px szélesre kicsinyíti (JPEG), és a tárolóba menti a **szerzővel, a licenccel és a forrásoldal linkjével** együtt. A receptlap ki is írja ezeket („Fotó: Kiss Anna, CC BY-SA 4.0 – Wikimedia Commons”), ahogy a licenc kéri.
 5. Ha egyik cikkhez sincs szabad kép, „nincs fotó” bejegyzés kerül a tárolóba, és egy hét múlva próbálja újra; ha nincs net, nem jegyez fel semmit, és egy óra múlva próbálja újra.
+
+A GitHub Actions-ben futtatott próbán a 170 receptből 165-höz talált szabad licencű fotót (a hiányzók forrásait azóta bővítettem). A fotók letöltése az első indulás után a háttérben kb. 5–10 percig tart; a Wikimedia korlátozza a gyors lekérdezést, ezért a szerver lassan, receptenként kb. egy másodperces szünettel halad, és a túlterhelés miatt elutasított kéréseket később újra próbálja.
 
 Ahol nincs fotó, a kártya egy egyszerű színes felületet mutat a recept emojijával – rajz nincs. **Saját fotó:** tedd a `data/kepek/{receptazonosító}.jpg` fájlt a helyére (pl. `data/kepek/lecso.jpg`), az mindig elsőbbséget kap. A fotók a `/img/recipe/{id}` címen érhetők el, egy hétig gyorsítótárazhatók.
 
