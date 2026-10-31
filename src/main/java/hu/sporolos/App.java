@@ -6,7 +6,11 @@ import hu.sporolos.data.Catalog;
 import hu.sporolos.data.DemoPriceProvider;
 import hu.sporolos.data.PriceHistory;
 import hu.sporolos.data.PriceProvider;
+import hu.sporolos.data.PhotoService;
 import hu.sporolos.data.PromoStore;
+import hu.sporolos.store.FileStorage;
+import hu.sporolos.store.PgStorage;
+import hu.sporolos.store.Storage;
 import hu.sporolos.web.WebServer;
 
 import java.io.IOException;
@@ -32,6 +36,9 @@ import java.util.Properties;
  *   refresh.hours   (REFRESH_HOURS)   – ennyi óra után tölti újra az árakat (alap: 6)
  *   promo.dir       (PROMO_DIR)       – a láncok saját akcióinak mappája (*.json, *.csv; alap: data/akciok)
  *   promo.feeds     (PROMO_FEEDS)     – akció-feedek URL-jei vesszővel elválasztva (ugyanilyen JSON/CSV)
+ *   database.url    (DATABASE_URL)    – postgres://felh:jelszo@host:5432/db; ha üres, fájlokban tárol (data/)
+ *   photos          (PHOTOS)          – on | off: receptfotók letöltése a Wikimedia Commonsról (alap: on)
+ *   photo.dir       (PHOTO_DIR)       – saját receptfotók mappája ({receptazonosító}.jpg; alap: data/kepek)
  */
 public final class App {
 
@@ -48,6 +55,18 @@ public final class App {
         String file = get(cfg, "arfigyelo.file", "ARFIGYELO_FILE", "");
         long refreshHours = Long.parseLong(get(cfg, "refresh.hours", "REFRESH_HOURS", "6"));
 
+        System.setProperty("java.awt.headless", "true");
+        String dbUrl = get(cfg, "database.url", "DATABASE_URL", "");
+        Path promoDirEarly = Path.of(get(cfg, "promo.dir", "PROMO_DIR", dataDir.resolve("akciok").toString()));
+        Storage storage;
+        if (dbUrl.isBlank()) {
+            storage = new FileStorage(dataDir, promoDirEarly.resolve(PromoStore.MANUAL_FILE));
+        } else {
+            System.out.println("[tárolás] Kapcsolódás a PostgreSQL-hez…");
+            storage = PgStorage.open(dbUrl, 20);
+        }
+        System.out.println("[tárolás] " + storage.describe());
+
         Catalog catalog = Catalog.loadDefault();
         List<PriceProvider> providers = new ArrayList<>();
         if (!source.equals("demo")) {
@@ -61,13 +80,19 @@ public final class App {
         List<String> feedList = feeds.isBlank() ? List.of()
                 : java.util.Arrays.stream(feeds.split("[,\\s]+")).filter(x -> !x.isBlank()).toList();
         Path promoDir = Path.of(get(cfg, "promo.dir", "PROMO_DIR", dataDir.resolve("akciok").toString()));
-        PromoStore promos = new PromoStore(promoDir, feedList);
+        PromoStore promos = new PromoStore(promoDir, feedList, storage);
 
         PriceRepository repo = new PriceRepository(catalog, providers,
-                new PriceHistory(dataDir.resolve("history"), 28), promos, Duration.ofHours(refreshHours));
+                new PriceHistory(storage, 28), promos, Duration.ofHours(refreshHours));
         repo.reload();
 
-        WebServer server = new WebServer(repo);
+        boolean photosOn = !get(cfg, "photos", "PHOTOS", "on").equalsIgnoreCase("off");
+        PhotoService photos = new PhotoService(catalog, storage,
+                Path.of(get(cfg, "photo.dir", "PHOTO_DIR", dataDir.resolve("kepek").toString())),
+                photosOn ? PhotoService.defaultHttp() : null);
+        photos.startBackground();
+
+        WebServer server = new WebServer(repo, storage, photos);
         int actual = server.start(host, port);
         System.out.println();
         System.out.println("  Spórolós Konyha fut:  http://" + (host.equals("0.0.0.0") ? "localhost" : host) + ":" + actual);

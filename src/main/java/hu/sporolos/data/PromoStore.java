@@ -44,10 +44,17 @@ public final class PromoStore {
 
     private final Path dir;
     private final List<String> feeds;
+    /** A kézi akciók helye: fájl (dir/sajat-akciok.json) vagy adatbázis. */
+    private final hu.sporolos.store.Storage manual;
 
     public PromoStore(Path dir, List<String> feeds) {
+        this(dir, feeds, dir == null ? null : new hu.sporolos.store.FileStorage(dir, dir.resolve(MANUAL_FILE)));
+    }
+
+    public PromoStore(Path dir, List<String> feeds, hu.sporolos.store.Storage manual) {
         this.dir = dir;
         this.feeds = feeds == null ? List.of() : List.copyOf(feeds);
+        this.manual = manual;
     }
 
     /** Minden akció a fájlokból és a feedekből. A hibás fájlokat/sorokat kihagyja, és a figyelmeztetésekbe írja. */
@@ -66,12 +73,26 @@ public final class PromoStore {
             }
             for (Path f : files) {
                 String name = f.getFileName().toString();
-                String source = name.equals(MANUAL_FILE) ? "kézi" : "fájl: " + name;
+                if (name.equals(MANUAL_FILE)) continue; // a kézi akciókat a tároló adja (lent)
+                String source = "fájl: " + name;
                 try {
                     out.addAll(parse(Files.readString(f, StandardCharsets.UTF_8), name.endsWith(".csv"), source, warnings));
                 } catch (IOException | RuntimeException e) {
                     warnings.add(name + ": " + e.getMessage());
                 }
+            }
+        }
+        if (manual != null) {
+            try {
+                for (Map<String, Object> m : manual.manualPromos()) {
+                    try {
+                        out.add(Promo.fromJson(m, "kézi"));
+                    } catch (IllegalArgumentException e) {
+                        warnings.add("kézi akció: " + e.getMessage());
+                    }
+                }
+            } catch (IOException | RuntimeException e) {
+                warnings.add("A kézi akciók nem olvashatók: " + e.getMessage());
             }
         }
         for (int i = 0; i < feeds.size(); i++) {
@@ -203,26 +224,13 @@ public final class PromoStore {
     }
 
     private List<Map<String, Object>> readManual() throws IOException {
-        if (dir == null) throw new IOException("Nincs beállítva az akciók mappája");
-        Path f = dir.resolve(MANUAL_FILE);
-        List<Map<String, Object>> list = new ArrayList<>();
-        if (Files.exists(f)) {
-            for (Object o : Json.arr(Json.parse(Files.readString(f, StandardCharsets.UTF_8)))) list.add(Json.obj(o));
-        }
-        return list;
+        if (manual == null) throw new IOException("Nincs beállítva az akciók mappája");
+        return new ArrayList<>(manual.manualPromos());
     }
 
     private void writeManual(List<Map<String, Object>> list) throws IOException {
-        Files.createDirectories(dir);
-        Path f = dir.resolve(MANUAL_FILE);
-        Path tmp = dir.resolve(MANUAL_FILE + ".tmp");
-        StringBuilder sb = new StringBuilder("[\n");
-        for (int i = 0; i < list.size(); i++) {
-            sb.append("  ").append(Json.write(list.get(i))).append(i < list.size() - 1 ? ",\n" : "\n");
-        }
-        sb.append("]\n");
-        Files.writeString(tmp, sb, StandardCharsets.UTF_8);
-        Files.move(tmp, f, StandardCopyOption.REPLACE_EXISTING);
+        if (manual == null) throw new IOException("Nincs beállítva az akciók mappája");
+        manual.saveManualPromos(list);
     }
 
     private static String download(String url) throws IOException, InterruptedException {

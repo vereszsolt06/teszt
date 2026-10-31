@@ -129,6 +129,7 @@ public final class WeeklyPlanner {
                 }
                 if (curCheckout + marginal + remainingAfter * reservePerDinner > budget) continue;
                 double value = s.score()
+                        + appeal(s.recipe(), catalog.meta(s.recipe().id()))
                         + (q.liked().contains(s.recipe().id()) ? 0.35 : 0)
                         + rnd.nextDouble() * 0.18
                         - 0.55 * marginal / Math.max(1, perDinnerBudget);
@@ -169,6 +170,29 @@ public final class WeeklyPlanner {
         return new Plan(days, b.items, b.checkout, b.staples, q.budget(), over, b.pantry,
                 days.isEmpty() ? 0 : sumKcal / days.size(), days.isEmpty() ? 0 : sumProtein / days.size(),
                 cand.size() + chosen.size(), notes);
+    }
+
+    private static final Set<String> CROWD_PLEASERS = Set.of("olasz", "mexikói", "ázsiai", "görög", "spanyol", "comfort");
+
+    /**
+     * Mennyire „rendes vacsora” egy recept (a NomNom is valódi, laktató hétköznapi vacsorákat ad, nem a
+     * legolcsóbb köretet): fehérjedús főétel és népszerű konyhák előnyben, könnyű levesek, főzelékek és
+     * a nagyon kis kalóriájú tálak hátrébb. Nagyjából −0,3 … +0,4.
+     */
+    static double appeal(Recipe r, RecipeMeta m) {
+        double a = 0;
+        List<String> t = r.tags();
+        if (m != null) {
+            if (m.moods().contains("fehérjedús")) a += 0.2;
+            else if (m.protein() >= 20) a += 0.1;
+            if (m.kcal() < 400) a -= 0.15;
+            if (m.moods().contains("laktató")) a += 0.05;
+        }
+        if (t.stream().anyMatch(CROWD_PLEASERS::contains)) a += 0.15;
+        if (t.contains("leves") && (m == null || !m.moods().contains("laktató"))) a -= 0.15;
+        if (t.contains("főzelék")) a -= 0.08;
+        if (t.contains("reggeli")) a -= 0.2;
+        return a;
     }
 
     /** A receptek nem kamraáru alapanyag-szükséglete összesítve (az alapanyag egységében). */

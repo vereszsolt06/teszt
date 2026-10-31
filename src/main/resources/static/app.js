@@ -6,20 +6,16 @@ const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
 const state = {
   status: null,
-  store: null,
-  tag: "",
-  suggestions: [],   // a bolt rangsorolt receptjei (szűrővel)
-  shown: new Set(),  // a "Másik receptet kérek" már mutatott receptjei
-  current: null,     // a kiválasztott recept részletei (/api/recipe)
-  swapped: new Set(),// a hozzávalók, amelyeknél a felhasználó az alternatív kiszerelést választotta
-  servings: 0,       // 0 = a recept alapadagja
-  showAll: false,
-  sort: "score",
-  requestId: 0,      // elavult válaszok eldobásához
-  dealLimit: 12,     // ennyi jó árat mutatunk elsőre (telefonon ne legyen végtelen a lista)
-  prefs: { stores: [], bulk: false, cards: [] }, // stores: üres = minden bolt
-  ingredients: null, // az akció-űrlap alapanyag-listája
-  view: "ma",        // ma | terv | nom | receptek (views.js)
+  profile: null,      // {id, settings, liked, disliked, storage}
+  week: null,         // /api/week válasz
+  view: "het",
+  recipes: null,      // /api/recipes (a kiválasztott boltra)
+  recipesKey: "",
+  deck: [],
+  filter: "",
+  sheet: null,        // a nyitott receptlap: {id, servings, data, swapped, day}
+  ingredients: null,
+  weekBusy: 0,
 };
 
 const DEAL_LABEL = {
@@ -29,11 +25,19 @@ const DEAL_LABEL = {
   CATEGORY: "Tartósan olcsó",
   PROMO: "Bolti akció",
 };
+const DIETS = [["vega", "Húsmentes"], ["gluténmentes", "Gluténmentes"], ["laktózmentes", "Laktózmentes"]];
+const EQUIPMENT = [["tuzhely", "Tűzhely"], ["suto", "Sütő"], ["airfryer", "Airfryer"]];
+const DAY_TO = { Hétfő: "hétfőre", Kedd: "keddre", Szerda: "szerdára", Csütörtök: "csütörtökre", Péntek: "péntekre", Szombat: "szombatra", Vasárnap: "vasárnapra" };
+const IN_STORE = {
+  aldi: "az Aldiban", lidl: "a Lidlben", penny: "a Pennyben", auchan: "az Auchanban",
+  tesco: "a Tescóban", spar: "a Sparban",
+};
 
-// ---------- formázás ----------
+// ---------- formázás, DOM ----------
 
 const nf = new Intl.NumberFormat("hu-HU", { maximumFractionDigits: 0 });
-const ft = (v) => nf.format(Math.round(v)).replace(/\s/g, " ") + " Ft";
+const ft = (v) => nf.format(Math.round(v)).replace(/\s/g, " ") + " Ft";
+const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
 
 function qty(amount, unit) {
   const comma = (n) => String(n).replace(".", ",");
@@ -41,21 +45,6 @@ function qty(amount, unit) {
   if (unit === "l" && amount < 1) return `${comma(Math.round(amount * 100) / 10)} dl`;
   return `${comma(Math.round(amount * 100) / 100)} ${unit}`;
 }
-
-function storeName(id) {
-  return state.status?.stores.find((s) => s.id === id)?.name || id;
-}
-
-/** "a Lidlben", "az Aldiban", "a Tescóban" – a láncnevek ragozása kézzel, mert szabállyal nem megy. */
-const IN_STORE = {
-  aldi: "az Aldiban", lidl: "a Lidlben", penny: "a Pennyben", auchan: "az Auchanban",
-  tesco: "a Tescóban", spar: "a Sparban", rossmann: "a Rossmannban", muller: "a Müllerben", dm: "a dm-ben",
-};
-function inStore(id) {
-  return IN_STORE[id] || `itt: ${storeName(id)} –`;
-}
-
-const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
 
 function el(tag, cls, text, attrs) {
   const e = document.createElement(tag);
@@ -65,9 +54,7 @@ function el(tag, cls, text, attrs) {
   return e;
 }
 
-// ---------- tárolás, beállítások, állapot az URL-ben ----------
-
-function store(key, value) {
+function local(key, value) {
   try {
     if (value === undefined) return localStorage.getItem(key);
     if (value === null) localStorage.removeItem(key);
@@ -78,710 +65,26 @@ function store(key, value) {
   return null;
 }
 
-function loadPrefs() {
-  try {
-    const p = JSON.parse(store("sporolos.prefs") || "null");
-    if (p && typeof p === "object") {
-      state.prefs = {
-        stores: Array.isArray(p.stores) ? p.stores : [],
-        bulk: !!p.bulk,
-        cards: Array.isArray(p.cards) ? p.cards : [],
-      };
-    }
-  } catch (e) { /* alapbeállítások */ }
-}
-
-function savePrefs() {
-  store("sporolos.prefs", JSON.stringify(state.prefs));
-}
-
-/** A beállítások query-paraméterként minden kéréshez. */
-function prefQuery() {
-  const p = new URLSearchParams();
-  if (state.prefs.stores.length) p.set("stores", state.prefs.stores.join(","));
-  if (state.prefs.bulk) p.set("bulk", "1");
-  if (state.prefs.cards.length) p.set("cards", state.prefs.cards.join(","));
-  const s = p.toString();
-  return s ? "&" + s : "";
-}
-
-/** A felhasználó boltjai (a státusz sorrendjében). */
-function myStores() {
-  const all = state.status?.stores || [];
-  if (!state.prefs.stores.length) return all;
-  const mine = all.filter((s) => state.prefs.stores.includes(s.id));
-  return mine.length ? mine : all;
-}
-
-function readHash() {
-  const p = new URLSearchParams(location.hash.slice(1));
-  return { store: p.get("bolt"), recipe: p.get("recept"), servings: Number(p.get("adag")) || 0, tag: p.get("cimke") || "", view: p.get("nezet") || "" };
-}
-
-function writeHash() {
-  const p = new URLSearchParams();
-  if (state.view && state.view !== "ma") p.set("nezet", state.view);
-  if (state.store) p.set("bolt", state.store);
-  if (state.current && state.view === "ma") p.set("recept", state.current.recipe.id);
-  if (state.servings) p.set("adag", String(state.servings));
-  if (state.tag) p.set("cimke", state.tag);
-  const h = "#" + p.toString();
-  if (location.hash !== h) history.replaceState(null, "", h);
-}
-
-// ---------- hálózat ----------
-
 async function api(path, opts) {
-  const sep = path.includes("?") ? "" : "?";
-  const res = await fetch(path + sep + prefQuery(), opts);
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(body.error || `A szerver ${res.status} hibával válaszolt.`);
+  const res = await fetch(path, opts);
+  let body = null;
+  try { body = await res.json(); } catch (e) { /* nem JSON */ }
+  if (!res.ok) {
+    const err = new Error(body?.error || `Hiba (${res.status})`);
+    err.status = res.status;
+    throw err;
+  }
   return body;
 }
+const jsonOpts = (method, data) => ({ method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
 
+let toastTimer;
 function toast(msg) {
   const t = $("#toast");
   t.textContent = msg;
   t.hidden = false;
-  clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => { t.hidden = true; }, 3200);
-}
-
-function showError(msg) {
-  const pick = $("#pick");
-  pick.replaceChildren(el("p", "empty", msg + " Indítsd újra az alkalmazást, vagy próbáld az „Árak frissítése” gombot."));
-}
-
-// ---------- betöltés ----------
-
-async function loadStatus() {
-  state.status = await api("/api/status");
-  const s = state.status;
-  const d = new Date(s.date + "T00:00:00");
-  const dateText = d.toLocaleDateString("hu-HU", { month: "long", day: "numeric" });
-  let text = `${s.source} · ${dateText} · ${nf.format(s.itemCount)} élelmiszerár`;
-  if (s.activePromos > 0) text += ` · ${s.activePromos} saját akció`;
-  if (s.historyDays > 0) text += ` · ${s.historyDays} nap előzmény`;
-  $("#source").textContent = text;
-
-  const banner = $("#banner");
-  if (s.demo) {
-    banner.textContent = "Demó árakat látsz: az Árfigyelő napi fájlja most nem volt elérhető. Ellenőrizd az internetkapcsolatot, majd nyomd meg az „Árak frissítése” gombot.";
-    banner.hidden = false;
-  } else if (s.stale) {
-    banner.textContent = `Az árak ${dateText}-i állapotot mutatnak. Frissebb adatért nyomd meg az „Árak frissítése” gombot.`;
-    banner.hidden = false;
-  } else {
-    banner.hidden = true;
-  }
-
-  const ids = myStores().map((x) => x.id);
-  if (!state.store || !ids.includes(state.store)) {
-    const saved = store("sporolos.store");
-    state.store = ids.includes(saved) ? saved : bestStore()?.id;
-  }
-  renderStores();
-}
-
-function bestStore() {
-  return myStores().reduce((a, b) => (!a || b.topScore > a.topScore ? b : a), null);
-}
-
-/** A bolt receptjei és jó árai; utána a kért (vagy a legjobb) recept. */
-async function loadStore(preferredRecipe) {
-  if (!state.store) return;
-  const tag = encodeURIComponent(state.tag);
-  const [sugs] = await Promise.all([
-    api(`/api/suggestions?store=${state.store}&tag=${tag}&limit=200`),
-    loadDeals(),
-  ]);
-  state.suggestions = sugs;
-  state.shown = new Set();
-  if (preferredRecipe && sugs.some((s) => s.recipe.id === preferredRecipe)) {
-    await showRecipe(preferredRecipe, state.servings > 0);
-  } else {
-    await nextRecipe(true);
-  }
-}
-
-async function loadDeals() {
-  const q = $("#search").value.trim();
-  if (q.length >= 2) return runSearch(q);
-  const only = $("#onlyIngredients").checked;
-  const deals = await api(`/api/deals?store=${state.store}&limit=${state.dealLimit + 1}&ingredients=${only}`);
-  renderDeals(deals.slice(0, state.dealLimit));
-  $("#more-deals").hidden = deals.length <= state.dealLimit;
-}
-
-async function showRecipe(id, keepServings) {
-  const myId = ++state.requestId;
-  if (!keepServings) state.servings = 0;
-  const servings = state.servings ? `&servings=${state.servings}` : "";
-  const detail = await api(`/api/recipe?id=${encodeURIComponent(id)}&store=${state.store}${servings}`);
-  if (myId !== state.requestId) return; // közben másik receptet kértek
-  if (state.current?.recipe.id !== id || state.current?.store !== detail.store) state.swapped = new Set();
-  state.current = detail;
-  state.shown.add(id);
-  renderPick(!keepServings);
-  renderMore();
-  writeHash();
-}
-
-/** Mindent újratölt (beállítás-változás után), a kiválasztott receptet megtartva. */
-async function reloadAll() {
-  const keep = state.current?.recipe.id;
-  await loadStatus();
-  await loadStore(keep);
-  if (typeof onStoreChanged === "function") onStoreChanged();
-}
-
-// ---------- receptválasztás ----------
-
-/** Súlyozott véletlen a legjobb 8 közül, ismétlés nélkül – így "dobál" recepteket, de mindig jókat. */
-async function nextRecipe(first) {
-  const pool = state.suggestions.slice(0, 8);
-  if (pool.length === 0) {
-    state.current = null;
-    renderPick();
-    renderMore();
-    writeHash();
-    return;
-  }
-  let candidates = pool.filter((s) => !state.shown.has(s.recipe.id));
-  if (candidates.length === 0) {
-    state.shown = new Set(state.current ? [state.current.recipe.id] : []);
-    candidates = pool.filter((s) => !state.shown.has(s.recipe.id));
-    if (candidates.length === 0) candidates = pool;
-  }
-  let chosen = candidates[0];
-  if (!first) {
-    const weights = candidates.map((s) => Math.pow(s.score + 0.05, 2));
-    let r = Math.random() * weights.reduce((a, b) => a + b, 0);
-    chosen = candidates[candidates.length - 1];
-    for (let i = 0; i < candidates.length; i++) {
-      r -= weights[i];
-      if (r <= 0) { chosen = candidates[i]; break; }
-    }
-  }
-  await showRecipe(chosen.recipe.id);
-}
-
-// ---------- boltválasztó ----------
-
-function renderStores() {
-  const row = $("#stores");
-  row.replaceChildren();
-  const best = bestStore();
-  const mine = myStores();
-  for (const s of mine) {
-    const b = el("button", "store", null, { type: "button", role: "tab", "aria-selected": String(s.id === state.store) });
-    b.style.setProperty("--c", s.color);
-    b.append(el("span", "store-name", s.name), el("span", "store-meta", `${s.dealCount} jó ár`));
-    if (best && s.id === best.id && mine.length > 1) b.appendChild(el("span", "best", "ma itt a legjobb"));
-    b.addEventListener("click", () => selectStore(s.id));
-    row.appendChild(b);
-  }
-  const hidden = (state.status?.stores.length || 0) - mine.length;
-  if (hidden > 0) {
-    const more = el("button", "store store-edit", null, { type: "button" });
-    more.append(el("span", "store-name", "+"), el("span", "store-meta", `${hidden} bolt elrejtve`));
-    more.addEventListener("click", openSettings);
-    row.appendChild(more);
-  }
-  row.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });
-}
-
-function selectStore(id, recipe) {
-  if (id === state.store && !recipe) return;
-  state.store = id;
-  state.dealLimit = 12;
-  store("sporolos.store", id);
-  renderStores();
-  loadStore(recipe || state.current?.recipe.id).catch((e) => showError(e.message));
-  if (typeof onStoreChanged === "function") onStoreChanged();
-}
-
-// ---------- a kiválasztott recept ----------
-
-/** "35 perc · könnyű · 520 kcal · 32 g fehérje / adag" */
-function metaLine(r) {
-  const parts = [`${r.minutes} perc`, r.difficulty];
-  if (r.nutrition) parts.push(`${r.nutrition.kcal} kcal`, `${r.nutrition.protein} g fehérje / adag`);
-  return parts.join(" · ");
-}
-
-/** Diéta- és hangulatcímkék kis jelvényként. */
-function badges(r, max) {
-  const wrap = el("span", "badges");
-  const list = [...(r.diets || []), ...(r.moods || [])].slice(0, max || 9);
-  for (const b of list) wrap.appendChild(el("span", "badge" + (DIET_SET.has(b) ? " diet" : ""), b));
-  return wrap;
-}
-const DIET_SET = new Set(["vega", "gluténmentes", "laktózmentes"]);
-
-/** A hozzávalók a felhasználó kiszerelés-választásaival (alternatíva cserélve, ahol kérte). */
-function effectiveIngredients(s) {
-  return s.ingredients.map((i) => (state.swapped.has(i.label) && i.alternative ? { ...i.alternative, swappedFrom: i } : i));
-}
-
-function totals(items) {
-  let cost = 0, checkout = 0, staples = 0;
-  for (const i of items) {
-    if (i.pantry) continue;
-    cost += i.cost;
-    if (i.staple) staples += i.checkoutCost; else checkout += i.checkoutCost;
-  }
-  return { cost, checkout, staples };
-}
-
-function renderPick(animate) {
-  const pick = $("#pick");
-  const s = state.current;
-  pick.classList.remove("fresh");
-  pick.replaceChildren();
-  $("#counter").textContent = "";
-
-  if (!s) {
-    pick.appendChild(el("p", "empty", state.tag
-      ? "Ehhez a szűrőhöz ebben a boltban most nincs elég árazható recept. Válassz másik szűrőt vagy boltot."
-      : "Ebben a boltban most nincs elég árazható alapanyag. Válassz másik boltot."));
-    return;
-  }
-
-  const r = s.recipe;
-  const items = effectiveIngredients(s);
-  const t = totals(items);
-  const deals = items.filter((i) => i.deal);
-
-  pick.appendChild(el("img", "pick-img", null, { src: r.image, alt: "", width: "640", height: "400", decoding: "async" }));
-  const head = el("div", "pick-head");
-  const left = el("div");
-  left.append(
-    el("h2", "pick-name", r.name, { id: "pick-title" }),
-    el("p", "pick-meta", metaLine(r)),
-    badges(r),
-    el("p", "pick-why", whyText(s, deals)),
-  );
-  const pack = packNote(s, t);
-  if (pack) left.appendChild(pack);
-
-  const right = el("div", "pick-side");
-  const tag = el("div", "price-tag", null, { role: "img", "aria-label": `A recept költsége kb. ${ft(t.cost)}` });
-  tag.append(el("small", null, `${s.servings} adag, kb.`), el("span", "now", ft(t.cost)));
-  if (s.otherStoresCost - t.cost >= 20) {
-    const was = el("small", "was", "máshol ");
-    was.appendChild(el("span", "old", ft(s.otherStoresCost)));
-    tag.appendChild(was);
-  }
-  right.append(tag, servingsControl(s));
-  head.append(left, right);
-  pick.appendChild(head);
-
-  const body = el("div", "pick-body");
-  body.append(renderIngredients(items), renderSteps(r));
-  pick.appendChild(body);
-  pick.appendChild(renderShoppingList(s, items, t));
-  pick.appendChild(renderComparison(s, t));
-
-  if (animate) {
-    void pick.offsetWidth;
-    pick.classList.add("fresh");
-  }
-
-  const left8 = state.suggestions.slice(0, 8).filter((x) => !state.shown.has(x.recipe.id)).length;
-  $("#counter").textContent = left8 > 0 ? `még ${left8} jó ötlet erre a boltra` : "körbeértünk, újrakezdjük";
-}
-
-/** Rövid megjegyzés a kiszerelésről: mennyit spórolna nagy kiszereléssel (vagy fordítva). */
-function packNote(s, t) {
-  const withAlt = s.ingredients.filter((i) => i.alternative);
-  if (!withAlt.length) return null;
-  const allSwapped = withAlt.every((i) => state.swapped.has(i.label));
-  const box = el("p", "pack-note");
-  const btn = el("button", "linkish", null, { type: "button" });
-  if (!s.bulkMode) {
-    const save = s.totalCost - s.altTotalCost;
-    if (allSwapped) {
-      box.append(`Nagy kiszerelésekkel számolva: a recept ${ft(save)}-tal olcsóbb, de ma ${ft(t.checkout)}-ot fizetsz. `);
-      btn.textContent = "Vissza a háztartási kiszerelésre";
-    } else {
-      box.append(`Nagy kiszerelésekkel a recept ${ft(save)}-tal olcsóbb lenne (${ft(s.altTotalCost)}), de ma ${ft(s.altCheckoutTotal)}-ot fizetnél ${ft(s.checkoutTotal)} helyett. `);
-      btn.textContent = "Mutasd nagy kiszereléssel";
-    }
-  } else {
-    if (allSwapped) {
-      box.append("Háztartási kiszerelésekkel számolva. ");
-      btn.textContent = "Vissza a nagy kiszerelésre";
-    } else {
-      box.append(`Nagy kiszerelésekkel számolva. Háztartási kiszerelésekkel ma csak ${ft(s.altCheckoutTotal)}-ot fizetnél, de a recept ${ft(s.altTotalCost - s.totalCost)}-tal drágább lenne. `);
-      btn.textContent = "Mutasd háztartási kiszereléssel";
-    }
-  }
-  btn.addEventListener("click", () => {
-    if (allSwapped) state.swapped = new Set();
-    else state.swapped = new Set(withAlt.map((i) => i.label));
-    renderPick(false);
-  });
-  box.appendChild(btn);
-  return box;
-}
-
-function servingsControl(s) {
-  const wrap = el("div", "servings", null, { role: "group", "aria-label": "Adagszám" });
-  const minus = el("button", "step", "−", { type: "button", "aria-label": "Kevesebb adag" });
-  const value = el("span", "servings-value", `${s.servings} adag`);
-  const plus = el("button", "step", "+", { type: "button", "aria-label": "Több adag" });
-  minus.disabled = s.servings <= 1;
-  plus.disabled = s.servings >= 20;
-  const change = (d) => {
-    state.servings = Math.max(1, Math.min(20, s.servings + d));
-    showRecipe(s.recipe.id, true).catch((e) => toast(e.message));
-  };
-  minus.addEventListener("click", () => change(-1));
-  plus.addEventListener("click", () => change(+1));
-  wrap.append(minus, value, plus);
-  return wrap;
-}
-
-function whyText(s, deals) {
-  const fmt = (i) => `${i.label.toLowerCase()}${i.deal.savingPercent > 0 ? ` (−${Math.round(i.deal.savingPercent)}%)` : ""}`;
-  const promo = deals.filter((i) => i.deal.type === "PROMO");
-  const hot = deals.filter((i) => i.deal.type !== "CATEGORY" && i.deal.type !== "PROMO");
-  const steady = deals.filter((i) => i.deal.type === "CATEGORY");
-  const parts = [];
-  if (promo.length) parts.push(`${cap(inStore(s.store))} akcióban van: ${promo.slice(0, 3).map(fmt).join(", ")}.`);
-  if (hot.length) parts.push(`${promo.length ? "Emellett épp most jó áron" : `${cap(inStore(s.store))} épp most jó áron`} van: ${hot.slice(0, 3).map(fmt).join(", ")}.`);
-  if (steady.length) parts.push(`${hot.length || promo.length ? "Tartósan" : `${cap(inStore(s.store))} tartósan`} olcsó: ${steady.slice(0, 3).map(fmt).join(", ")}.`);
-  if (parts.length === 0) parts.push(`Nincs benne kiemelt akció, de ${inStore(s.store)} ez most az egyik legolcsóbban összevásárolható recept.`);
-  if (s.savings >= 20) parts.push(`A többi boltodban átlagosan ${ft(s.savings)}-tal többe kerülne.`);
-  return parts.join(" ");
-}
-
-function renderIngredients(items) {
-  const box = el("div", "ingredients");
-  box.appendChild(el("h3", null, "Hozzávalók és mit vegyél"));
-  const ul = el("ul", "ing");
-  let anyEstimated = false;
-  for (const i of items) {
-    const li = el("li");
-    if (i.pantry) li.classList.add("pantry");
-    if (i.estimated) { li.classList.add("estimated"); anyEstimated = true; }
-    const label = el("span");
-    label.append(el("span", "ing-name", i.label), document.createTextNode(" "), el("span", "ing-amount", i.amount ? `– ${i.amount}` : ""));
-    li.append(label, el("span", "ing-cost", i.pantry ? "otthon van" : ft(i.cost)));
-    if (i.item) {
-      const p = el("span", "ing-product");
-      const link = el("button", "linkish", i.item.name, { type: "button" });
-      link.addEventListener("click", () => openItem(i.item.id));
-      p.append(link);
-      p.appendChild(el("span", "ing-price", ` · ${i.priceText}`));
-      if (i.item.availability < 0.5) {
-        p.appendChild(el("span", "avail", ` · a boltjaik ${Math.max(1, Math.round(i.item.availability * 100))}%-ában`));
-      }
-      p.appendChild(el("span", "ing-buy", `Vegyél: ${i.buyText}${i.bulk ? " (nagy kiszerelés)" : ""}`));
-      if (i.deal) {
-        p.appendChild(el("span", i.deal.type === "PROMO" ? "ing-deal promo" : "ing-deal",
-          `${DEAL_LABEL[i.deal.type]}${i.deal.savingPercent > 0 ? ` · −${Math.round(i.deal.savingPercent)}%` : ""}`, { title: i.deal.reason }));
-      }
-      li.appendChild(p);
-    } else if (i.estimated) {
-      li.appendChild(el("span", "ing-product", `Az Árfigyelő nem követi, vagy ebben a boltban nincs – becsült ár (${i.priceText}).`));
-    }
-    ul.appendChild(li);
-  }
-  box.appendChild(ul);
-  if (anyEstimated) box.appendChild(el("p", "note", "* becsült ár; ha akciót látsz rá az újságban, az „Akciók” gombbal felviheted."));
-  return box;
-}
-
-function renderSteps(r) {
-  const box = el("div", "steps");
-  box.appendChild(el("h3", null, "Elkészítés"));
-  const ol = el("ol");
-  for (const step of r.steps) ol.appendChild(el("li", null, step));
-  box.appendChild(ol);
-  return box;
-}
-
-// ---------- bevásárlólista ----------
-
-function listKey(s) {
-  return `sporolos.list.${s.store}.${s.recipe.id}`;
-}
-
-function renderShoppingList(s, items, t) {
-  const box = el("section", "shopping", null, { "aria-label": "Bevásárlólista" });
-  const head = el("div", "shopping-head");
-  head.appendChild(el("h3", null, `Bevásárlólista – ${storeName(s.store)}`));
-  const copy = el("button", "ghost small", navigator.share ? "Megosztás" : "Lista másolása", { type: "button" });
-  copy.addEventListener("click", () => shareList(s, items, t));
-  head.appendChild(copy);
-  box.appendChild(head);
-
-  let checked = new Set();
-  try { checked = new Set(JSON.parse(store(listKey(s)) || "[]")); } catch (e) { /* üres lista */ }
-
-  const buyable = items.filter((i) => !i.pantry);
-  const needed = buyable.filter((i) => !i.staple);
-  const staples = buyable.filter((i) => i.staple);
-
-  const mkList = (list) => {
-    const ul = el("ul", "buy");
-    for (const i of list) {
-      const li = el("li");
-      const id = `buy-${s.recipe.id}-${i.label}`.replace(/[^\w-]/g, "_");
-      const cb = el("input", null, null, { type: "checkbox", id });
-      cb.checked = checked.has(i.label);
-      li.classList.toggle("done", cb.checked);
-      cb.addEventListener("change", () => {
-        if (cb.checked) checked.add(i.label); else checked.delete(i.label);
-        li.classList.toggle("done", cb.checked);
-        store(listKey(s), checked.size ? JSON.stringify([...checked]) : null);
-      });
-      const label = el("label", null, null, { for: id });
-      label.append(el("span", "buy-name", i.item ? i.item.name : `${i.label} (becsült)`),
-        el("span", "buy-qty", `${i.buyText}${i.item ? ` · ${i.priceText}` : ""}`));
-      li.append(cb, label, el("span", "buy-price", ft(i.checkoutCost)));
-      const orig = i.swappedFrom || i;
-      const other = i.swappedFrom ? i.swappedFrom : i.alternative;
-      if (other) li.appendChild(altRow(orig, i, other));
-      ul.appendChild(li);
-    }
-    return ul;
-  };
-
-  box.appendChild(mkList(needed));
-  if (staples.length) {
-    box.appendChild(el("p", "buy-sub", "Ha nincs otthon:"));
-    box.appendChild(mkList(staples));
-  }
-  const total = el("p", "buy-total");
-  total.append(el("span", null, "A pénztárnál kb."), el("b", null, ft(t.checkout)));
-  box.appendChild(total);
-  if (t.staples > 0) box.appendChild(el("p", "note", `+ ${ft(t.staples)}, ha olajat, lisztet, cukrot is venni kell.`));
-  box.appendChild(el("p", "note", "Egész csomagokkal számolva; a mérlegelős árut annyiért, amennyit veszel."));
-  return box;
-}
-
-/** A másik kiszerelés ajánlata egy bevásárlólista-sor alatt, cseregombbal. */
-function altRow(orig, current, other) {
-  const row = el("div", "alt");
-  const otherIsBulk = other.bulk;
-  const costDiff = other.cost - current.cost;      // a receptre jutó rész változása
-  const payDiff = other.checkoutCost - current.checkoutCost; // a pénztári összeg változása
-  const what = otherIsBulk ? "Nagy kiszerelésben olcsóbb" : "Kisebb kiszerelésben";
-  const txt = `${what}: ${other.item ? other.item.name : ""} (${other.buyText}, ${ft(other.checkoutCost)}). `
-    + `A receptre ${costDiff < 0 ? "−" + ft(-costDiff) : "+" + ft(costDiff)}, `
-    + `ma ${payDiff >= 0 ? "+" + ft(payDiff) : "−" + ft(-payDiff)}`
-    + (otherIsBulk && other.buyAmount > 0 ? `, és marad a későbbi főzéshez.` : ".");
-  row.appendChild(el("span", null, txt));
-  const btn = el("button", "ghost small", "Ezt veszem", { type: "button" });
-  btn.addEventListener("click", () => {
-    if (state.swapped.has(orig.label)) state.swapped.delete(orig.label);
-    else state.swapped.add(orig.label);
-    renderPick(false);
-  });
-  row.appendChild(btn);
-  return row;
-}
-
-function listAsText(s, items, t) {
-  const lines = [`Bevásárlólista – ${s.recipe.name} (${s.servings} adag) – ${storeName(s.store)}`];
-  const line = (i) => `☐ ${i.item ? i.item.name : i.label} – ${i.buyText} – ${ft(i.checkoutCost)}`;
-  for (const i of items) if (!i.pantry && !i.staple) lines.push(line(i));
-  const staples = items.filter((i) => i.staple);
-  if (staples.length) {
-    lines.push("Ha nincs otthon:");
-    for (const i of staples) lines.push(line(i));
-  }
-  lines.push(`Összesen kb. ${ft(t.checkout)}`);
-  return lines.join("\n");
-}
-
-async function shareList(s, items, t) {
-  const text = listAsText(s, items, t);
-  try {
-    if (navigator.share) {
-      await navigator.share({ title: `Bevásárlólista – ${s.recipe.name}`, text });
-      return;
-    }
-    await navigator.clipboard.writeText(text);
-    toast("A bevásárlólista a vágólapra került.");
-  } catch (e) {
-    if (e && e.name === "AbortError") return;
-    toast("A lista másolása nem sikerült ebben a böngészőben.");
-  }
-}
-
-// ---------- összehasonlítás a boltok között ----------
-
-function renderComparison(s, t) {
-  const box = el("section", "compare", null, { "aria-label": "A recept ára boltonként" });
-  box.appendChild(el("h3", null, "Mennyibe kerülne a többi boltodban?"));
-  const rows = s.stores.filter((x) => x.coverage >= 0.4)
-    .map((x) => (x.store === s.store ? { ...x, totalCost: t.cost } : x))
-    .sort((a, b) => a.totalCost - b.totalCost);
-  if (rows.length <= 1) {
-    box.appendChild(el("p", "note", "A beállításokban csak ez az egy bolt van kiválasztva."));
-    return box;
-  }
-  const max = Math.max(...rows.map((x) => x.totalCost));
-  const ul = el("ul", "bars");
-  for (const x of rows) {
-    const li = el("li");
-    if (x.store === s.store) li.classList.add("current");
-    const btn = el("button", "bar-row", null, { type: "button", "aria-label": `${x.name}: ${ft(x.totalCost)}` });
-    const bar = el("span", "bar");
-    bar.style.setProperty("--w", `${Math.max(6, (x.totalCost / max) * 100)}%`);
-    bar.style.setProperty("--c", x.color);
-    btn.append(el("span", "bar-name", x.name), bar, el("span", "bar-value", ft(x.totalCost)));
-    btn.addEventListener("click", () => {
-      if (x.store !== s.store) selectStore(x.store, s.recipe.id);
-    });
-    li.appendChild(btn);
-    ul.appendChild(li);
-  }
-  box.appendChild(ul);
-  const cheapest = rows[0];
-  if (cheapest.store !== s.store) {
-    box.appendChild(el("p", "note", `${cap(inStore(cheapest.store))} ${ft(t.cost - cheapest.totalCost)}-tal olcsóbb lenne. Koppints egy boltra az átváltáshoz.`));
-  } else {
-    box.appendChild(el("p", "note", `${cap(inStore(s.store))} a legolcsóbb ez a recept a boltjaid közül.`));
-  }
-  return box;
-}
-
-// ---------- további receptek ----------
-
-function sortedSuggestions() {
-  const list = state.suggestions.slice();
-  if (state.sort === "cost") list.sort((a, b) => a.totalCost / a.servings - b.totalCost / b.servings);
-  if (state.sort === "time") list.sort((a, b) => a.recipe.minutes - b.recipe.minutes);
-  return list;
-}
-
-function renderMore() {
-  const ol = $("#more");
-  ol.replaceChildren();
-  const currentId = state.current?.recipe.id;
-  const list = sortedSuggestions().filter((s) => s.recipe.id !== currentId);
-  const rest = state.showAll ? list : list.slice(0, 5);
-  $("#more-title").textContent = state.showAll ? `Az összes recept (${state.suggestions.length})` : "Ebben a boltban még kifizetődő";
-  $("#sort-wrap").hidden = !state.showAll;
-  $("#show-all").hidden = state.showAll || list.length <= 5;
-  $("#show-all").textContent = `Az összes recept (${state.suggestions.length})`;
-  if (rest.length === 0) {
-    ol.appendChild(el("li", "empty", "Nincs több ajánlat ezzel a szűrővel."));
-    return;
-  }
-  for (const s of rest) {
-    const li = el("li");
-    const b = el("button", null, null, { type: "button" });
-    const text = el("span");
-    text.append(el("span", "m-name", s.recipe.name),
-      el("span", "m-sub", `${s.recipe.minutes} perc · ${s.servings} adag · ${s.dealCount ? `${s.dealCount} hozzávaló jó áron` : "nincs benne akció"}`));
-    const cost = el("span", "m-cost");
-    cost.appendChild(el("span", "m-total", ft(s.totalCost)));
-    if (s.savings >= 20) cost.appendChild(el("span", "m-save", `−${ft(s.savings)}`));
-    b.append(el("img", "m-img", null, { src: s.recipe.image, alt: "", width: "64", height: "40", loading: "lazy" }), text, cost);
-    b.addEventListener("click", async () => {
-      await showRecipe(s.recipe.id).catch((e) => toast(e.message));
-      const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-      $("#pick").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
-      $("#pick").focus({ preventScroll: true });
-    });
-    li.appendChild(b);
-    ol.appendChild(li);
-  }
-}
-
-// ---------- jó árak és keresés ----------
-
-function renderDeals(deals) {
-  const ul = $("#deals");
-  ul.replaceChildren();
-  $("#search-hint").hidden = true;
-  if (deals.length === 0) {
-    ul.appendChild(el("li", "empty", "Ebben a boltban most nincs kiemelkedő ár ebben a nézetben."));
-    return;
-  }
-  for (const d of deals) ul.appendChild(tagItem(d.item, d.type, d.referencePrice, d.reason, d.ingredient));
-}
-
-function tagItem(item, type, referencePrice, reason, ingredient) {
-  const li = $("#tpl-tag").content.firstElementChild.cloneNode(true);
-  if (type === "PROMO") li.classList.add("promo");
-  const kind = type ? DEAL_LABEL[type] : "";
-  li.querySelector(".tag-kind").textContent =
-    [kind, ingredient ? `receptekhez: ${ingredient.toLowerCase()}` : ""].filter(Boolean).join(" · ") || item.category;
-  const name = li.querySelector(".tag-name");
-  name.textContent = item.name;
-  name.addEventListener("click", () => openItem(item.id));
-  const oldEl = li.querySelector(".tag-old");
-  if (!type || referencePrice <= item.price) {
-    oldEl.remove();
-    if (!type) li.classList.add("plain");
-  } else if (type === "CATEGORY") {
-    oldEl.replaceWith(el("span", "tag-avg", `átlag ${ft(referencePrice)}`));
-  } else {
-    oldEl.textContent = ft(referencePrice);
-  }
-  li.querySelector(".tag-price").textContent = ft(item.price);
-  const unitText = item.unit === "kg" && item.quantity === 1 ? "Ft/kg-os ár" : `${qty(item.quantity, item.unit)} · ${ft(item.unitPrice)}/${item.unit}`;
-  li.querySelector(".tag-reason").textContent = reason ? `${reason}` : unitText;
-  return li;
-}
-
-async function runSearch(q) {
-  $("#more-deals").hidden = true;
-  const hits = await api(`/api/search?q=${encodeURIComponent(q)}&store=${state.store}&limit=25`);
-  const ul = $("#deals");
-  ul.replaceChildren();
-  const hint = $("#search-hint");
-  hint.hidden = false;
-  hint.textContent = hits.length
-    ? `${hits.length} találat ${inStore(state.store)}, egységár szerint (legolcsóbb elöl)`
-    : `Nincs találat ${inStore(state.store)} erre: „${q}”.`;
-  for (const h of hits) {
-    ul.appendChild(tagItem(h, h.deal?.type, h.deal?.referencePrice, h.deal ? h.deal.reason : null, null));
-  }
-}
-
-// ---------- termék ára minden láncban ----------
-
-async function openItem(id) {
-  let data;
-  try {
-    data = await api(`/api/item?id=${encodeURIComponent(id)}`);
-  } catch (e) {
-    toast(e.message);
-    return;
-  }
-  const dlg = $("#item-dialog");
-  $("#item-title").textContent = data.name;
-  $("#item-cat").textContent = data.offers.length > 1
-    ? `${data.category} · ${data.offers.length} láncban kapható`
-    : `${data.category} · csak egy láncban kapható`;
-  const ul = $("#item-offers");
-  ul.replaceChildren();
-  const min = Math.min(...data.offers.map((o) => o.price));
-  for (const o of data.offers) {
-    const li = el("li");
-    if (o.store === state.store) li.classList.add("current");
-    if (!o.mine) li.classList.add("not-mine");
-    const left = el("div");
-    left.appendChild(el("b", null, o.storeName + (o.mine ? "" : " (nem a boltod)")));
-    const shops = o.totalShops ? `${o.shops} / ${o.totalShops} boltjukban` : (o.shops ? `${o.shops} boltjukban` : "saját akció");
-    left.appendChild(el("span", "offer-meta", o.maxPrice > o.price ? `${shops} · máshol akár ${ft(o.maxPrice)}` : shops));
-    if (o.deal) left.appendChild(el("span", "ing-deal", `${DEAL_LABEL[o.deal.type]}${o.deal.savingPercent > 0 ? ` · −${Math.round(o.deal.savingPercent)}%` : ""}`));
-    const right = el("div", "offer-price");
-    right.appendChild(el("b", null, ft(o.price)));
-    if (o.price > min) right.appendChild(el("span", "offer-diff", `+${ft(o.price - min)}`));
-    right.appendChild(el("span", "offer-meta", `${qty(o.quantity, o.unit)} · ${ft(o.unitPrice)}/${o.unit}`));
-    li.append(left, right);
-    ul.appendChild(li);
-  }
-  openDialog(dlg);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, 3800);
 }
 
 function openDialog(dlg) {
@@ -789,63 +92,1111 @@ function openDialog(dlg) {
   else dlg.setAttribute("open", "");
 }
 
+const settings = () => state.profile?.settings || {};
+const storeInfo = (id) => state.status?.stores.find((s) => s.id === id);
+const storeName = (id) => storeInfo(id)?.name || id;
+const inStore = (id) => IN_STORE[id] || `itt: ${storeName(id)}`;
+const currentStore = () => settings().store || bestStore()?.id;
+
+function bestStore() {
+  const s = state.status?.stores || [];
+  const mine = settings().stores?.length ? s.filter((x) => settings().stores.includes(x.id)) : s;
+  return (mine.length ? mine : s).reduce((a, b) => (!a || b.topScore > a.topScore ? b : a), null);
+}
+
+/** A beállítások query-paraméterként a boltfüggő kérésekhez. */
+function prefQuery() {
+  const s = settings();
+  const p = new URLSearchParams();
+  if (s.stores?.length) p.set("stores", s.stores.join(","));
+  if (s.bulk) p.set("bulk", "1");
+  if (s.cards?.length) p.set("cards", s.cards.join(","));
+  const q = p.toString();
+  return q ? "&" + q : "";
+}
+
+function filterQuery() {
+  const s = settings();
+  const q = new URLSearchParams();
+  if (s.diets?.length) q.set("diets", s.diets.join(","));
+  if (s.equipment?.length && s.equipment.length < 3) q.set("equipment", s.equipment.join(","));
+  return q.toString();
+}
+
+// ---------- fotók ----------
+
+/** Recept fotója; ha nincs (még nem töltődött le / nincs szabad licencű kép), egyszerű színes kártya az emojival. */
+function photo(r, cls, width) {
+  const wrap = el("div", `photo ${cls || ""}`);
+  let h = 0;
+  for (const c of r.id) h = (h * 31 + c.charCodeAt(0)) % 360;
+  wrap.style.setProperty("--h", h);
+  const fallback = () => {
+    wrap.classList.add("ph");
+    wrap.replaceChildren(el("span", "ph-emoji", r.emoji || "🍽️", { "aria-hidden": "true" }));
+  };
+  if (r.image) {
+    const img = el("img", null, null, { src: r.image, alt: "", loading: "lazy", decoding: "async", width: String(width || 640), height: String(Math.round((width || 640) * 0.625)) });
+    img.addEventListener("error", fallback, { once: true });
+    wrap.appendChild(img);
+  } else {
+    fallback();
+  }
+  return wrap;
+}
+
+function macroLine(r) {
+  if (!r.nutrition) return "";
+  return `${r.nutrition.kcal} kcal · ${r.nutrition.protein} g fehérje`;
+}
+
+function badges(r, max) {
+  const wrap = el("span", "badges");
+  const list = [...(r.moods || []), ...(r.diets || [])].slice(0, max || 9);
+  for (const b of list) wrap.appendChild(el("span", "badge" + (DIETS.some(([d]) => d === b) ? " diet" : ""), b));
+  return wrap;
+}
+
+// ---------- profil (fiók nélkül: véletlen azonosító, megosztható) ----------
+
+async function loadProfile() {
+  const fromLink = new URLSearchParams(location.hash.slice(1)).get("profil");
+  if (fromLink) {
+    local("sporolos.profile", fromLink);
+    history.replaceState(null, "", "#het");
+    toast("Csatlakoztál a háztartás közös tervéhez.");
+  }
+  const id = local("sporolos.profile");
+  if (!id) return null;
+  try {
+    state.profile = await api(`/api/profile?id=${encodeURIComponent(id)}`);
+    return state.profile;
+  } catch (e) {
+    if (e.status === 404 || e.status === 400) {
+      local("sporolos.profile", null);
+      return null;
+    }
+    throw e;
+  }
+}
+
+let saveTimer;
+/** Beállítás módosítása; a hét és a receptlista újraszámolódik. */
+function updateSettings(patch, immediate) {
+  state.profile.settings = { ...settings(), ...patch };
+  clearTimeout(saveTimer);
+  const run = async () => {
+    try {
+      state.profile = await api(`/api/profile?id=${state.profile.id}`, jsonOpts("PUT", state.profile.settings));
+      state.recipes = null;
+      renderStorePill();
+      await loadWeek();
+      if (state.view === "receptek") renderBrowse();
+      if (state.view === "nom") loadDeck();
+    } catch (e) { toast(e.message); }
+  };
+  if (immediate) return run();
+  saveTimer = setTimeout(run, 450);
+  return null;
+}
+
+// ---------- státusz, bolt ----------
+
+async function loadStatus() {
+  state.status = await api(`/api/status${prefQuery().replace(/^&/, "?")}`);
+  const s = state.status;
+  const d = new Date(s.date + "T00:00:00");
+  const dateText = d.toLocaleDateString("hu-HU", { month: "long", day: "numeric" });
+  $("#foot-source").textContent = `Most: ${s.source}, ${dateText}, ${nf.format(s.itemCount)} élelmiszerár.`;
+  const banner = $("#banner");
+  if (s.demo) {
+    banner.textContent = "Demó árakat látsz: az Árfigyelő napi fájlja most nem volt elérhető. A Beállításokban újra próbálhatod.";
+    banner.hidden = false;
+  } else if (s.stale) {
+    banner.textContent = `Az árak ${dateText}-i állapotot mutatnak.`;
+    banner.hidden = false;
+  } else {
+    banner.hidden = true;
+  }
+}
+
+function renderStorePill() {
+  const id = currentStore();
+  const s = storeInfo(id);
+  const pill = $("#store-pill");
+  pill.style.setProperty("--c", s?.color || "var(--line)");
+  pill.querySelector(".pill-text").textContent = s ? s.name : "Bolt";
+  pill.setAttribute("aria-label", `Bolt: ${s ? s.name : "nincs"} – módosítás`);
+}
+
+function storeCards(container, selected, onPick) {
+  container.replaceChildren();
+  const best = bestStore();
+  for (const s of state.status.stores) {
+    const b = el("button", "store-card", null, { type: "button", "aria-pressed": String(s.id === selected) });
+    b.style.setProperty("--c", s.color);
+    b.append(el("span", "sc-name", s.name), el("span", "sc-meta", `${s.dealCount} jó ár ma · ${s.recipeCount} recept`));
+    if (best && s.id === best.id) b.appendChild(el("span", "sc-best", "ma itt a legjobb"));
+    b.addEventListener("click", () => onPick(s.id));
+    container.appendChild(b);
+  }
+}
+
+function openStoreSheet() {
+  storeCards($("#store-grid"), currentStore(), (id) => {
+    $("#store-sheet").close();
+    updateSettings({ store: id }, true);
+  });
+  openDialog($("#store-sheet"));
+}
+
+// ---------- nézetek ----------
+
+const VIEWS = ["het", "lista", "nom", "receptek"];
+
+function route() {
+  const h = location.hash.slice(1);
+  const p = new URLSearchParams(h);
+  if (p.get("recept")) {
+    openRecipe(p.get("recept"), {});
+    return;
+  }
+  setView(VIEWS.includes(h) ? h : "het");
+}
+
+function setView(v) {
+  state.view = v;
+  for (const sec of $$(".view")) sec.hidden = sec.dataset.view !== v;
+  for (const a of $$("a[data-view]")) {
+    if (a.dataset.view === v) a.setAttribute("aria-current", "page");
+    else a.removeAttribute("aria-current");
+  }
+  if (v === "het" || v === "lista") {
+    if (!state.week) loadWeek().catch((e) => toast(e.message));
+    else (v === "het" ? renderWeek : renderList)();
+  }
+  if (v === "nom") loadDeck().catch((e) => toast(e.message));
+  if (v === "receptek") renderBrowse().catch((e) => toast(e.message));
+  window.scrollTo(0, 0);
+}
+
+// ---------- heti terv ----------
+
+async function loadWeek(action, day, recipe) {
+  if (!state.profile) return;
+  const my = ++state.weekBusy;
+  const q = new URLSearchParams({ id: state.profile.id });
+  if (action) q.set("action", action);
+  if (day != null) q.set("day", day);
+  if (recipe) q.set("recipe", recipe);
+  if (!state.week) $("#dinners").replaceChildren(...skeletonCards(settings().dinners || 5));
+  const w = await api(`/api/week?${q}`);
+  if (my !== state.weekBusy) return;
+  state.week = w;
+  if (!settings().store) state.profile.settings.store = w.store;
+  renderStorePill();
+  renderWeek();
+  renderList();
+}
+
+function skeletonCards(n) {
+  return Array.from({ length: n }, () => el("li", "dinner skeleton", null, { "aria-hidden": "true" }));
+}
+
+function renderWeek() {
+  const w = state.week;
+  if (!w) return;
+  const people = w.people;
+  $("#week-total").textContent = `≈ ${ft(w.checkoutTotal)}`;
+  $("#week-meta").textContent = `${w.days.length} vacsora ${people} főre · ${w.storeName} · átlagosan ${w.avgKcal} kcal, ${w.avgProtein} g fehérje adagonként`;
+  const meter = $("#week-meter");
+  if (w.budget > 0) {
+    meter.hidden = false;
+    meter.classList.toggle("over", w.overBudget);
+    meter.firstElementChild.style.width = `${Math.min(100, (w.checkoutTotal / w.budget) * 100)}%`;
+    $("#week-meter-text").textContent = w.overBudget
+      ? `${ft(w.checkoutTotal - w.budget)}-tal a ${ft(w.budget)}-os keret fölött`
+      : `keret ${ft(w.budget)} · ${ft(w.budget - w.checkoutTotal)} marad`;
+  } else {
+    meter.hidden = true;
+    $("#week-meter-text").textContent = "nincs megadva heti keret";
+  }
+  const notes = $("#week-notes");
+  notes.replaceChildren(...w.notes.map((n) => el("p", "note-box", n)));
+
+  const ol = $("#dinners");
+  ol.replaceChildren();
+  if (!w.days.length) {
+    ol.appendChild(el("li", "empty", "Ezekkel a beállításokkal ebben a boltban most nem áll össze terv. Próbáld kevesebb szűrővel vagy másik bolttal."));
+  }
+  w.days.forEach((d, i) => ol.appendChild(dinnerCard(d, i, people)));
+  $("#week-fine").textContent = w.staplesTotal > 0
+    ? `Az összegben nincs benne ${ft(w.staplesTotal)} kamraáru (olaj, liszt, cukor…), ha venni kell. A kártyákon az adagár a közös bevásárlólistából a vacsorára eső rész (a megmaradó csomagrésszel együtt); a receptlapon a ténylegesen felhasznált mennyiség ára.`
+    : "A kártyákon az adagár a közös bevásárlólistából a vacsorára eső rész; a receptlapon a ténylegesen felhasznált mennyiség ára.";
+}
+
+function dinnerCard(d, i, people) {
+  const s = d.suggestion, r = s.recipe;
+  const li = el("li", "dinner");
+  const open = el("button", "dinner-open", null, { type: "button", "aria-label": `${d.label}: ${r.name} – recept megnyitása` });
+  const pic = photo(r, "dinner-photo", 640);
+  pic.appendChild(el("span", "day-chip", d.label));
+  open.appendChild(pic);
+  const body = el("span", "dinner-body");
+  body.append(el("span", "dinner-name", r.name));
+  const line = el("span", "dinner-line");
+  line.append(el("b", null, `≈ ${ft(d.shareOfList / people)}`), document.createTextNode(` / adag · ${people} adag · ${r.minutes} perc`));
+  body.appendChild(line);
+  const sub = el("span", "dinner-sub", macroLine(r));
+  body.appendChild(sub);
+  body.appendChild(badges(r, 3));
+  open.appendChild(body);
+  open.addEventListener("click", () => openRecipe(r.id, { servings: people, day: i }));
+  const swap = el("button", "swap-btn", null, { type: "button", "aria-label": `${d.label}: másik vacsorát kérek`, title: "Másikat kérek" });
+  swap.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h13l-3-3M20 15H7l3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Csere</span>';
+  swap.addEventListener("click", () => {
+    li.classList.add("swapping");
+    loadWeek("swap", i).catch((e) => toast(e.message));
+  });
+  li.append(open, swap);
+  return li;
+}
+
+// ---------- bevásárlólista ----------
+
+function renderList() {
+  const w = state.week;
+  if (!w) return;
+  $("#list-sub").textContent = `${w.storeName} · ${w.days.length} vacsora, ${w.people} főre`;
+  $("#list-total").textContent = ft(w.checkoutTotal);
+  const checked = new Set(w.checked || []);
+  const root = $("#aisles");
+  root.replaceChildren();
+  let total = 0;
+  const staples = [];
+  for (const a of w.aisles) {
+    const items = a.items.filter((i) => !i.staple);
+    staples.push(...a.items.filter((i) => i.staple));
+    if (!items.length) continue;
+    root.appendChild(aisleSection(a.aisle, items, checked));
+    total += items.length;
+  }
+  if (staples.length) root.appendChild(aisleSection("Ha nincs otthon", staples, checked));
+  if (w.pantry.length) root.appendChild(el("p", "pantry", `Fűszerek a kamrából: ${w.pantry.join(", ")}.`));
+  const done = w.aisles.flatMap((a) => a.items).filter((i) => !i.staple && checked.has(i.label)).length;
+  $("#list-progress").textContent = `${done} / ${total} a kosárban`;
+  $("#list-share").textContent = navigator.share ? "Megosztás" : "Lista másolása";
+}
+
+function aisleSection(title, items, checked) {
+  const sec = el("section", "aisle");
+  sec.appendChild(el("h2", null, title));
+  const ul = el("ul", "buy");
+  for (const i of items) {
+    const li = el("li");
+    const id = `chk-${i.label}`.replace(/[^\w-]/g, "_");
+    const cb = el("input", null, null, { type: "checkbox", id });
+    cb.checked = checked.has(i.label);
+    li.classList.toggle("done", cb.checked);
+    cb.addEventListener("change", async () => {
+      li.classList.toggle("done", cb.checked);
+      try {
+        const r = await api(`/api/check?id=${state.profile.id}`, jsonOpts("POST", { key: state.week.listKey, item: i.label, on: cb.checked }));
+        state.week.checked = r.checked;
+        const all = state.week.aisles.flatMap((a) => a.items).filter((x) => !x.staple);
+        $("#list-progress").textContent = `${all.filter((x) => r.checked.includes(x.label)).length} / ${all.length} a kosárban`;
+      } catch (e) { toast(e.message); }
+    });
+    const label = el("label", null, null, { for: id });
+    label.append(el("span", "buy-name", i.item ? i.item.name : `${i.label} (becsült ár)`),
+      el("span", "buy-qty", `${i.buyText}${i.item ? ` · ${i.priceText}` : ""}`),
+      el("span", "buy-use", `${i.usedIn.join(", ")}${i.leftover ? ` · marad ${i.leftover}` : ""}`));
+    const price = el("span", "buy-price", ft(i.checkoutCost));
+    li.append(cb, label, price);
+    if (i.deal) li.appendChild(el("span", i.deal.type === "PROMO" ? "buy-deal promo" : "buy-deal", DEAL_LABEL[i.deal.type]));
+    ul.appendChild(li);
+  }
+  sec.appendChild(ul);
+  return sec;
+}
+
+async function shareList() {
+  const w = state.week;
+  if (!w) return;
+  const lines = [`Bevásárlólista – ${w.storeName} (${w.people} fő, ${w.days.length} vacsora)`];
+  for (const a of w.aisles) {
+    lines.push("", a.aisle.toUpperCase());
+    for (const i of a.items) lines.push(`☐ ${i.item ? i.item.name : i.label} – ${i.buyText} – ${ft(i.checkoutCost)}${i.staple ? " (ha nincs otthon)" : ""}`);
+  }
+  lines.push("", `Összesen kb. ${ft(w.checkoutTotal)}`, "", "Vacsorák:", ...w.days.map((d) => `${d.label}: ${d.suggestion.recipe.name}`));
+  const text = lines.join("\n");
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: "Bevásárlólista", text });
+      return;
+    }
+    await navigator.clipboard.writeText(text);
+    toast("A lista a vágólapra került.");
+  } catch (e) {
+    if (e && e.name === "AbortError") return;
+    toast("A lista másolása nem sikerült ebben a böngészőben.");
+  }
+}
+
+// ---------- receptlap ----------
+
+async function openRecipe(id, opts) {
+  const servings = opts.servings || settings().people || 0;
+  state.sheet = { id, servings, day: opts.day ?? null, swapped: new Set(), data: null };
+  const dlg = $("#recipe-sheet");
+  const body = $("#rs-body");
+  body.replaceChildren(el("p", "empty", "Recept betöltése…"));
+  openDialog(dlg);
+  await loadSheet();
+}
+
+async function loadSheet() {
+  const sh = state.sheet;
+  try {
+    sh.data = await api(`/api/recipe?id=${encodeURIComponent(sh.id)}&store=${currentStore()}&servings=${sh.servings}${prefQuery()}`);
+  } catch (e) {
+    $("#rs-body").replaceChildren(el("p", "empty", e.message));
+    return;
+  }
+  renderSheet();
+}
+
+function sheetItems(s) {
+  return s.ingredients.map((i) => (state.sheet.swapped.has(i.label) && i.alternative ? { ...i.alternative, swappedFrom: i } : i));
+}
+
+function renderSheet() {
+  const sh = state.sheet, s = sh.data, r = s.recipe;
+  const items = sheetItems(s);
+  let cost = 0, checkout = 0;
+  for (const i of items) if (!i.pantry) { cost += i.cost; if (!i.staple) checkout += i.checkoutCost; }
+  const body = $("#rs-body");
+  body.replaceChildren();
+
+  const hero = el("div", "rs-hero");
+  hero.appendChild(photo(r, "rs-photo", 800));
+  const close = el("button", "rs-close", "✕", { type: "button", "aria-label": "Bezárás" });
+  close.addEventListener("click", () => $("#recipe-sheet").close());
+  hero.appendChild(close);
+  body.appendChild(hero);
+  if (s.photo) {
+    const c = el("p", "credit");
+    c.append("Fotó: ", s.photo.author || "", s.photo.license ? `, ${s.photo.license}` : "", " – ");
+    if (s.photo.pageUrl) c.appendChild(el("a", null, "Wikimedia Commons", { href: s.photo.pageUrl, target: "_blank", rel: "noopener" }));
+    else c.append(s.photo.title || "");
+    if (s.photo.title && s.photo.pageUrl) c.append(` (${s.photo.title})`);
+    body.appendChild(c);
+  }
+
+  const head = el("div", "rs-head");
+  const left = el("div");
+  left.append(el("h2", "rs-title", r.name, { id: "rs-title" }),
+    el("p", "sub", `${r.minutes} perc · ${r.difficulty} · ${(r.equipment || []).join(", ")}`),
+    badges(r));
+  const right = el("div", "rs-side");
+  const tag = el("div", "price-tag", null, { role: "img", "aria-label": `Adagonként kb. ${ft(cost / s.servings)}` });
+  tag.append(el("small", null, "adagonként"), el("span", "now", ft(cost / s.servings)), el("small", null, `${s.servings} adag ${ft(cost)} · ma fizetsz ${ft(checkout)}`));
+  right.append(tag, servingsControl(s.servings));
+  head.append(left, right);
+  body.appendChild(head);
+
+  if (r.nutrition) {
+    const m = el("dl", "macros");
+    for (const [k, label, unit] of [["kcal", "kalória", "kcal"], ["protein", "fehérje", "g"], ["carbs", "szénhidrát", "g"], ["fat", "zsír", "g"]]) {
+      const d = el("div");
+      d.append(el("dt", null, label), el("dd", null, `${r.nutrition[k]} ${unit}`));
+      m.appendChild(d);
+    }
+    body.appendChild(m);
+    body.appendChild(el("p", "fineprint", "Becsült érték egy adagra, tipikus tápértékekből."));
+  }
+
+  // hét-műveletek
+  const acts = el("div", "rs-actions");
+  if (sh.day != null && state.week?.days[sh.day]?.suggestion.recipe.id === r.id) {
+    const swap = el("button", "ghost", `Másikat kérek ${DAY_TO[state.week.days[sh.day].label] || "erre a napra"}`, { type: "button" });
+    swap.addEventListener("click", async () => {
+      $("#recipe-sheet").close();
+      await loadWeek("swap", sh.day).catch((e) => toast(e.message));
+    });
+    acts.appendChild(swap);
+  } else if (state.week?.days.length) {
+    const sel = el("select", null, null, { "aria-label": "Melyik napra?" });
+    state.week.days.forEach((d, i) => sel.appendChild(el("option", null, `${d.label} (most: ${d.suggestion.recipe.name})`, { value: String(i) })));
+    const add = el("button", "primary", "Betesszük a hétre", { type: "button" });
+    add.addEventListener("click", async () => {
+      $("#recipe-sheet").close();
+      await loadWeek("set", sel.value, r.id).catch((e) => toast(e.message));
+      toast(`${r.name} → ${state.week.days[Number(sel.value)].label}`);
+      if (state.view !== "het") location.hash = "het";
+    });
+    acts.append(sel, add);
+  }
+  const liked = state.profile?.liked.includes(r.id);
+  const heart = el("button", "ghost", liked ? "♥ Kedvenc" : "♡ Kedvencekhez", { type: "button", "aria-pressed": String(!!liked) });
+  heart.addEventListener("click", async () => {
+    await rate(r.id, liked ? null : true);
+    renderSheet();
+  });
+  acts.appendChild(heart);
+  body.appendChild(acts);
+
+  const cols = el("div", "rs-cols");
+  cols.append(ingredientsBox(items, s), stepsBox(r));
+  body.appendChild(cols);
+  body.appendChild(compareBox(s, cost));
+}
+
+function servingsControl(n) {
+  const wrap = el("div", "stepper", null, { role: "group", "aria-label": "Adagszám" });
+  const minus = el("button", "step", "−", { type: "button", "aria-label": "Kevesebb adag" });
+  const plus = el("button", "step", "+", { type: "button", "aria-label": "Több adag" });
+  minus.disabled = n <= 1;
+  plus.disabled = n >= 20;
+  const change = (d) => {
+    state.sheet.servings = Math.max(1, Math.min(20, n + d));
+    loadSheet();
+  };
+  minus.addEventListener("click", () => change(-1));
+  plus.addEventListener("click", () => change(+1));
+  wrap.append(minus, el("span", "step-value", `${n} adag`), plus);
+  return wrap;
+}
+
+function ingredientsBox(items, s) {
+  const box = el("section", "rs-ing");
+  box.appendChild(el("h3", null, `Mi kell hozzá ${inStore(s.store)}`));
+  const ul = el("ul", "ing");
+  for (const i of items) {
+    const li = el("li");
+    if (i.pantry) li.classList.add("pantry");
+    const label = el("span");
+    label.append(el("span", "ing-name", i.label), document.createTextNode(" "), el("span", "ing-amount", i.amount || ""));
+    li.append(label, el("span", "ing-cost", i.pantry ? "kamrából" : ft(i.cost)));
+    if (i.item) {
+      const p = el("span", "ing-product");
+      const link = el("button", "linkish", i.item.name, { type: "button" });
+      link.addEventListener("click", () => openItem(i.item.id));
+      p.append(link, el("span", "muted", ` · vegyél: ${i.buyText}${i.bulk ? " (nagy kiszerelés)" : ""} · ${ft(i.checkoutCost)}`));
+      if (i.deal) p.appendChild(el("span", i.deal.type === "PROMO" ? "ing-deal promo" : "ing-deal",
+        `${DEAL_LABEL[i.deal.type]}${i.deal.savingPercent > 0 ? ` −${Math.round(i.deal.savingPercent)}%` : ""}`, { title: i.deal.reason }));
+      li.appendChild(p);
+      const other = i.swappedFrom ? i.swappedFrom : i.alternative;
+      if (other) li.appendChild(altRow(i.swappedFrom || i, i, other));
+    } else if (i.estimated) {
+      li.appendChild(el("span", "ing-product muted", "Az Árfigyelő nem követi, vagy itt nincs – becsült ár."));
+    }
+    ul.appendChild(li);
+  }
+  box.appendChild(ul);
+  return box;
+}
+
+function altRow(orig, current, other) {
+  const row = el("div", "alt");
+  const costDiff = other.cost - current.cost;
+  const payDiff = other.checkoutCost - current.checkoutCost;
+  const what = other.bulk ? "Nagy kiszerelésben olcsóbb" : "Kisebb kiszerelésben";
+  row.appendChild(el("span", null, `${what}: ${other.item ? other.item.name : ""} (${other.buyText}). A receptre ${costDiff < 0 ? "−" + ft(-costDiff) : "+" + ft(costDiff)}, ma ${payDiff >= 0 ? "+" + ft(payDiff) : "−" + ft(-payDiff)}.`));
+  const btn = el("button", "ghost small", "Ezt veszem", { type: "button" });
+  btn.addEventListener("click", () => {
+    if (state.sheet.swapped.has(orig.label)) state.sheet.swapped.delete(orig.label);
+    else state.sheet.swapped.add(orig.label);
+    renderSheet();
+  });
+  row.appendChild(btn);
+  return row;
+}
+
+function stepsBox(r) {
+  const box = el("section", "rs-steps");
+  box.appendChild(el("h3", null, "Elkészítés"));
+  const ol = el("ol");
+  for (const step of r.steps) ol.appendChild(el("li", null, step));
+  box.appendChild(ol);
+  return box;
+}
+
+function compareBox(s, cost) {
+  const box = el("section", "rs-compare");
+  box.appendChild(el("h3", null, "Mennyibe kerülne máshol?"));
+  const rows = s.stores.filter((x) => x.coverage >= 0.4)
+    .map((x) => (x.store === s.store ? { ...x, totalCost: cost } : x))
+    .sort((a, b) => a.totalCost - b.totalCost);
+  const max = Math.max(...rows.map((x) => x.totalCost), 1);
+  const ul = el("ul", "bars");
+  for (const x of rows) {
+    const li = el("li", x.store === s.store ? "current" : null);
+    const bar = el("span", "bar");
+    bar.style.setProperty("--w", `${Math.max(6, (x.totalCost / max) * 100)}%`);
+    bar.style.setProperty("--c", x.color);
+    li.append(el("span", "bar-name", x.name), bar, el("span", "bar-value", ft(x.totalCost)));
+    ul.appendChild(li);
+  }
+  box.appendChild(ul);
+  if (rows.length && rows[0].store !== s.store) {
+    box.appendChild(el("p", "fineprint", `${cap(inStore(rows[0].store))} ${ft(cost - rows[0].totalCost)}-tal olcsóbb lenne. A bolt a fejlécben váltható.`));
+  }
+  return box;
+}
+
+// ---------- Nom vagy nem ----------
+
+async function rate(recipeId, liked) {
+  try {
+    state.profile = await api(`/api/rate?id=${state.profile.id}`, jsonOpts("POST", { recipe: recipeId, liked }));
+  } catch (e) { toast(e.message); }
+}
+
+async function allRecipes() {
+  const key = `${currentStore()}|${filterQuery()}|${prefQuery()}`;
+  if (state.recipes && state.recipesKey === key) return state.recipes;
+  const list = await api(`/api/recipes?store=${currentStore()}&${filterQuery()}${prefQuery()}`);
+  state.recipes = list;
+  state.recipesKey = key;
+  return list;
+}
+
+const perServing = (x) => (x.totalCost != null ? x.totalCost / x.recipe.servings : null);
+const isSweet = (r) => r.tags.some((t) => t === "édes" || t === "sütemény" || t === "reggeli");
+
+async function loadDeck() {
+  const list = await allRecipes();
+  const rated = new Set([...state.profile.liked, ...state.profile.disliked]);
+  // vacsorák elöl, kicsit keverve; az édességek és reggelik a pakli végén
+  state.deck = list.filter((x) => !rated.has(x.recipe.id) && x.totalCost != null)
+    .map((x) => ({ x, k: Math.random() + (isSweet(x.recipe) ? 10 : 0) + (x.recipe.image ? 0 : 0.5) }))
+    .sort((a, b) => a.k - b.k).map((o) => o.x);
+  renderDeck();
+  renderLiked();
+}
+
+function renderDeck() {
+  const deck = $("#nom-deck");
+  deck.replaceChildren();
+  const top = state.deck.slice(0, 3);
+  $("#nom-count").textContent = `${state.profile.liked.length} nom · ${state.profile.disliked.length} nem · még ${state.deck.length} recept`;
+  for (const b of ["#nom-no", "#nom-yes", "#nom-later"]) $(b).disabled = !top.length;
+  if (!top.length) {
+    deck.appendChild(el("p", "empty", "Minden receptet értékeltél ezekkel a szűrőkkel. A heti terv már ezek alapján válogat."));
+    return;
+  }
+  top.slice().reverse().forEach((x, idx) => {
+    const depth = top.length - 1 - idx;
+    const r = x.recipe;
+    const card = el("article", "nom-card", null, { "aria-label": r.name });
+    card.style.setProperty("--depth", depth);
+    card.appendChild(photo(r, "nom-photo", 640));
+    const body = el("div", "nom-body");
+    body.append(el("h2", null, r.name), el("p", "sub", `${r.minutes} perc · ${macroLine(r)}`), badges(r, 4),
+      el("span", "nom-price", `${ft(perServing(x))} / adag`));
+    card.appendChild(body);
+    card.append(el("span", "stamp yes", "NOM"), el("span", "stamp no", "NEM"));
+    if (depth === 0) dragCard(card);
+    deck.appendChild(card);
+  });
+}
+
+async function decide(liked) {
+  const x = state.deck[0];
+  if (!x) return;
+  const card = $("#nom-deck .nom-card:last-of-type");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (card && !reduce) {
+    const dir = liked === true ? 1 : liked === false ? -1 : 0;
+    card.style.transition = "transform 220ms ease-in, opacity 220ms ease-in";
+    card.style.transform = dir ? `translateX(${dir * 120}%) rotate(${dir * 18}deg)` : "translateY(30px) scale(0.92)";
+    card.style.opacity = "0";
+  }
+  if (liked === null) state.deck.push(state.deck.shift());
+  else state.deck.shift();
+  setTimeout(renderDeck, reduce ? 0 : 200);
+  if (liked !== null) {
+    await rate(x.recipe.id, liked);
+    renderLiked();
+    $("#nom-count").textContent = `${state.profile.liked.length} nom · ${state.profile.disliked.length} nem · még ${state.deck.length} recept`;
+  }
+}
+
+function dragCard(card) {
+  let x0 = null, dx = 0;
+  card.addEventListener("pointerdown", (e) => {
+    x0 = e.clientX;
+    dx = 0;
+    card.setPointerCapture(e.pointerId);
+    card.style.transition = "none";
+  });
+  card.addEventListener("pointermove", (e) => {
+    if (x0 == null) return;
+    dx = e.clientX - x0;
+    card.style.transform = `translateX(${dx}px) rotate(${dx / 18}deg)`;
+    card.classList.toggle("lean-yes", dx > 40);
+    card.classList.toggle("lean-no", dx < -40);
+  });
+  const end = () => {
+    if (x0 == null) return;
+    x0 = null;
+    if (Math.abs(dx) > 100) return decide(dx > 0);
+    card.style.transition = "transform 180ms ease-out";
+    card.style.transform = "";
+    card.classList.remove("lean-yes", "lean-no");
+    if (Math.abs(dx) < 5) openRecipe(state.deck[0].recipe.id, {});
+  };
+  card.addEventListener("pointerup", end);
+  card.addEventListener("pointercancel", () => { x0 = null; card.style.transform = ""; });
+}
+
+function renderLiked() {
+  const ul = $("#liked");
+  ul.replaceChildren();
+  const byId = new Map((state.recipes || []).map((x) => [x.recipe.id, x]));
+  const liked = state.profile.liked.map((id) => byId.get(id)).filter(Boolean);
+  $("#nom-reset").hidden = !state.profile.liked.length && !state.profile.disliked.length;
+  if (!liked.length) {
+    ul.appendChild(el("li", "empty", "Még nincs kedvenced. Amit a „Nom” gombbal jelölsz, itt gyűlik, és a heti terv előnyben részesíti."));
+    return;
+  }
+  for (const x of liked) {
+    const li = el("li");
+    const b = el("button", "liked-open", null, { type: "button" });
+    b.append(photo(x.recipe, "liked-photo", 160), el("span", null, x.recipe.name));
+    b.addEventListener("click", () => openRecipe(x.recipe.id, {}));
+    const rm = el("button", "ghost small", "Mégsem", { type: "button", "aria-label": `${x.recipe.name} törlése a kedvencek közül` });
+    rm.addEventListener("click", async () => { await rate(x.recipe.id, null); loadDeck(); });
+    li.append(b, rm);
+    ul.appendChild(li);
+  }
+}
+
+// ---------- receptek, jó árak ----------
+
+async function renderBrowse() {
+  const store = currentStore();
+  $("#today-store").textContent = inStore(store);
+  const [list] = await Promise.all([allRecipes(), renderToday(store), renderDeals(store)]);
+  const q = $("#browse-q").value.trim();
+  const f = state.filter;
+  const liked = new Set(state.profile.liked);
+  const norm = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const nq = norm(q);
+  const rows = list.filter((x) => {
+    const r = x.recipe;
+    if (nq && !norm(`${r.name} ${r.tags.join(" ")}`).includes(nq)) return false;
+    if (!f) return true;
+    if (f === "kedvenc") return liked.has(r.id);
+    if (f === "airfryer") return (r.equipment || []).some((e) => e.includes("airfryer"));
+    if (f === "gyors") return r.minutes <= 30;
+    return (r.diets || []).includes(f) || (r.moods || []).includes(f);
+  });
+  const sort = $("#browse-sort").value;
+  const key = {
+    price: (x) => perServing(x) ?? 1e9,
+    score: (x) => -(x.score ?? 0),
+    time: (x) => x.recipe.minutes,
+    kcal: (x) => x.recipe.nutrition?.kcal ?? 1e9,
+    protein: (x) => -(x.recipe.nutrition?.protein ?? 0),
+  }[sort];
+  rows.sort(key ? (a, b) => key(a) - key(b) : (a, b) => a.recipe.name.localeCompare(b.recipe.name, "hu"));
+  $("#browse-count").textContent = `${rows.length} recept · adagárak ${inStore(store)}${filterQuery() ? " · a diétád és a konyhád szerint szűrve" : ""}`;
+  const grid = $("#browse-grid");
+  grid.replaceChildren();
+  if (!rows.length) grid.appendChild(el("li", "empty", "Nincs ilyen recept ezekkel a szűrőkkel."));
+  const frag = document.createDocumentFragment();
+  for (const x of rows) frag.appendChild(recipeCard(x, liked.has(x.recipe.id)));
+  grid.appendChild(frag);
+}
+
+function recipeCard(x, isLiked) {
+  const r = x.recipe;
+  const li = el("li", "card");
+  const b = el("button", "card-open", null, { type: "button" });
+  b.appendChild(photo(r, "card-photo", 400));
+  const body = el("span", "card-body");
+  body.append(el("span", "card-name", r.name), el("span", "card-sub", `${r.minutes} perc · ${macroLine(r)}`), badges(r, 2));
+  b.appendChild(body);
+  b.addEventListener("click", () => openRecipe(r.id, {}));
+  const foot = el("div", "card-foot");
+  foot.appendChild(el("span", "card-price", x.totalCost != null ? `${ft(perServing(x))} / adag` : "itt nem kapható minden"));
+  const heart = el("button", "heart", isLiked ? "♥" : "♡", { type: "button", "aria-pressed": String(isLiked), "aria-label": `${r.name}: kedvenc` });
+  heart.addEventListener("click", async () => {
+    const on = heart.getAttribute("aria-pressed") !== "true";
+    heart.setAttribute("aria-pressed", String(on));
+    heart.textContent = on ? "♥" : "♡";
+    await rate(r.id, on ? true : null);
+  });
+  foot.appendChild(heart);
+  li.append(b, foot);
+  return li;
+}
+
+async function renderToday(store) {
+  // vacsorának való receptek (reggeli, édesség nélkül), a diétád és a konyhád szerint
+  const ok = new Set((await allRecipes()).map((x) => x.recipe.id));
+  const sugs = (await api(`/api/suggestions?store=${store}&limit=60${prefQuery()}`))
+    .filter((s) => ok.has(s.recipe.id) && !isSweet(s.recipe)).slice(0, 10);
+  const ul = $("#today");
+  ul.replaceChildren();
+  for (const s of sugs) {
+    const li = el("li");
+    const b = el("button", "mini", null, { type: "button" });
+    b.appendChild(photo(s.recipe, "mini-photo", 320));
+    const deals = s.ingredients.filter((i) => i.deal).map((i) => i.label.toLowerCase()).slice(0, 2);
+    b.append(el("span", "mini-name", s.recipe.name),
+      el("span", "mini-sub", `${ft(s.totalCost / s.servings)} / adag${deals.length ? ` · jó áron: ${deals.join(", ")}` : ""}`));
+    b.addEventListener("click", () => openRecipe(s.recipe.id, {}));
+    li.appendChild(b);
+    ul.appendChild(li);
+  }
+}
+
+async function renderDeals(store) {
+  const q = $("#deal-q").value.trim();
+  const ul = $("#deals");
+  const list = q.length >= 2
+    ? (await api(`/api/search?q=${encodeURIComponent(q)}&store=${store}&limit=16${prefQuery()}`)).map((h) => ({ item: h, type: h.deal?.type, referencePrice: h.deal?.referencePrice, reason: h.deal?.reason }))
+    : await api(`/api/deals?store=${store}&limit=16&ingredients=true${prefQuery()}`);
+  ul.replaceChildren();
+  if (!list.length) ul.appendChild(el("li", "empty", q ? `Nincs találat ${inStore(store)}.` : "Most nincs kiemelt ár."));
+  for (const d of list) {
+    const li = el("li", "deal" + (d.type === "PROMO" ? " promo" : ""));
+    const b = el("button", null, null, { type: "button" });
+    b.append(el("span", "deal-kind", d.type ? DEAL_LABEL[d.type] : d.item.category),
+      el("span", "deal-name", d.item.name));
+    const prices = el("span", "deal-prices");
+    if (d.type && d.type !== "CATEGORY" && d.referencePrice > d.item.price) prices.appendChild(el("s", null, ft(d.referencePrice)));
+    prices.appendChild(el("b", null, ft(d.item.price)));
+    b.appendChild(prices);
+    b.addEventListener("click", () => openItem(d.item.id));
+    li.appendChild(b);
+    ul.appendChild(li);
+  }
+}
+
+async function openItem(id) {
+  let data;
+  try {
+    data = await api(`/api/item?id=${encodeURIComponent(id)}${prefQuery()}`);
+  } catch (e) {
+    toast(e.message);
+    return;
+  }
+  $("#item-title").textContent = data.name;
+  $("#item-cat").textContent = `${data.category} · ${data.offers.length > 1 ? `${data.offers.length} láncban kapható` : "csak egy láncban kapható"}`;
+  const ul = $("#item-offers");
+  ul.replaceChildren();
+  const min = Math.min(...data.offers.map((o) => o.price));
+  for (const o of data.offers) {
+    const li = el("li", o.store === currentStore() ? "current" : null);
+    if (!o.mine) li.classList.add("not-mine");
+    const left = el("div");
+    left.appendChild(el("b", null, o.storeName));
+    const shops = o.totalShops ? `${o.shops} / ${o.totalShops} boltjukban` : (o.shops ? `${o.shops} boltjukban` : "saját akció");
+    left.appendChild(el("span", "offer-meta", o.maxPrice > o.price ? `${shops} · máshol akár ${ft(o.maxPrice)}` : shops));
+    if (o.deal) left.appendChild(el("span", "ing-deal", DEAL_LABEL[o.deal.type]));
+    const right = el("div", "offer-price");
+    right.appendChild(el("b", null, ft(o.price)));
+    if (o.price > min) right.appendChild(el("span", "offer-diff", `+${ft(o.price - min)}`));
+    right.appendChild(el("span", "offer-meta", `${qty(o.quantity, o.unit)} · ${ft(o.unitPrice)}/${o.unit}`));
+    li.append(left, right);
+    ul.appendChild(li);
+  }
+  openDialog($("#item-dialog"));
+}
+
+// ---------- első indítás ----------
+
+const ob = { step: 0, draft: null };
+
+const OB_STEPS = [
+  {
+    title: "Hol vásárolsz?",
+    hint: "A terv ennek a láncnak a mai áraival számol (GVH Árfigyelő). Később bármikor átválthatsz.",
+    render(box) {
+      const grid = el("div", "store-grid");
+      const pick = (id) => { ob.draft.store = id; storeCards(grid, id, pick); };
+      storeCards(grid, ob.draft.store, pick);
+      box.appendChild(grid);
+    },
+    ok: () => !!ob.draft.store,
+  },
+  {
+    title: "Hányan esztek?",
+    hint: "Ennyi adaggal számolunk, és ennyi vacsorát tervezünk a hétre.",
+    render(box) {
+      box.append(stepperField("Fő", "people", 1, 12, (v) => `${v} fő`), stepperField("Vacsora a héten", "dinners", 1, 7, (v) => `${v} vacsora`));
+    },
+  },
+  {
+    title: "Mennyi a heti keret?",
+    hint: "A vacsorák bevásárlására. A terv ebbe próbál beleférni – és ha lehet, maradjon is belőle.",
+    render(box) {
+      const chips = el("div", "chips-row");
+      for (const v of [8000, 12000, 15000, 20000, 30000, 0]) {
+        const b = el("button", null, v ? ft(v) : "nincs keret", { type: "button", "aria-pressed": String(ob.draft.budget === v) });
+        b.addEventListener("click", () => { ob.draft.budget = v; renderOb(); });
+        chips.appendChild(b);
+      }
+      const input = el("input", null, null, { type: "number", min: "0", step: "500", inputmode: "numeric", "aria-label": "Saját összeg forintban" });
+      input.value = ob.draft.budget || "";
+      input.addEventListener("input", () => { ob.draft.budget = Math.max(0, Math.round(Number(input.value) || 0)); });
+      const money = el("label", "money");
+      money.append(el("span", null, "vagy saját összeg:"), input, el("span", null, "Ft"));
+      box.append(chips, money);
+    },
+  },
+  {
+    title: "Van, amit nem esztek?",
+    hint: "Csak olyan vacsorák jönnek, amik minden bejelöltnek megfelelnek. Ha nincs ilyen, lépj tovább.",
+    render(box) {
+      box.appendChild(toggleChips(DIETS, "diets"));
+    },
+  },
+  {
+    title: "Mivel főzöl?",
+    hint: "Csak olyan receptet kapsz, ami ezekkel elkészíthető. Airfryerrel a sütős receptek egy része is megy.",
+    render(box) {
+      box.appendChild(toggleChips(EQUIPMENT, "equipment", true));
+    },
+  },
+];
+
+function stepperField(label, key, min, max, fmt) {
+  const wrap = el("div", "field");
+  wrap.appendChild(el("span", "field-label", label));
+  const st = el("div", "stepper big");
+  const minus = el("button", "step", "−", { type: "button", "aria-label": `${label}: kevesebb` });
+  const val = el("span", "step-value", fmt(ob.draft[key]));
+  const plus = el("button", "step", "+", { type: "button", "aria-label": `${label}: több` });
+  const set = (d) => {
+    ob.draft[key] = Math.max(min, Math.min(max, ob.draft[key] + d));
+    val.textContent = fmt(ob.draft[key]);
+    minus.disabled = ob.draft[key] <= min;
+    plus.disabled = ob.draft[key] >= max;
+  };
+  minus.addEventListener("click", () => set(-1));
+  plus.addEventListener("click", () => set(1));
+  set(0);
+  st.append(minus, val, plus);
+  wrap.appendChild(st);
+  return wrap;
+}
+
+function toggleChips(options, key, atLeastOne) {
+  const row = el("div", "chips-row big");
+  for (const [v, label] of options) {
+    const b = el("button", null, label, { type: "button", "aria-pressed": String(ob.draft[key].includes(v)) });
+    b.addEventListener("click", () => {
+      const on = !ob.draft[key].includes(v);
+      if (!on && atLeastOne && ob.draft[key].length === 1) { toast("Legalább egy maradjon."); return; }
+      ob.draft[key] = on ? [...ob.draft[key], v] : ob.draft[key].filter((x) => x !== v);
+      b.setAttribute("aria-pressed", String(on));
+    });
+    row.appendChild(b);
+  }
+  return row;
+}
+
+function startOnboarding() {
+  ob.step = 0;
+  ob.draft = { store: bestStore()?.id, people: 2, dinners: 5, budget: 15000, diets: [], equipment: ["tuzhely", "suto"] };
+  renderOb();
+  const dlg = $("#onboard");
+  dlg.addEventListener("cancel", (e) => e.preventDefault());
+  openDialog(dlg);
+}
+
+function renderOb() {
+  const st = OB_STEPS[ob.step];
+  const box = $("#ob-step");
+  box.replaceChildren();
+  if (ob.step === 0) {
+    box.appendChild(el("p", "ob-kicker", "Mi legyen ma vacsora – megint?"));
+  }
+  box.append(el("h1", "ob-title", st.title, { id: "ob-title" }), el("p", "sub", st.hint));
+  st.render(box);
+  $("#ob-progress").replaceChildren(...OB_STEPS.map((_, i) => el("span", i <= ob.step ? "on" : null)));
+  $("#ob-back").hidden = ob.step === 0;
+  $("#ob-next").textContent = ob.step === OB_STEPS.length - 1 ? "Kérem a hetet" : "Tovább";
+}
+
+async function obNext() {
+  const st = OB_STEPS[ob.step];
+  if (st.ok && !st.ok()) { toast("Válassz egy boltot."); return; }
+  if (ob.step < OB_STEPS.length - 1) {
+    ob.step++;
+    renderOb();
+    return;
+  }
+  $("#ob-next").disabled = true;
+  try {
+    state.profile = await api("/api/profile", jsonOpts("POST", { ...ob.draft, onboarded: true }));
+    local("sporolos.profile", state.profile.id);
+    $("#onboard").close();
+    await afterProfile();
+  } catch (e) {
+    toast(e.message);
+  } finally {
+    $("#ob-next").disabled = false;
+  }
+}
+
 // ---------- beállítások ----------
 
 function openSettings() {
-  const s = state.status;
-  const chips = $("#set-stores");
-  chips.replaceChildren();
-  const mine = new Set(myStores().map((x) => x.id));
-  for (const st of s.stores) {
-    const lab = el("label", "chip");
-    const cb = el("input", null, null, { type: "checkbox", value: st.id });
-    cb.checked = mine.has(st.id);
-    cb.addEventListener("change", () => {
-      const sel = $$("#set-stores input:checked").map((x) => x.value);
-      if (sel.length === 0) {
-        cb.checked = true;
-        toast("Legalább egy boltnak maradnia kell.");
-        return;
-      }
-      state.prefs.stores = sel.length === s.stores.length ? [] : sel;
-      savePrefs();
-      reloadAll().catch((e) => toast(e.message));
-    });
-    lab.style.setProperty("--c", st.color);
-    lab.append(cb, el("span", null, st.name));
-    chips.appendChild(lab);
+  const s = settings();
+  const root = $("#settings-body");
+  root.replaceChildren();
+  const group = (title, hint) => {
+    const fs = el("fieldset", "setting");
+    fs.appendChild(el("legend", null, title));
+    if (hint) fs.appendChild(el("p", "hint", hint));
+    root.appendChild(fs);
+    return fs;
+  };
+
+  const house = group("A háztartásod", "Ezekből készül a heti terv.");
+  const row = el("div", "fields");
+  row.append(
+    settingStepper("Fő", s.people, 1, 12, (v) => `${v} fő`, (v) => updateSettings({ people: v })),
+    settingStepper("Vacsora a héten", s.dinners, 1, 7, (v) => `${v}`, (v) => updateSettings({ dinners: v })));
+  const money = el("label", "field");
+  money.appendChild(el("span", "field-label", "Heti keret"));
+  const m = el("span", "money");
+  const input = el("input", null, null, { type: "number", min: "0", step: "500", inputmode: "numeric", placeholder: "nincs" });
+  input.value = s.budget || "";
+  input.addEventListener("input", () => updateSettings({ budget: Math.max(0, Math.round(Number(input.value) || 0)) }));
+  m.append(input, el("span", null, "Ft"));
+  money.appendChild(m);
+  row.appendChild(money);
+  house.appendChild(row);
+
+  group("Diéta").appendChild(checkChips(DIETS, s.diets, (v) => updateSettings({ diets: v })));
+  group("Konyha", "Csak ezekkel elkészíthető recepteket kapsz.").appendChild(checkChips(EQUIPMENT, s.equipment, (v) => {
+    if (!v.length) { toast("Legalább egy eszköz maradjon."); openSettings(); return; }
+    updateSettings({ equipment: v });
+  }));
+
+  const stores = group("Boltjaim", "Ezekkel vetjük össze az árakat („mennyibe kerülne máshol”). A nem kedvelt láncot kiveheted.");
+  const all = state.status.stores;
+  const mine = s.stores?.length ? s.stores : all.map((x) => x.id);
+  stores.appendChild(checkChips(all.map((x) => [x.id, x.name, x.color]), mine, (v) => {
+    if (!v.length) { toast("Legalább egy bolt maradjon."); openSettings(); return; }
+    const patch = { stores: v.length === all.length ? [] : v };
+    if (!v.includes(currentStore())) patch.store = v[0];
+    updateSettings(patch, true).then(() => loadStatus());
+  }));
+
+  const pack = group("Kiszerelés");
+  for (const [v, title, hint] of [[false, "Háztartási kiszerelés", "Annyit veszel, amennyi kell, vagy a legkisebb szokásos csomagot; a nagyobbat alternatívaként mutatjuk."],
+    [true, "Nagy kiszerelés is jöhet, ha olcsóbb", "Például 5 kg krumpli vagy 30 tojás, ha a receptre vetítve legalább 10%-kal olcsóbb."]]) {
+    const lab = el("label", "radio");
+    const r = el("input", null, null, { type: "radio", name: "pack" });
+    r.checked = !!s.bulk === v;
+    r.addEventListener("change", () => updateSettings({ bulk: v }, true));
+    const t = el("span");
+    t.append(el("b", null, title), el("br"), el("span", "hint", hint));
+    lab.append(r, t);
+    pack.appendChild(lab);
   }
 
-  for (const r of $$('#settings-dialog input[name="pack"]')) r.checked = (r.value === "bulk") === state.prefs.bulk;
+  const cards = group("Hűségkártyáim és appjaim", "A kártyás akciók csak akkor számítanak, ha van ilyened.");
+  cards.appendChild(checkChips(all.filter((x) => x.cardName).map((x) => [x.id, x.cardName, x.color]), s.cards || [], (v) => updateSettings({ cards: v }, true)));
+  const promoBtn = el("button", "ghost", "Bolti akciók felvitele…", { type: "button" });
+  promoBtn.addEventListener("click", () => openPromos().catch((e) => toast(e.message)));
+  cards.appendChild(promoBtn);
 
-  const cards = $("#set-cards");
-  cards.replaceChildren();
-  for (const st of s.stores) {
-    if (!st.cardName) continue;
-    const lab = el("label", "chip");
-    const cb = el("input", null, null, { type: "checkbox", value: st.id });
-    cb.checked = state.prefs.cards.includes(st.id);
-    cb.addEventListener("change", () => {
-      state.prefs.cards = $$("#set-cards input:checked").map((x) => x.value);
-      savePrefs();
-      reloadAll().catch((e) => toast(e.message));
-    });
-    lab.style.setProperty("--c", st.color);
-    lab.append(cb, el("span", null, st.cardName));
-    cards.appendChild(lab);
-  }
-  openDialog($("#settings-dialog"));
+  const share = group("Közös háztartás", "Ezzel a linkkel a párod vagy a családod ugyanazt a hetet és ugyanazt a bevásárlólistát látja, a kipipálás is közös. Csak annak add oda, akivel közösen vásároltok.");
+  const link = `${location.origin}${location.pathname}#profil=${state.profile.id}`;
+  const linkBox = el("input", "link-box", null, { type: "text", readonly: "", value: link, "aria-label": "Megosztási link" });
+  const copy = el("button", "ghost small", "Link másolása", { type: "button" });
+  copy.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(link); toast("A link a vágólapra került."); }
+    catch (e) { linkBox.select(); }
+  });
+  const restart = el("button", "ghost small", "Újrakezdés új profillal", { type: "button" });
+  restart.addEventListener("click", () => {
+    local("sporolos.profile", null);
+    $("#settings").close();
+    state.profile = null;
+    state.week = null;
+    startOnboarding();
+  });
+  const sr = el("div", "share-row");
+  sr.append(linkBox, copy);
+  share.append(sr, restart);
+
+  const data = group("Adatok");
+  const st = state.status;
+  data.appendChild(el("p", "hint", `Árak: ${st.source} (${st.date}), ${nf.format(st.itemCount)} élelmiszerár${st.historyDays ? `, ${st.historyDays} nap előzmény` : ""}. Tárolás: ${state.profile.storage}.`));
+  const refresh = el("button", "ghost", "Árak frissítése most", { type: "button" });
+  refresh.addEventListener("click", async () => {
+    refresh.disabled = true;
+    refresh.textContent = "Frissítés…";
+    try {
+      await api("/api/refresh", { method: "POST" });
+      await loadStatus();
+      state.recipes = null;
+      await loadWeek();
+      refresh.textContent = "Árak frissítve";
+    } catch (e) {
+      refresh.textContent = "Frissítés sikertelen";
+      toast(e.message);
+    }
+  });
+  data.appendChild(refresh);
+  openDialog($("#settings"));
 }
 
-// ---------- akciók ----------
+function settingStepper(label, value, min, max, fmt, onChange) {
+  const wrap = el("div", "field");
+  wrap.appendChild(el("span", "field-label", label));
+  const st = el("div", "stepper");
+  let v = value;
+  const minus = el("button", "step", "−", { type: "button", "aria-label": `${label}: kevesebb` });
+  const val = el("span", "step-value", fmt(v));
+  const plus = el("button", "step", "+", { type: "button", "aria-label": `${label}: több` });
+  const set = (d) => {
+    v = Math.max(min, Math.min(max, v + d));
+    val.textContent = fmt(v);
+    minus.disabled = v <= min;
+    plus.disabled = v >= max;
+    if (d) onChange(v);
+  };
+  minus.addEventListener("click", () => set(-1));
+  plus.addEventListener("click", () => set(1));
+  set(0);
+  st.append(minus, val, plus);
+  wrap.appendChild(st);
+  return wrap;
+}
+
+function checkChips(options, selected, onChange) {
+  const wrap = el("div", "chips");
+  for (const [v, label, color] of options) {
+    const lab = el("label", "chip");
+    if (color) lab.style.setProperty("--c", color);
+    const cb = el("input", null, null, { type: "checkbox", value: v });
+    cb.checked = selected.includes(v);
+    cb.addEventListener("change", () => onChange($$("input:checked", wrap).map((x) => x.value)));
+    lab.append(cb, el("span", null, label));
+    wrap.appendChild(lab);
+  }
+  return wrap;
+}
+
+// ---------- bolti akciók ----------
 
 async function openPromos() {
   if (!state.ingredients) state.ingredients = await api("/api/ingredients");
   const form = $("#promo-form");
-  const storeSel = form.elements.store;
-  storeSel.replaceChildren(...state.status.stores.map((s) => {
+  form.elements.store.replaceChildren(...state.status.stores.map((s) => {
     const o = el("option", null, s.name, { value: s.id });
-    if (s.id === state.store) o.selected = true;
+    if (s.id === currentStore()) o.selected = true;
     return o;
   }));
   const ingSel = form.elements.ingredient;
@@ -858,29 +1209,25 @@ async function openPromos() {
 }
 
 async function renderPromos(data) {
-  const d = data || await api("/api/promos");
+  const d = data || await api(`/api/promos${prefQuery().replace(/^&/, "?")}`);
   const ul = $("#promo-list");
   ul.replaceChildren();
-  if (!d.promos.length) {
-    ul.appendChild(el("li", "empty small", "Még nincs felvitt akció. Az akciós újságból vagy a lánc appjából ide írhatod be őket."));
-  }
+  if (!d.promos.length) ul.appendChild(el("li", "empty small", "Még nincs felvitt akció."));
   for (const p of d.promos) {
     const li = el("li", `promo-item status-${p.status.toLowerCase()}`);
     const left = el("div");
     left.appendChild(el("b", null, `${p.storeName}: ${p.name}`));
     const amount = p.unit === "kg" && p.quantity === 1 ? "Ft/kg" : qty(p.quantity, p.unit);
     const dates = p.validFrom || p.validTo ? ` · ${p.validFrom || "…"} – ${p.validTo || "…"}` : "";
-    left.appendChild(el("span", "offer-meta",
-      `${ft(p.price)} (${amount})${p.regularPrice ? `, rendesen ${ft(p.regularPrice)}` : ""}${dates}${p.card ? " · kártyás" : ""}${p.ingredientName ? ` · ${p.ingredientName}` : ""}`));
+    left.appendChild(el("span", "offer-meta", `${ft(p.price)} (${amount})${p.regularPrice ? `, rendesen ${ft(p.regularPrice)}` : ""}${dates}${p.card ? " · kártyás" : ""}${p.ingredientName ? ` · ${p.ingredientName}` : ""}`));
     left.appendChild(el("span", "promo-status", p.statusText + (p.matchedName ? `: ${p.matchedName}` : "")));
     li.appendChild(left);
     if (p.deletable) {
       const del = el("button", "ghost small", "Törlés", { type: "button" });
       del.addEventListener("click", async () => {
         try {
-          const r = await api(`/api/promos?id=${encodeURIComponent(p.id)}`, { method: "DELETE" });
-          await renderPromos(r);
-          await reloadAll();
+          await renderPromos(await api(`/api/promos?id=${encodeURIComponent(p.id)}`, { method: "DELETE" }));
+          await afterPriceChange();
         } catch (e) { toast(e.message); }
       });
       li.appendChild(del);
@@ -894,30 +1241,30 @@ async function renderPromos(data) {
   w.textContent = d.warnings.join(" · ");
 }
 
+async function afterPriceChange() {
+  state.recipes = null;
+  await loadStatus();
+  await loadWeek();
+}
+
 async function submitPromo(e) {
   e.preventDefault();
   const f = e.target;
   const body = {
-    store: f.elements.store.value,
-    ingredient: f.elements.ingredient.value,
-    name: f.elements.name.value.trim(),
-    price: Number(f.elements.price.value),
-    regularPrice: Number(f.elements.regularPrice.value) || 0,
-    quantity: Number(f.elements.quantity.value),
-    unit: f.elements.unit.value,
-    validFrom: f.elements.validFrom.value || null,
-    validTo: f.elements.validTo.value || null,
-    card: f.elements.card.checked,
+    store: f.elements.store.value, ingredient: f.elements.ingredient.value, name: f.elements.name.value.trim(),
+    price: Number(f.elements.price.value), regularPrice: Number(f.elements.regularPrice.value) || 0,
+    quantity: Number(f.elements.quantity.value), unit: f.elements.unit.value,
+    validFrom: f.elements.validFrom.value || null, validTo: f.elements.validTo.value || null, card: f.elements.card.checked,
   };
   try {
-    const r = await api("/api/promos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const r = await api("/api/promos", jsonOpts("POST", body));
     await renderPromos(r);
     const added = r.promos.find((p) => p.name === body.name && p.store === body.store);
     toast(added ? `Akció felvéve – ${added.statusText}.` : "Akció felvéve.");
     f.elements.name.value = "";
     f.elements.price.value = "";
     f.elements.regularPrice.value = "";
-    await reloadAll();
+    await afterPriceChange();
   } catch (err) {
     toast(err.message);
   }
@@ -927,118 +1274,88 @@ async function importPromos() {
   const text = $("#promo-import").value.trim();
   if (!text) { toast("Előbb illeszd be az akciókat."); return; }
   try {
-    const r = await api("/api/promos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
+    const r = await api("/api/promos", jsonOpts("POST", { text }));
     await renderPromos(r);
     toast(`${r.added} akció felvéve${r.skipped.length ? `, ${r.skipped.length} sor kimaradt` : ""}.`);
-    if (r.skipped.length) {
-      const w = $("#promo-warnings");
-      w.hidden = false;
-      w.textContent = r.skipped.join(" · ");
-    }
     if (r.added) $("#promo-import").value = "";
-    await reloadAll();
+    await afterPriceChange();
   } catch (err) {
     toast(err.message);
   }
 }
 
-// ---------- események ----------
+// ---------- indulás ----------
 
 function bind() {
-  $("#another").addEventListener("click", () => nextRecipe(false).catch((e) => toast(e.message)));
-
-  $("#filters").addEventListener("click", (e) => {
-    const b = e.target.closest("button[data-tag]");
+  window.addEventListener("hashchange", route);
+  $("#store-pill").addEventListener("click", openStoreSheet);
+  $("#open-settings").addEventListener("click", () => state.profile && openSettings());
+  $("#week-new").addEventListener("click", () => {
+    $("#dinners").classList.add("refreshing");
+    loadWeek("new").catch((e) => toast(e.message)).finally(() => $("#dinners").classList.remove("refreshing"));
+  });
+  $("#list-share").addEventListener("click", shareList);
+  $("#nom-yes").addEventListener("click", () => decide(true));
+  $("#nom-no").addEventListener("click", () => decide(false));
+  $("#nom-later").addEventListener("click", () => decide(null));
+  $("#nom-reset").addEventListener("click", async () => {
+    try {
+      state.profile = await api(`/api/rate?id=${state.profile.id}`, { method: "DELETE" });
+      await loadDeck();
+      toast("Az értékeléseid törölve.");
+    } catch (e) { toast(e.message); }
+  });
+  document.addEventListener("keydown", (e) => {
+    if (state.view !== "nom" || document.querySelector("dialog[open]") || e.target.closest("input, textarea, select")) return;
+    if (e.key === "ArrowRight") decide(true);
+    if (e.key === "ArrowLeft") decide(false);
+  });
+  let t1, t2;
+  $("#browse-q").addEventListener("input", () => { clearTimeout(t1); t1 = setTimeout(() => renderBrowse().catch((e) => toast(e.message)), 150); });
+  $("#deal-q").addEventListener("input", () => { clearTimeout(t2); t2 = setTimeout(() => renderDeals(currentStore()).catch((e) => toast(e.message)), 250); });
+  $("#browse-sort").addEventListener("change", () => renderBrowse().catch((e) => toast(e.message)));
+  $("#browse-filters").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-f]");
     if (!b) return;
-    state.tag = b.dataset.tag;
-    syncFilterButtons();
-    loadStore().catch((err) => showError(err.message));
+    state.filter = b.dataset.f;
+    for (const x of $$("#browse-filters button")) x.setAttribute("aria-pressed", String(x === b));
+    renderBrowse().catch((err) => toast(err.message));
   });
-
-  $("#onlyIngredients").addEventListener("change", () => loadDeals().catch((err) => toast(err.message)));
-
-  let searchTimer;
-  $("#search").addEventListener("input", () => {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => loadDeals().catch((err) => toast(err.message)), 250);
-  });
-
-  $("#more-deals").addEventListener("click", () => {
-    state.dealLimit += 24;
-    loadDeals().catch((err) => toast(err.message));
-  });
-
-  $("#show-all").addEventListener("click", () => {
-    state.showAll = true;
-    renderMore();
-  });
-
-  $("#sort").addEventListener("change", (e) => {
-    state.sort = e.target.value;
-    renderMore();
-  });
-
-  for (const dlg of $$("dialog")) {
-    // a háttérre kattintás bezárja
-    dlg.addEventListener("click", (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); });
-  }
-
-  $("#open-settings").addEventListener("click", openSettings);
-  $("#open-promos").addEventListener("click", () => openPromos().catch((e) => toast(e.message)));
+  $("#ob-next").addEventListener("click", obNext);
+  $("#ob-back").addEventListener("click", () => { ob.step = Math.max(0, ob.step - 1); renderOb(); });
   $("#promo-form").addEventListener("submit", submitPromo);
   $("#promo-import-btn").addEventListener("click", importPromos);
-
-  for (const r of $$('#settings-dialog input[name="pack"]')) {
-    r.addEventListener("change", () => {
-      state.prefs.bulk = r.value === "bulk" && r.checked;
-      savePrefs();
-      state.swapped = new Set();
-      reloadAll().catch((e) => toast(e.message));
-    });
+  for (const dlg of $$("dialog:not(#onboard)")) {
+    dlg.addEventListener("click", (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); });
   }
-
-  $("#refresh").addEventListener("click", async () => {
-    const btn = $("#refresh");
-    btn.disabled = true;
-    btn.textContent = "Frissítés…";
-    try {
-      await api("/api/refresh", { method: "POST" });
-      await reloadAll();
-      btn.textContent = "Árak frissítve";
-    } catch (err) {
-      btn.textContent = "Frissítés sikertelen";
-      toast(err.message);
-    } finally {
-      setTimeout(() => { btn.disabled = false; btn.textContent = "Árak frissítése"; }, 2500);
-    }
-  });
-
-  window.addEventListener("hashchange", () => {
-    const h = readHash();
-    if (h.store && h.store !== state.store) selectStore(h.store, h.recipe);
-    else if (h.recipe && h.recipe !== state.current?.recipe.id) showRecipe(h.recipe).catch((e) => toast(e.message));
+  $("#recipe-sheet").addEventListener("close", () => {
+    if (new URLSearchParams(location.hash.slice(1)).get("recept")) history.replaceState(null, "", `#${state.view}`);
   });
 }
 
-function syncFilterButtons() {
-  for (const x of $$("#filters button")) x.setAttribute("aria-pressed", String(x.dataset.tag === state.tag));
+async function afterProfile() {
+  await loadStatus();
+  renderStorePill();
+  const h = location.hash.slice(1);
+  if (!VIEWS.includes(h) && !h.startsWith("recept=")) history.replaceState(null, "", "#het");
+  route();
+  if (state.view !== "het" && state.view !== "lista") loadWeek().catch((e) => toast(e.message));
 }
 
 async function init() {
-  loadPrefs();
   bind();
-  const h = readHash();
-  if (h.store) state.store = h.store;
-  if (h.tag) { state.tag = h.tag; syncFilterButtons(); }
-  if (h.servings) state.servings = h.servings;
-  if (h.view) state.view = h.view;
   try {
-    await loadStatus();
-    await loadStore(h.recipe);
-    if (typeof initViews === "function") initViews();
+    state.status = await api("/api/status");
+    const p = await loadProfile();
+    if (!p) {
+      await loadStatus();
+      startOnboarding();
+      return;
+    }
+    await afterProfile();
   } catch (e) {
-    $("#source").textContent = "Az adatok nem tölthetők be.";
-    showError(e.message);
+    $("#banner").textContent = `Az adatok nem tölthetők be: ${e.message}`;
+    $("#banner").hidden = false;
   }
 }
 

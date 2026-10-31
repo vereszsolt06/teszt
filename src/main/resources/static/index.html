@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Spórolós Konyha</title>
-  <meta name="description" content="Receptajánló a GVH Árfigyelő napi árai alapján: mit főzz ma abból, ami az adott boltban épp jó áron van.">
-  <meta name="theme-color" content="#e9eee6" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#121a15" media="(prefers-color-scheme: dark)">
+  <meta name="description" content="Heti vacsoraterv a kereted szerint, a GVH Árfigyelő napi boltárai alapján, egy közös bevásárlólistával.">
+  <meta name="theme-color" content="#f3f0e8" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#14130f" media="(prefers-color-scheme: dark)">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,251 +15,199 @@
   <link rel="stylesheet" href="app.css">
 </head>
 <body>
-  <a class="skip" href="#pick">Ugrás a receptre</a>
+  <a class="skip" href="#main">Ugrás a tartalomra</a>
 
   <header class="top">
     <div class="brand">
       <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true"><path d="M6 10h20l8 10-8 10H6z" fill="var(--tag)" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round"/><circle cx="25" cy="20" r="2.6" fill="var(--ink)"/></svg>
-      <div>
-        <h1>Spórolós Konyha</h1>
-        <p class="source" id="source">Árak betöltése…</p>
-      </div>
+      <span class="brand-name">Spórolós Konyha</span>
     </div>
+    <nav class="tabs" aria-label="Fő nézetek">
+      <a href="#het" data-view="het">Hét</a>
+      <a href="#lista" data-view="lista">Lista</a>
+      <a href="#nom" data-view="nom">Nom vagy nem</a>
+      <a href="#receptek" data-view="receptek">Receptek</a>
+    </nav>
     <div class="top-actions">
-      <button class="ghost" id="open-promos" type="button">Akciók</button>
-      <button class="ghost" id="open-settings" type="button">Beállítások</button>
-      <button class="ghost" id="refresh" type="button" title="Árak újratöltése az Árfigyelőből">Árak frissítése</button>
+      <button class="store-pill" id="store-pill" type="button" aria-haspopup="dialog"><span class="dot"></span><span class="pill-text">Bolt</span></button>
+      <button class="icon-btn" id="open-settings" type="button" aria-label="Beállítások" title="Beállítások">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="7" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="17" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </button>
     </div>
   </header>
 
   <div class="banner" id="banner" hidden></div>
 
-  <nav class="stores" aria-label="Bolt választása">
-    <p class="stores-hint">Hol vásárolsz ma?</p>
-    <div class="store-row" id="stores" role="tablist"></div>
-  </nav>
-
-  <nav class="views" aria-label="Nézetek">
-    <div class="view-row" role="tablist">
-      <button type="button" role="tab" data-view="ma" aria-selected="true">Mai ajánlat</button>
-      <button type="button" role="tab" data-view="terv" aria-selected="false">Heti terv</button>
-      <button type="button" role="tab" data-view="nom" aria-selected="false">Nom vagy nem</button>
-      <button type="button" role="tab" data-view="receptek" aria-selected="false">Receptek</button>
-    </div>
-  </nav>
-
-  <main class="layout" data-panel="ma">
-    <section class="cook" aria-label="Receptajánló">
-      <div class="filters" id="filters" role="group" aria-label="Szűrés">
-        <button type="button" data-tag="" aria-pressed="true">Bármi</button>
-        <button type="button" data-tag="gyors" aria-pressed="false">Gyors</button>
-        <button type="button" data-tag="olcsó" aria-pressed="false">Olcsó</button>
-        <button type="button" data-tag="vega" aria-pressed="false">Húsmentes</button>
-        <button type="button" data-tag="magyaros" aria-pressed="false">Magyaros</button>
-        <button type="button" data-tag="leves" aria-pressed="false">Leves</button>
-        <button type="button" data-tag="főzelék" aria-pressed="false">Főzelék</button>
-        <button type="button" data-tag="húsos" aria-pressed="false">Húsos</button>
-        <button type="button" data-tag="hal" aria-pressed="false">Hal</button>
-        <button type="button" data-tag="édes" aria-pressed="false">Édes</button>
-      </div>
-
-      <article class="pick" id="pick" aria-live="polite" tabindex="-1">
-        <div class="pick-skeleton">Recept keresése…</div>
-      </article>
-
-      <div class="actions">
-        <button class="primary" id="another" type="button">Másik receptet kérek</button>
-        <span class="counter" id="counter"></span>
-      </div>
-
-      <div class="list-head">
-        <h2 class="section-title" id="more-title">Ebben a boltban még kifizetődő</h2>
-        <label class="sort" id="sort-wrap" hidden>
-          <span>Sorrend</span>
-          <select id="sort">
-            <option value="score">ajánlás szerint</option>
-            <option value="cost">legolcsóbb elöl</option>
-            <option value="time">leggyorsabb elöl</option>
-          </select>
-        </label>
-      </div>
-      <ol class="more" id="more"></ol>
-      <button class="ghost wide" id="show-all" type="button">Az összes recept</button>
-    </section>
-
-    <aside class="deals" aria-labelledby="deals-title">
-      <div class="deals-head">
-        <h2 id="deals-title" class="section-title">Most jó áron</h2>
-        <label class="switch">
-          <input type="checkbox" id="onlyIngredients" checked>
-          <span>csak főzéshez</span>
-        </label>
-      </div>
-      <label class="search">
-        <span class="visually-hidden">Keresés a bolt termékei között</span>
-        <input type="search" id="search" placeholder="Keresés: tej, csirkemell, vaj…" autocomplete="off" enterkeyhint="search">
-      </label>
-      <p class="search-hint" id="search-hint" hidden></p>
-      <ul class="tags" id="deals"></ul>
-      <button class="ghost wide" id="more-deals" type="button" hidden>Több jó ár</button>
-    </aside>
-  </main>
-
-  <main class="panel" data-panel="terv" hidden aria-labelledby="plan-title">
-    <section class="plan-setup" aria-label="A heti terv beállításai">
-      <div class="plan-intro">
-        <h2 id="plan-title" class="panel-title">Heti vacsoraterv</h2>
-        <p class="hint">Megadod, hányan esztek, hány vacsora kell és mennyi a keret – a terv a kiválasztott bolt mai áraiból áll össze, és a hozzávalókat a vacsorák között megosztja, hogy ne maradjon fél csomag semmi.</p>
-      </div>
-      <div class="plan-fields">
-        <div class="field"><span class="field-label" id="lbl-people">Hányan esztek?</span>
-          <div class="servings" role="group" aria-labelledby="lbl-people">
-            <button class="step" type="button" data-step="people" data-d="-1" aria-label="Kevesebb fő">−</button>
-            <span class="servings-value" id="plan-people">2 fő</span>
-            <button class="step" type="button" data-step="people" data-d="1" aria-label="Több fő">+</button>
-          </div></div>
-        <div class="field"><span class="field-label" id="lbl-dinners">Vacsorák a héten</span>
-          <div class="servings" role="group" aria-labelledby="lbl-dinners">
-            <button class="step" type="button" data-step="dinners" data-d="-1" aria-label="Kevesebb vacsora">−</button>
-            <span class="servings-value" id="plan-dinners">5</span>
-            <button class="step" type="button" data-step="dinners" data-d="1" aria-label="Több vacsora">+</button>
-          </div></div>
-        <label class="field"><span class="field-label">Heti keret</span>
-          <span class="money"><input id="plan-budget" type="number" min="0" step="500" inputmode="numeric" placeholder="nincs"><span>Ft</span></span></label>
-      </div>
-      <div class="plan-chips">
-        <div role="group" aria-label="Diéta"><span class="field-label">Diéta</span>
-          <div class="chips" id="plan-diets">
-            <label class="chip"><input type="checkbox" value="vega"><span>Húsmentes</span></label>
-            <label class="chip"><input type="checkbox" value="gluténmentes"><span>Gluténmentes</span></label>
-            <label class="chip"><input type="checkbox" value="laktózmentes"><span>Laktózmentes</span></label>
-          </div></div>
-        <div role="group" aria-label="Konyhai eszközök"><span class="field-label">Ami van a konyhádban</span>
-          <div class="chips" id="plan-equipment">
-            <label class="chip"><input type="checkbox" value="tuzhely" checked><span>Tűzhely</span></label>
-            <label class="chip"><input type="checkbox" value="suto" checked><span>Sütő</span></label>
-            <label class="chip"><input type="checkbox" value="airfryer"><span>Airfryer</span></label>
-          </div></div>
-      </div>
-      <div class="actions">
-        <button class="primary" id="plan-new" type="button">Új hetet kérek</button>
-        <span class="counter" id="plan-taste"></span>
-      </div>
-    </section>
-
-    <div class="plan-grid">
-      <section aria-labelledby="plan-week-title">
-        <h2 class="section-title" id="plan-week-title">A heted</h2>
-        <div class="plan-summary" id="plan-summary"></div>
-        <ol class="days" id="plan-days"><li class="pick-skeleton">Terv készítése…</li></ol>
-      </section>
-      <aside class="plan-list" aria-labelledby="plan-list-title">
-        <div class="shopping-head">
-          <h2 class="section-title" id="plan-list-title">Bevásárlólista</h2>
-          <button class="ghost small" id="plan-share" type="button">Megosztás</button>
+  <main id="main" tabindex="-1">
+    <!-- HÉT -->
+    <section class="view" data-view="het" aria-labelledby="week-title">
+      <div class="week-head">
+        <div class="week-sum" id="week-sum">
+          <p class="eyebrow" id="week-title">Ez a hét</p>
+          <p class="week-total" id="week-total">…</p>
+          <p class="week-meta" id="week-meta"></p>
+          <div class="meter" id="week-meter" hidden><span></span></div>
+          <p class="meter-text" id="week-meter-text"></p>
         </div>
-        <div id="plan-aisles"></div>
-      </aside>
-    </div>
-  </main>
-
-  <main class="panel" data-panel="nom" hidden aria-labelledby="nom-title">
-    <div class="nom-head">
-      <h2 id="nom-title" class="panel-title">Nom vagy nem?</h2>
-      <p class="hint">Lapozd végig a recepteket: ami tetszik, azt a heti terv előnyben részesíti, amit nem kérsz, azt kihagyja. Húzd jobbra vagy balra, vagy használd a gombokat (billentyűzeten a ← és → nyilat).</p>
-    </div>
-    <div class="nom-stage">
-      <div class="nom-deck" id="nom-deck" aria-live="polite"></div>
-      <div class="nom-buttons">
-        <button class="nom-btn no" id="nom-no" type="button" aria-label="Nem kérem"><span aria-hidden="true">✕</span> Nem</button>
-        <button class="nom-btn later" id="nom-skip" type="button">Később</button>
-        <button class="nom-btn yes" id="nom-yes" type="button" aria-label="Nom, kérem"><span aria-hidden="true">♥</span> Nom</button>
+        <div class="week-actions">
+          <button class="primary" id="week-new" type="button">Új hetet kérek</button>
+          <a class="ghost" href="#lista" id="week-to-list">Bevásárlólista</a>
+        </div>
       </div>
-      <p class="counter" id="nom-count"></p>
-    </div>
-    <section class="nom-liked" aria-labelledby="nom-liked-title">
-      <div class="list-head">
-        <h2 class="section-title" id="nom-liked-title">Kedvenceid</h2>
-        <button class="ghost small" id="nom-reset" type="button">Értékelések törlése</button>
-      </div>
-      <ul class="liked" id="nom-liked"></ul>
+      <div class="week-notes" id="week-notes"></div>
+      <ol class="dinners" id="dinners" aria-label="A hét vacsorái"></ol>
+      <p class="fineprint" id="week-fine"></p>
     </section>
-  </main>
 
-  <main class="panel" data-panel="receptek" hidden aria-labelledby="browse-title">
-    <div class="browse-head">
-      <h2 id="browse-title" class="panel-title">Receptek</h2>
-      <label class="search"><span class="visually-hidden">Keresés a receptek között</span>
-        <input type="search" id="browse-q" placeholder="Keresés: csirke, leves, tészta…" autocomplete="off" enterkeyhint="search"></label>
-      <div class="filters" id="browse-filters" role="group" aria-label="Szűrés">
-        <button type="button" data-f="" aria-pressed="true">Mind</button>
-        <button type="button" data-f="vega" aria-pressed="false">Húsmentes</button>
-        <button type="button" data-f="gluténmentes" aria-pressed="false">Gluténmentes</button>
-        <button type="button" data-f="laktózmentes" aria-pressed="false">Laktózmentes</button>
-        <button type="button" data-f="fehérjedús" aria-pressed="false">Fehérjedús</button>
-        <button type="button" data-f="könnyed" aria-pressed="false">Könnyed</button>
-        <button type="button" data-f="laktató" aria-pressed="false">Laktató</button>
-        <button type="button" data-f="airfryer" aria-pressed="false">Airfryerben is</button>
-        <button type="button" data-f="kedvenc" aria-pressed="false">Kedvenceim</button>
+    <!-- LISTA -->
+    <section class="view" data-view="lista" aria-labelledby="list-title" hidden>
+      <div class="list-top">
+        <div>
+          <h1 class="view-title" id="list-title">Bevásárlólista</h1>
+          <p class="sub" id="list-sub"></p>
+        </div>
+        <div class="list-total">
+          <span class="price-tag small"><small>a pénztárnál kb.</small><span class="now" id="list-total">…</span></span>
+        </div>
       </div>
-      <label class="sort"><span>Sorrend</span>
-        <select id="browse-sort">
-          <option value="price">legolcsóbb adag elöl</option>
-          <option value="time">leggyorsabb elöl</option>
-          <option value="kcal">legkevesebb kalória elöl</option>
-          <option value="protein">legtöbb fehérje elöl</option>
-          <option value="name">ábécérendben</option>
-        </select></label>
-    </div>
-    <p class="counter" id="browse-count"></p>
-    <ul class="cards" id="browse-grid"></ul>
+      <div class="list-tools">
+        <div class="progress" id="list-progress" aria-live="polite"></div>
+        <button class="ghost small" id="list-share" type="button">Megosztás</button>
+      </div>
+      <div id="aisles"></div>
+      <p class="fineprint">Egész csomagokkal számolva, a mérlegelős árut annyiért, amennyit veszel. A kipipálás a háztartás minden eszközén látszik.</p>
+    </section>
+
+    <!-- NOM VAGY NEM -->
+    <section class="view" data-view="nom" aria-labelledby="nom-title" hidden>
+      <div class="nom-head">
+        <h1 class="view-title" id="nom-title">Nom vagy nem?</h1>
+        <p class="sub">Húzd jobbra, ami jöhet, balra, ami nem. A következő hetek ehhez igazodnak. Billentyűzeten: ← és →.</p>
+      </div>
+      <div class="nom-stage">
+        <div class="nom-deck" id="nom-deck" aria-live="polite"></div>
+        <div class="nom-buttons">
+          <button class="nom-btn no" id="nom-no" type="button"><span aria-hidden="true">✕</span> Nem</button>
+          <button class="nom-btn later" id="nom-later" type="button">Később</button>
+          <button class="nom-btn yes" id="nom-yes" type="button"><span aria-hidden="true">♥</span> Nom</button>
+        </div>
+        <p class="sub center" id="nom-count"></p>
+      </div>
+      <section class="nom-liked" aria-labelledby="liked-title">
+        <div class="row-head">
+          <h2 class="section-title" id="liked-title">Kedvenceid</h2>
+          <button class="ghost small" id="nom-reset" type="button">Értékelések törlése</button>
+        </div>
+        <ul class="liked" id="liked"></ul>
+      </section>
+    </section>
+
+    <!-- RECEPTEK -->
+    <section class="view" data-view="receptek" aria-labelledby="browse-title" hidden>
+      <h1 class="view-title" id="browse-title">Receptek</h1>
+      <section class="strip-wrap" aria-labelledby="today-title">
+        <div class="row-head">
+          <h2 class="section-title" id="today-title">Ma kifizetődő <span class="muted" id="today-store"></span></h2>
+        </div>
+        <ul class="strip" id="today"></ul>
+      </section>
+      <section class="strip-wrap" aria-labelledby="deals-title">
+        <div class="row-head">
+          <h2 class="section-title" id="deals-title">Most jó áron</h2>
+          <label class="search inline"><span class="visually-hidden">Keresés a bolt termékei között</span>
+            <input type="search" id="deal-q" placeholder="Termék keresése…" autocomplete="off" enterkeyhint="search"></label>
+        </div>
+        <ul class="deal-strip" id="deals"></ul>
+      </section>
+      <div class="browse-tools">
+        <label class="search"><span class="visually-hidden">Keresés a receptek között</span>
+          <input type="search" id="browse-q" placeholder="Keresés: csirke, leves, tészta…" autocomplete="off" enterkeyhint="search"></label>
+        <div class="chips-row" id="browse-filters" role="group" aria-label="Szűrés">
+          <button type="button" data-f="" aria-pressed="true">Mind</button>
+          <button type="button" data-f="fehérjedús" aria-pressed="false">Fehérjedús</button>
+          <button type="button" data-f="könnyed" aria-pressed="false">Könnyed</button>
+          <button type="button" data-f="laktató" aria-pressed="false">Laktató</button>
+          <button type="button" data-f="vega" aria-pressed="false">Húsmentes</button>
+          <button type="button" data-f="gluténmentes" aria-pressed="false">Gluténmentes</button>
+          <button type="button" data-f="laktózmentes" aria-pressed="false">Laktózmentes</button>
+          <button type="button" data-f="gyors" aria-pressed="false">Gyors</button>
+          <button type="button" data-f="airfryer" aria-pressed="false">Airfryer</button>
+          <button type="button" data-f="kedvenc" aria-pressed="false">♥ Kedvencek</button>
+        </div>
+        <label class="sort"><span>Sorrend</span>
+          <select id="browse-sort">
+            <option value="price">legolcsóbb adag</option>
+            <option value="score">ma a legjobb ár</option>
+            <option value="time">leggyorsabb</option>
+            <option value="protein">legtöbb fehérje</option>
+            <option value="kcal">legkevesebb kalória</option>
+            <option value="name">ábécé</option>
+          </select></label>
+      </div>
+      <p class="sub" id="browse-count"></p>
+      <ul class="cards" id="browse-grid"></ul>
+    </section>
   </main>
 
   <footer class="foot">
-    <p>Az árak a <a href="https://arfigyelo.gvh.hu" target="_blank" rel="noopener">GVH Árfigyelő</a> napi adataiból származnak, üzletlánconként: a lánc legolcsóbb boltjának árát mutatjuk, a te boltodban lehet drágább. A recept ára a felhasznált mennyiségre jutó rész; a bevásárlólista egész csomagokkal számol. A boltban kiírt ár az irányadó.</p>
+    <p>Árak: <a href="https://arfigyelo.gvh.hu" target="_blank" rel="noopener">GVH Árfigyelő</a> napi adatai lánconként (a lánc legolcsóbb boltjának ára; a te boltodban lehet drágább) és a felvitt bolti akciók. Fotók: Wikimedia Commons, szabad licenccel – a szerző és a licenc a recept adatlapján. <span id="foot-source"></span></p>
   </footer>
 
+  <nav class="bottom-tabs" aria-label="Fő nézetek">
+    <a href="#het" data-view="het"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 10h16M9 3v4M15 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Hét</span></a>
+    <a href="#lista" data-view="lista"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7h11M9 12h11M9 17h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M4 7l1 1 2-2M4 12l1 1 2-2M4 17l1 1 2-2" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Lista</span></a>
+    <a href="#nom" data-view="nom"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span>Nom</span></a>
+    <a href="#receptek" data-view="receptek"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 16l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Receptek</span></a>
+  </nav>
+
+  <!-- receptlap -->
+  <dialog class="recipe-sheet" id="recipe-sheet" aria-labelledby="rs-title">
+    <div class="rs-scroll" id="rs-body"></div>
+  </dialog>
+
+  <!-- bolt választása -->
+  <dialog class="sheet" id="store-sheet" aria-labelledby="store-sheet-title">
+    <form method="dialog" class="dialog-close"><button type="submit" class="ghost small">Bezárás</button></form>
+    <h2 id="store-sheet-title">Hol vásárolsz ezen a héten?</h2>
+    <p class="hint">A terv és a lista ennek a láncnak a mai áraival számol. A „ma itt a legjobb” jelzés azt mutatja, hol a legkedvezőbbek ma a receptek.</p>
+    <div class="store-grid" id="store-grid"></div>
+  </dialog>
+
+  <!-- első indítás -->
+  <dialog class="onboard" id="onboard" aria-labelledby="ob-title">
+    <div class="ob-inner">
+      <div class="ob-progress" id="ob-progress" aria-hidden="true"></div>
+      <div class="ob-step" id="ob-step"></div>
+      <div class="ob-nav">
+        <button class="ghost" id="ob-back" type="button">Vissza</button>
+        <button class="primary" id="ob-next" type="button">Tovább</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- beállítások -->
+  <dialog class="sheet wide-sheet" id="settings" aria-labelledby="settings-title">
+    <form method="dialog" class="dialog-close"><button type="submit" class="ghost small">Kész</button></form>
+    <h2 id="settings-title">Beállítások</h2>
+    <div id="settings-body"></div>
+  </dialog>
+
+  <!-- termék ára minden láncban -->
   <dialog class="item-dialog" id="item-dialog" aria-labelledby="item-title">
-    <form method="dialog" class="dialog-close"><button type="submit" class="ghost" aria-label="Bezárás">Bezárás</button></form>
+    <form method="dialog" class="dialog-close"><button type="submit" class="ghost small">Bezárás</button></form>
     <h2 id="item-title"></h2>
     <p class="item-cat" id="item-cat"></p>
     <ul class="offers" id="item-offers"></ul>
   </dialog>
 
-  <dialog class="sheet" id="settings-dialog" aria-labelledby="settings-title">
-    <form method="dialog" class="dialog-close"><button type="submit" class="ghost" aria-label="Bezárás">Kész</button></form>
-    <h2 id="settings-title">Beállítások</h2>
-
-    <fieldset class="setting">
-      <legend>Boltjaim</legend>
-      <p class="hint">Csak ezek a láncok jelennek meg, és a „mennyibe kerülne a többi boltodban” összevetés, a megtakarítás és a „ma itt a legjobb” is csak ezekhez számol.</p>
-      <div class="chips" id="set-stores"></div>
-    </fieldset>
-
-    <fieldset class="setting">
-      <legend>Kiszerelés</legend>
-      <label class="radio"><input type="radio" name="pack" value="home" checked>
-        <span><b>Háztartási kiszerelés</b><br><span class="hint">Annyit veszel, amennyi a recepthez kell, vagy a legkisebb szokásos csomagot. A nagyobb kiszerelést alternatívaként mutatja, ha jóval olcsóbb.</span></span></label>
-      <label class="radio"><input type="radio" name="pack" value="bulk">
-        <span><b>Nagy kiszerelés is jöhet, ha olcsóbb</b><br><span class="hint">Például 5 kg krumpli vagy 30 tojás, ha a receptre vetítve legalább 10%-kal olcsóbb. Most többet fizetsz, de a maradék a későbbi főzéshez jó.</span></span></label>
-    </fieldset>
-
-    <fieldset class="setting">
-      <legend>Hűségkártyáim és appjaim</legend>
-      <p class="hint">A kártyás vagy appos akciók csak akkor számítanak, ha itt bejelölöd, hogy van ilyened.</p>
-      <div class="chips" id="set-cards"></div>
-    </fieldset>
-  </dialog>
-
+  <!-- akciók -->
   <dialog class="sheet wide-sheet" id="promo-dialog" aria-labelledby="promo-title">
-    <form method="dialog" class="dialog-close"><button type="submit" class="ghost" aria-label="Bezárás">Bezárás</button></form>
+    <form method="dialog" class="dialog-close"><button type="submit" class="ghost small">Bezárás</button></form>
     <h2 id="promo-title">A láncok saját akciói</h2>
     <p class="hint">Az Árfigyelő napi fájlja a polcárakat tartalmazza. Az akciós újság, az appos és a hűségkártyás árak nincsenek benne. Itt felviheted őket; ha egy akció már benne van az Árfigyelő áraiban, az app nem számolja kétszer.</p>
-
     <ul class="promo-list" id="promo-list"></ul>
     <p class="note" id="promo-warnings" hidden></p>
-
-    <details class="promo-add" id="promo-add" open>
+    <details class="promo-add" open>
       <summary>Új akció</summary>
       <form id="promo-form" class="promo-form">
         <label>Bolt<select name="store" required></select></label>
@@ -275,27 +223,16 @@
         <div class="span2 form-actions"><button class="primary" type="submit">Akció felvétele</button></div>
       </form>
     </details>
-
     <details class="promo-add">
       <summary>Több akció beillesztése (CSV vagy JSON)</summary>
-      <p class="hint">Fejléc: <code>bolt;termek;ar;egyseg;kiszereles;rendes_ar;tol;ig;alapanyag;vonalkod;kartya</code>. Az alapanyag a listában szereplő név vagy kulcs (pl. <code>csirkemell</code>), a vonalkód az Árfigyelőből.</p>
+      <p class="hint">Fejléc: <code>bolt;termek;ar;egyseg;kiszereles;rendes_ar;tol;ig;alapanyag;vonalkod;kartya</code>. Az alapanyag a listában szereplő név vagy kulcs (pl. <code>csirkemell</code>).</p>
       <textarea id="promo-import" rows="6" placeholder="bolt;termek;ar;egyseg;kiszereles;tol;ig;alapanyag&#10;Lidl;Csirkemellfilé;1499;kg;1;2026-10-30;2026-11-05;csirkemell"></textarea>
       <div class="form-actions"><button class="ghost" id="promo-import-btn" type="button">Beillesztett akciók felvétele</button></div>
     </details>
   </dialog>
 
-  <template id="tpl-tag">
-    <li class="tag">
-      <span class="tag-kind"></span>
-      <button type="button" class="tag-name linkish"></button>
-      <span class="tag-prices"><s class="tag-old"></s> <b class="tag-price"></b></span>
-      <span class="tag-reason"></span>
-    </li>
-  </template>
-
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="app.js"></script>
-  <script src="views.js"></script>
 </body>
 </html>

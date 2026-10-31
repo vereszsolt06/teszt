@@ -20,7 +20,10 @@ import hu.sporolos.model.Models.Deal;
 import hu.sporolos.model.Models.DealType;
 import hu.sporolos.model.Models.PriceEntry;
 import hu.sporolos.model.Models.Suggestion;
-import hu.sporolos.web.RecipeArt;
+import hu.sporolos.data.PhotoService;
+import hu.sporolos.store.FileStorage;
+import hu.sporolos.store.PgStorage;
+import hu.sporolos.store.Storage;
 import hu.sporolos.web.WebServer;
 
 import java.io.ByteArrayInputStream;
@@ -56,6 +59,7 @@ public final class AllTests {
     private static final Catalog CATALOG = Catalog.loadDefault();
 
     public static void main(String[] args) throws Exception {
+        System.setProperty("java.awt.headless", "true");
         int ok = 0, fail = 0, skip = 0;
         for (Method m : AllTests.class.getDeclaredMethods()) {
             if (!m.getName().startsWith("test")) continue;
@@ -199,21 +203,21 @@ public final class AllTests {
     static void testHistoryDeal() throws Exception {
         Path dir = Files.createTempDirectory("hist");
         try {
-            PriceHistory h = new PriceHistory(dir, 28);
+            PriceHistory h = new PriceHistory(new FileStorage(dir), 28);
             LocalDate today = LocalDate.of(2026, 10, 28);
+            Files.createDirectories(dir.resolve("history"));
             for (int i = 1; i <= 4; i++) {
-                Files.writeString(dir.resolve(today.minusDays(i) + ".tsv"), "c1\tlidl\t2000\n");
+                Files.writeString(dir.resolve("history").resolve(today.minusDays(i) + ".tsv"), "c1\tlidl\t2000\n");
             }
             PriceEntry now = entry("c1", "Csirkemell", 18, "lidl", 1600, "kg", 1);
             h.record(today, List.of(now));
             eq(4, h.daysLoaded(), "4 korábbi nap");
             eq(2000.0, h.usualPrice("c1", "lidl"), "szokásos ár");
-            check(Files.exists(dir.resolve(today + ".tsv")), "a mai nap elmentve");
+            check(Files.exists(dir.resolve("history").resolve(today + ".tsv")), "a mai nap elmentve");
             Deal d = new DealAnalyzer(List.of(now), h).dealFor(now);
             check(d != null && d.type() == DealType.HISTORY, "20%-kal a szokásos alatt");
         } finally {
-            try (var s = Files.list(dir)) { s.forEach(p -> p.toFile().delete()); }
-            Files.deleteIfExists(dir);
+            deleteTree(dir);
         }
     }
 
@@ -536,9 +540,13 @@ public final class AllTests {
         PriceRepository repo = new PriceRepository(CATALOG,
                 List.of(new ArfigyeloExcelProvider(CATALOG, null, dir.resolve("nincs.xlsx"), null), // nem létezik → demóra vált
                         new DemoPriceProvider(CATALOG, LocalDate.now())),
-                new PriceHistory(dir.resolve("history"), 28), new PromoStore(dir.resolve("akciok"), List.of()),
+                new PriceHistory(new FileStorage(dir), 28), new PromoStore(dir.resolve("akciok"), List.of()),
                 Duration.ofHours(1));
-        WebServer server = new WebServer(repo);
+        FileStorage storage = new FileStorage(dir);
+        Files.createDirectories(dir.resolve("kepek"));
+        Files.write(dir.resolve("kepek").resolve("lecso.jpg"), tinyJpeg());
+        PhotoService photos = new PhotoService(CATALOG, storage, dir.resolve("kepek"), null);
+        WebServer server = new WebServer(repo, storage, photos);
         int port = server.start("127.0.0.1", 0);
         try {
             HttpClient c = HttpClient.newHttpClient();
@@ -619,8 +627,7 @@ public final class AllTests {
             get(c, base + "/api/deals?store=nincsilyen", 400);
             get(c, base + "/api/ismeretlen", 404);
             check(get(c, base + "/", 200).contains("Spórolós Konyha"), "főoldal");
-            check(get(c, base + "/app.js", 200).contains("nextRecipe"), "app.js");
-            check(get(c, base + "/views.js", 200).contains("loadPlan"), "views.js");
+            check(get(c, base + "/app.js", 200).contains("loadWeek"), "app.js");
 
             // heti terv, receptlista, képek
             Map<String, Object> plan = Json.obj(Json.parse(get(c, base + "/api/plan?store=lidl&people=3&dinners=4&budget=20000&diets=vega", 200)));
@@ -629,7 +636,6 @@ public final class AllTests {
             for (Object d : days) {
                 Map<String, Object> r = Json.obj(Json.obj(Json.obj(d).get("suggestion")).get("recipe"));
                 check(Json.arr(r.get("diets")).contains("vega"), "vega terv: " + r.get("id"));
-                check(String.valueOf(r.get("image")).startsWith("/img/recipe/"), "van kép");
             }
             check(!Json.arr(plan.get("aisles")).isEmpty(), "van bevásárlólista");
             String keepId = String.valueOf(Json.obj(Json.obj(Json.obj(days.get(0)).get("suggestion")).get("recipe")).get("id"));
@@ -640,9 +646,41 @@ public final class AllTests {
             eq(CATALOG.recipes().size(), all.size(), "minden recept a listában");
             List<Object> gf = Json.arr(Json.parse(get(c, base + "/api/recipes?store=lidl&diets=gluténmentes", 200)));
             check(gf.size() > 10 && gf.size() < all.size(), "gluténmentes szűrő: " + gf.size());
-            String svg = get(c, base + "/img/recipe/" + firstId + ".svg", 200);
-            check(svg.startsWith("<svg") && svg.endsWith("</svg>"), "SVG kép");
-            get(c, base + "/img/recipe/nincsilyen.svg", 404);
+            // fotó: a saját képek mappájából; ahol nincs, ott image == null és 404
+            var lecso = all.stream().map(o -> Json.obj(Json.obj(o).get("recipe"))).filter(r -> "lecso".equals(r.get("id"))).findFirst().orElseThrow();
+            eq("/img/recipe/lecso", String.valueOf(lecso.get("image")), "saját fotó URL-je");
+            var img = c.send(HttpRequest.newBuilder(URI.create(base + "/img/recipe/lecso")).build(), HttpResponse.BodyHandlers.ofByteArray());
+            eq(200, img.statusCode(), "fotó kiszolgálva");
+            eq("image/jpeg", img.headers().firstValue("content-type").orElse(""), "JPEG");
+            get(c, base + "/img/recipe/bolognai", 404);
+
+            // háztartás-profil: létrehozás, hét, csere, kipipálás, értékelés
+            String prof = post(c, base + "/api/profile", "{\"store\":\"lidl\",\"people\":3,\"dinners\":4,\"budget\":20000,\"diets\":[\"vega\",\"rossz\"],\"onboarded\":true}", 200);
+            Map<String, Object> pm = Json.obj(Json.parse(prof));
+            String pid = String.valueOf(pm.get("id"));
+            eq(List.of("vega"), Json.obj(pm.get("settings")).get("diets"), "ismeretlen diéta kiszűrve");
+            Map<String, Object> wk = Json.obj(Json.parse(get(c, base + "/api/week?id=" + pid, 200)));
+            List<Object> wdays = Json.arr(wk.get("days"));
+            eq(4, wdays.size(), "4 vacsora a profil szerint");
+            List<String> ids = recipeIds(wk);
+            eq(ids, recipeIds(Json.obj(Json.parse(get(c, base + "/api/week?id=" + pid, 200)))), "a mentett hét megmarad");
+            List<String> ids2 = recipeIds(Json.obj(Json.parse(get(c, base + "/api/week?id=" + pid + "&action=swap&day=1", 200))));
+            eq(ids.get(0), ids2.get(0), "csere: a többi nap marad");
+            check(!ids.get(1).equals(ids2.get(1)), "csere: a 2. nap más");
+            Map<String, Object> set = Json.obj(Json.parse(get(c, base + "/api/week?id=" + pid + "&action=set&day=0&recipe=gombas-rizotto", 200)));
+            eq("gombas-rizotto", recipeIds(set).get(0), "konkrét recept a hétre");
+            String key = String.valueOf(set.get("listKey"));
+            post(c, base + "/api/check?id=" + pid, "{\"key\":\"" + key + "\",\"item\":\"Rizs\",\"on\":true}", 200);
+            eq(List.of("Rizs"), Json.obj(Json.parse(get(c, base + "/api/week?id=" + pid, 200))).get("checked"), "kipipálva marad");
+            Map<String, Object> rated = Json.obj(Json.parse(post(c, base + "/api/rate?id=" + pid, "{\"recipe\":\"lecso\",\"liked\":false}", 200)));
+            eq(List.of("lecso"), rated.get("disliked"), "nem kért recept");
+            post(c, base + "/api/rate?id=" + pid, "{\"recipe\":\"nincsilyen\",\"liked\":true}", 400);
+            get(c, base + "/api/profile?id=nincsilyen99", 404);
+            get(c, base + "/api/week?id=../../etc", 400);
+            send(c, "PUT", base + "/api/profile?id=" + pid, "{\"store\":\"aldi\",\"people\":2,\"dinners\":3,\"onboarded\":true}", 200);
+            Map<String, Object> wk3 = Json.obj(Json.parse(get(c, base + "/api/week?id=" + pid, 200)));
+            eq("aldi", String.valueOf(wk3.get("store")), "boltváltás után új hét");
+            eq(3, Json.arr(wk3.get("days")).size(), "3 vacsora");
             get(c, base + "/img/recipe/..%2Fpom.xml", 400);
             get(c, base + "/../pom.xml", 400);
         } finally {
@@ -696,17 +734,136 @@ public final class AllTests {
         check(CATALOG.recipes().size() >= 150, "legalább 150 recept: " + CATALOG.recipes().size());
     }
 
-    static void testRecipeArtForAll() {
-        RecipeArt art = new RecipeArt(CATALOG);
-        java.util.Set<String> distinct = new java.util.HashSet<>();
-        for (var r : CATALOG.recipes()) {
-            String svg = art.svg(r.id());
-            check(svg != null && svg.startsWith("<svg") && svg.endsWith("</svg>"), "SVG: " + r.id());
-            check(!svg.contains("NaN") && !svg.contains("<script"), "tiszta SVG: " + r.id());
-            distinct.add(svg);
+    static void testPhotoServiceWikimedia() throws Exception {
+        Path dir = Files.createTempDirectory("fotok");
+        try {
+            FileStorage st = new FileStorage(dir);
+            byte[] jpeg = bigJpeg();
+            List<String> calls = new ArrayList<>();
+            PhotoService.Http http = url -> {
+                calls.add(url);
+                if (url.contains("wikipedia.org/api/rest_v1/page/summary/Paella")) {
+                    return json("{\"type\":\"standard\",\"title\":\"Paella\",\"thumbnail\":{\"source\":\"https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Paella_dish.jpg/330px-Paella_dish.jpg\"}}");
+                }
+                if (url.contains("wikipedia.org/api/rest_v1/page/summary/Lasagna")) {
+                    // helyi, nem szabad („fair use”) kép a Wikipédián
+                    return json("{\"type\":\"standard\",\"title\":\"Lasagna\",\"thumbnail\":{\"source\":\"https://upload.wikimedia.org/wikipedia/en/thumb/1/12/Las.jpg/330px-Las.jpg\"}}");
+                }
+                if (url.contains("commons.wikimedia.org/w/api.php") && url.contains("Paella_dish.jpg")) {
+                    return json("{\"query\":{\"pages\":{\"1\":{\"imageinfo\":[{\"thumburl\":\"https://upload.wikimedia.org/x/800px-Paella_dish.jpg\","
+                            + "\"descriptionurl\":\"https://commons.wikimedia.org/wiki/File:Paella_dish.jpg\",\"extmetadata\":{"
+                            + "\"Artist\":{\"value\":\"<a href='x'>Kiss Anna</a>\"},\"LicenseShortName\":{\"value\":\"CC BY-SA 4.0\"},"
+                            + "\"LicenseUrl\":{\"value\":\"https://creativecommons.org/licenses/by-sa/4.0\"}}}]}}}}");
+                }
+                if (url.endsWith("800px-Paella_dish.jpg")) return new PhotoService.Http.Response(200, "image/jpeg", jpeg);
+                return new PhotoService.Http.Response(404, "application/json", "{}".getBytes(StandardCharsets.UTF_8));
+            };
+            PhotoService ps = new PhotoService(CATALOG, st, dir.resolve("kepek"), http);
+            var p = ps.fetchNow("csirkes-paella");
+            check(p != null && p.present(), "a paella fotója megvan");
+            eq("CC BY-SA 4.0", p.license(), "licenc");
+            eq("Kiss Anna", p.author(), "szerző HTML nélkül");
+            check(ps.has("csirkes-paella"), "indexben");
+            check(javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(st.photo("csirkes-paella").bytes())).getWidth() == 800, "800 px-re kicsinyítve");
+            // a lasagne-nek csak nem szabad képe van: „nincs fotó” bejegyzés
+            check(ps.fetchNow("lasagne") == null, "nem szabad kép kihagyva");
+            check(!ps.has("lasagne"), "lasagne: nincs fotó");
+            check(st.photo("lasagne") != null && !st.photo("lasagne").present(), "a sikertelen próba feljegyezve");
+            check(calls.stream().noneMatch(u -> u.contains("Las.jpg") && u.contains("commons.wikimedia.org")), "a helyi képet le sem kérdezte");
+            // hálózati hiba: nem jegyzi fel (legközelebb újra próbálja)
+            PhotoService offline = new PhotoService(CATALOG, st, null, url -> { throw new IOException("nincs net"); });
+            check(offline.fetchNow("lecso") == null && st.photo("lecso") == null, "hálózati hibánál nincs bejegyzés");
+            // saját fotó mindig elsőbbséget kap
+            Files.createDirectories(dir.resolve("kepek"));
+            Files.write(dir.resolve("kepek").resolve("lasagne.jpg"), tinyJpeg());
+            check(ps.has("lasagne") && ps.photo("lasagne").present(), "saját fotó");
+            // minden receptnek van legalább egy fotóforrása
+            for (var r : CATALOG.recipes()) check(!CATALOG.photoSources(r.id()).isEmpty(), "fotóforrás: " + r.id());
+        } finally {
+            deleteTree(dir);
         }
-        eq(CATALOG.recipes().size(), distinct.size(), "minden kép más");
-        check(art.svg("nincsilyen") == null, "ismeretlen recept: nincs kép");
+    }
+
+    static void testFileStorageRoundTrip() throws Exception {
+        Path dir = Files.createTempDirectory("tarolo");
+        try (FileStorage st = new FileStorage(dir)) {
+            storageRoundTrip(st);
+        } finally {
+            deleteTree(dir);
+        }
+    }
+
+    /** PostgreSQL: csak ha a PG_TEST_URL meg van adva (pl. postgres://postgres:jelszo@127.0.0.1:5432/teszt). */
+    static void testPostgresStorage() throws Exception {
+        String url = System.getenv("PG_TEST_URL");
+        if (url == null || url.isBlank()) throw new Skip("PG_TEST_URL nincs megadva");
+        try (PgStorage st = PgStorage.open(url, 1)) {
+            storageRoundTrip(st);
+            // párhuzamos használat a kapcsolatkészleten át
+            var ex = java.util.concurrent.Executors.newFixedThreadPool(6);
+            List<java.util.concurrent.Future<?>> fs = new ArrayList<>();
+            String pid = "parhuzamos" + System.nanoTime() % 100000;
+            for (int i = 0; i < 30; i++) {
+                int n = i;
+                fs.add(ex.submit(() -> {
+                    st.rate(pid, "r" + (n % 7), n % 2 == 0);
+                    return st.ratings(pid).size();
+                }));
+            }
+            for (var f : fs) f.get();
+            ex.shutdownNow();
+            eq(7, st.ratings(pid).size(), "párhuzamos értékelések");
+            // SQL-befecskendezés: a paraméter szövegként megy át
+            st.saveProfile(pid, Map.of("store", "'); DROP TABLE household; --"));
+            eq("'); DROP TABLE household; --", st.profile(pid).get("store"), "paraméterezett lekérdezés");
+            // a séma második megnyitáskor is rendben (nem migrál újra)
+            try (PgStorage again = PgStorage.open(url, 1)) {
+                check(again.profile(pid) != null, "újranyitás");
+            }
+        }
+    }
+
+    static void storageRoundTrip(Storage st) throws Exception {
+        String id = "teszt" + System.nanoTime() % 1_000_000;
+        check(st.profile(id) == null, "új profil nincs");
+        st.saveProfile(id, Map.of("store", "lidl", "people", 3));
+        eq("lidl", st.profile(id).get("store"), "profil mentve");
+        st.rate(id, "lecso", true);
+        st.rate(id, "gulyasleves", false);
+        st.rate(id, "lecso", false);
+        st.rate(id, "bolognai", true);
+        st.rate(id, "bolognai", null);
+        eq(Map.of("lecso", false, "gulyasleves", false), st.ratings(id), "értékelések");
+        st.clearRatings(id);
+        check(st.ratings(id).isEmpty(), "értékelések törölve");
+        st.saveWeek(id, Map.of("ids", List.of("a", "b"), "seed", 3));
+        eq(List.of("a", "b"), st.week(id).get("ids"), "hét mentve");
+        st.setChecked(id, "k1", "Tej", true);
+        st.setChecked(id, "k1", "Kenyér", true);
+        st.setChecked(id, "k1", "Tej", false);
+        eq(Set.of("Kenyér"), st.checked(id, "k1"), "pipák");
+        st.setChecked(id, "k2", "Rizs", true);
+        check(st.checked(id, "k1").isEmpty(), "új lista: a régi pipák törlődnek");
+        LocalDate d = LocalDate.of(2020, 1, 1).plusDays(System.nanoTime() % 2000);
+        check(!st.hasPriceDay(d), "még nincs ilyen nap");
+        st.savePriceDay(d, List.of(entry("x1", "Tej", 1, "lidl", 299, "l", 1), entry("x2", "Kenyér", 1, "aldi", 499.5, "kg", 1)));
+        check(st.hasPriceDay(d), "nap elmentve");
+        var pd = st.prices(d, d.plusDays(1));
+        eq(1, pd.days(), "egy nap");
+        eq(List.of(499.5), pd.prices().get("x2|aldi"), "ár visszaolvasva");
+        byte[] img = tinyJpeg();
+        String rid = "foto" + System.nanoTime() % 100000;
+        st.savePhoto(new Storage.Photo(rid, "image/jpeg", img, "Lecsó", "https://x", "Szerző", "CC0", null, java.time.Instant.now()));
+        check(java.util.Arrays.equals(img, st.photo(rid).bytes()), "fotó bájtjai");
+        eq("Szerző", st.photo(rid).author(), "fotó szerzője");
+        st.savePhoto(new Storage.Photo(rid + "-nincs", null, null, null, null, null, null, null, java.time.Instant.now()));
+        check(!st.photo(rid + "-nincs").present(), "„nincs fotó” bejegyzés");
+        eq(Boolean.TRUE, st.photoIndex().get(rid), "fotóindex");
+        eq(Boolean.FALSE, st.photoIndex().get(rid + "-nincs"), "fotóindex: nincs");
+        st.saveManualPromos(List.of(Map.of("id", "p1", "store", "lidl", "name", "Csirke", "price", 999)));
+        eq("Csirke", st.manualPromos().get(0).get("name"), "kézi akció");
+        st.saveManualPromos(List.of());
+        check(st.manualPromos().isEmpty(), "kézi akciók törölve");
     }
 
     static void testWeeklyPlanner() {
@@ -770,6 +927,53 @@ public final class AllTests {
 
     static PriceEntry entry(String id, String name, int cat, String store, double price, String unit, double qty) {
         return new PriceEntry(id, name, cat, "kat", store, price, price, unit, qty, price / qty, 1, 10, 10);
+    }
+
+    static String post(HttpClient c, String url, String body, int expected) throws IOException, InterruptedException {
+        return send(c, "POST", url, body, expected);
+    }
+
+    static String send(HttpClient c, String method, String url, String body, int expected) throws IOException, InterruptedException {
+        HttpResponse<String> r = c.send(HttpRequest.newBuilder(URI.create(url))
+                .method(method, HttpRequest.BodyPublishers.ofString(body)).header("Content-Type", "application/json").build(),
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        eq(expected, r.statusCode(), "HTTP státusz: " + method + " " + url + " " + r.body());
+        return r.body();
+    }
+
+    static List<String> recipeIds(Map<String, Object> plan) {
+        return Json.arr(plan.get("days")).stream()
+                .map(d -> String.valueOf(Json.obj(Json.obj(Json.obj(d).get("suggestion")).get("recipe")).get("id"))).toList();
+    }
+
+    static PhotoService.Http.Response json(String s) {
+        return new PhotoService.Http.Response(200, "application/json", s.getBytes(StandardCharsets.UTF_8));
+    }
+
+    static byte[] tinyJpeg() throws IOException {
+        return jpeg(16, 10);
+    }
+
+    static byte[] bigJpeg() throws IOException {
+        return jpeg(1200, 800);
+    }
+
+    static byte[] jpeg(int w, int h) throws IOException {
+        var img = new java.awt.image.BufferedImage(w, h, java.awt.image.BufferedImage.TYPE_INT_RGB);
+        var g = img.createGraphics();
+        g.setPaint(new java.awt.GradientPaint(0, 0, java.awt.Color.ORANGE, w, h, java.awt.Color.RED));
+        g.fillRect(0, 0, w, h);
+        g.dispose();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(img, "jpeg", out);
+        return out.toByteArray();
+    }
+
+    static void deleteTree(Path dir) throws IOException {
+        if (!Files.exists(dir)) return;
+        try (var s = Files.walk(dir)) {
+            s.sorted(java.util.Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
+        }
     }
 
     static String get(HttpClient c, String url, int expected) throws IOException, InterruptedException {

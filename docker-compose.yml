@@ -1,0 +1,39 @@
+# Indítás:  docker compose up -d   →  http://localhost:8080
+# Leállítás: docker compose down   (az adatok a „db-adatok” és „app-adatok” kötetben megmaradnak)
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sporolos
+      POSTGRES_USER: sporolos
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-sporolos-helyi-jelszo}
+    volumes:
+      - db-adatok:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sporolos -d sporolos"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    # a port csak a gépedről érhető el (pl. psql-hez); ha nem kell, törölheted
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://sporolos:${DB_PASSWORD:-sporolos-helyi-jelszo}@db:5432/sporolos
+      PHOTOS: "on"
+      REFRESH_HOURS: "6"
+    volumes:
+      - app-adatok:/app/data
+    ports:
+      - "127.0.0.1:8080:8080"
+
+volumes:
+  db-adatok:
+  app-adatok:

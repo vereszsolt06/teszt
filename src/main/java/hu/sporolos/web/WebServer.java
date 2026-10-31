@@ -8,7 +8,11 @@ import hu.sporolos.core.PriceRepository;
 import hu.sporolos.core.PromoMerger;
 import hu.sporolos.data.Catalog;
 import hu.sporolos.data.Promo;
+import hu.sporolos.data.PhotoService;
 import hu.sporolos.data.PromoStore;
+import hu.sporolos.core.WeeklyPlanner;
+import hu.sporolos.store.Ids;
+import hu.sporolos.store.Storage;
 import hu.sporolos.model.Models.PriceEntry;
 import hu.sporolos.model.Models.Store;
 import hu.sporolos.model.Models.Suggestion;
@@ -52,7 +56,17 @@ import java.util.zip.GZIPOutputStream;
  *  GET    /api/ingredients                              – a recept-alapanyagok listája (akció felviteléhez)
  *  GET    /api/plan?store=lidl&people=2&dinners=5&budget=15000&diets=vega&equipment=tuzhely,suto
  *              &liked=a,b&disliked=c&keep=a,_,b&exclude=d&seed=42 – heti vacsoraterv közös bevásárlólistával
- *  GET    /api/recipes?store=lidl&diets=…&equipment=…    – az összes recept (képpel, tápértékkel, árral)
+ *  GET    /api/recipes?store=lidl&diets=…&equipment=…    – az összes recept (fotóval, tápértékkel, árral)
+ *
+ * Háztartás-profil (fiók nélkül; az id egy véletlen, megosztható azonosító):
+ *  POST   /api/profile                                  – új profil (törzs: beállítások) → {id, settings, …}
+ *  GET    /api/profile?id=…                             – beállítások, értékelések
+ *  PUT    /api/profile?id=…                             – beállítások mentése
+ *  POST   /api/rate?id=…        {recipe, liked}         – „Nom vagy nem” (liked: true / false / null)
+ *  DELETE /api/rate?id=…                                – minden értékelés törlése
+ *  GET    /api/week?id=…[&action=new|swap|set&day=2&recipe=…] – a háztartás heti terve (mentve marad)
+ *  POST   /api/check?id=…       {key, item, on}         – bevásárlólista-tétel kipipálása
+ *  GET    /img/recipe/{id}                              – a recept fotója (Wikimedia Commons vagy saját)
  *  GET    /api/promos                                   – a láncok saját akciói és állapotuk
  *  POST   /api/promos                                   – új akció (JSON), vagy import: {"text": "<CSV vagy JSON>"}
  *  DELETE /api/promos?id=…                              – kézi akció törlése
@@ -63,14 +77,21 @@ public final class WebServer {
     private static final int MAX_BODY = 1_000_000;
 
     private final PriceRepository repo;
-    private final RecipeArt art;
+    private final Storage storage;
+    private final PhotoService photos;
     private HttpServer server;
     private ExecutorService executor;
 
     public WebServer(PriceRepository repo) {
+        this(repo, null, null);
+    }
+
+    public WebServer(PriceRepository repo, Storage storage, PhotoService photos) {
         this.repo = repo;
-        this.art = new RecipeArt(repo.catalog());
+        this.storage = storage;
+        this.photos = photos;
         ApiMapper.catalog = repo.catalog();
+        ApiMapper.photos = photos;
     }
 
     public int start(String host, int port) throws IOException {
@@ -98,9 +119,11 @@ public final class WebServer {
             Map<String, String> q = query(ex.getRequestURI().getRawQuery());
             boolean isRefresh = path.equals("/api/refresh");
             boolean isPromos = path.equals("/api/promos");
-            boolean allowed = method.equals("GET") && !isRefresh
-                    || method.equals("POST") && (isRefresh || isPromos)
-                    || method.equals("DELETE") && isPromos;
+            boolean writes = path.equals("/api/rate") || path.equals("/api/check");
+            boolean allowed = method.equals("GET") && !isRefresh && !writes
+                    || method.equals("POST") && (isRefresh || isPromos || writes || path.equals("/api/profile"))
+                    || method.equals("PUT") && path.equals("/api/profile")
+                    || method.equals("DELETE") && (isPromos || path.equals("/api/rate"));
             if (!allowed) {
                 send(ex, 405, "application/json; charset=utf-8", Json.write(Map.of("error", "Nem támogatott kérés: " + method)));
                 return;
@@ -121,6 +144,14 @@ public final class WebServer {
                     default -> promos(repo.get(), prefs(q));
                 };
                 case "/api/refresh" -> status(repo.reload(), prefs(q));
+                case "/api/profile" -> switch (method) {
+                    case "POST" -> createProfile(readBody(ex));
+                    case "PUT" -> saveProfile(q, readBody(ex));
+                    default -> profileJson(requireId(q));
+                };
+                case "/api/rate" -> method.equals("DELETE") ? clearRatings(q) : rate(q, readBody(ex));
+                case "/api/week" -> week(repo.get(), q);
+                case "/api/check" -> check(q, readBody(ex));
                 default -> throw new NotFound("Ismeretlen végpont: " + path);
             };
             send(ex, 200, "application/json; charset=utf-8", Json.write(body));
@@ -202,7 +233,7 @@ public final class WebServer {
                 .map(ApiMapper::suggestion).toList();
     }
 
-    private static Object recipe(PriceRepository.State s, Map<String, String> q, Prefs p) {
+    private Object recipe(PriceRepository.State s, Map<String, String> q, Prefs p) {
         String store = requireStore(s, q);
         String id = q.getOrDefault("id", "");
         int servings = intParam(q, "servings", 0, 0, 40);
@@ -210,6 +241,7 @@ public final class WebServer {
         Suggestion main = rec.suggestion(id, store, servings, p.stores(), p.bulk());
         if (main == null) throw new NotFound("Nincs ilyen recept: " + id);
         Map<String, Object> m = new LinkedHashMap<>(ApiMapper.suggestion(main));
+        m.put("photo", photos == null ? null : photos.credit(id));
         List<Object> stores = new ArrayList<>();
         for (Store st : s.stores()) {
             if (!p.stores().isEmpty() && !p.stores().contains(st.id()) && !st.id().equals(store)) continue;
@@ -274,15 +306,19 @@ public final class WebServer {
         var a = s.analysis(p.cards());
         List<String> keep = new ArrayList<>();
         for (String x : q.getOrDefault("keep", "").split(",", -1)) keep.add(x.equals("_") || x.isBlank() ? null : x.trim());
-        var req = new hu.sporolos.core.WeeklyPlanner.Request(
+        var req = new WeeklyPlanner.Request(
                 intParam(q, "people", 2, 1, 12), intParam(q, "dinners", 5, 1, 7), intParam(q, "budget", 0, 0, 1_000_000),
                 csv(q.get("diets")), csv(q.get("equipment")), csv(q.get("liked")), csv(q.get("disliked")),
                 keep, csv(q.get("exclude")), longParam(q, "seed", 1), p.stores(), p.bulk());
-        var plan = new hu.sporolos.core.WeeklyPlanner(repo.catalog(), a.recommender()).plan(store, req);
+        var plan = new WeeklyPlanner(repo.catalog(), a.recommender()).plan(store, req);
+        return planJson(s, store, req.people(), plan);
+    }
+
+    private Map<String, Object> planJson(PriceRepository.State s, String store, int people, WeeklyPlanner.Plan plan) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("store", store);
         m.put("storeName", storeName(s, store));
-        m.put("people", req.people());
+        m.put("people", people);
         m.put("budget", plan.budget());
         m.put("checkoutTotal", plan.checkoutTotal());
         m.put("staplesTotal", plan.staplesTotal());
@@ -303,7 +339,7 @@ public final class WebServer {
         }
         m.put("days", days);
         List<Object> aisles = new ArrayList<>();
-        for (var e : hu.sporolos.core.WeeklyPlanner.byAisle(plan).entrySet()) {
+        for (var e : WeeklyPlanner.byAisle(plan).entrySet()) {
             Map<String, Object> am = new LinkedHashMap<>();
             am.put("aisle", e.getKey());
             List<Object> items = new ArrayList<>();
@@ -319,6 +355,154 @@ public final class WebServer {
             aisles.add(am);
         }
         m.put("aisles", aisles);
+        return m;
+    }
+
+    // ---------- háztartás-profil, heti terv ----------
+
+    private Storage requireStorage() {
+        if (storage == null) throw new IllegalArgumentException("A profilok tárolása nincs bekapcsolva");
+        return storage;
+    }
+
+    private static String requireId(Map<String, String> q) {
+        String id = q.get("id");
+        if (!Ids.valid(id)) throw new IllegalArgumentException("Hiányzó vagy érvénytelen profil-azonosító");
+        return id;
+    }
+
+    private List<String> storeIds() {
+        return repo.get().stores().stream().map(Store::id).toList();
+    }
+
+    private Object createProfile(String body) throws IOException {
+        String id = Ids.newProfileId();
+        Map<String, Object> in = body.isBlank() ? Map.of() : Json.obj(Json.parse(body));
+        requireStorage().saveProfile(id, Household.from(in, storeIds()).toJson());
+        return profileJson(id);
+    }
+
+    private Object saveProfile(Map<String, String> q, String body) throws IOException {
+        String id = requireId(q);
+        Household.load(requireStorage(), id, storeIds()); // létezik-e
+        requireStorage().saveProfile(id, Household.from(Json.obj(Json.parse(body)), storeIds()).toJson());
+        return profileJson(id);
+    }
+
+    private Map<String, Object> profileJson(String id) throws IOException {
+        Household h = Household.load(requireStorage(), id, storeIds());
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", id);
+        m.put("settings", h.toJson());
+        List<String> liked = new ArrayList<>(), disliked = new ArrayList<>();
+        storage.ratings(id).forEach((r, l) -> (l ? liked : disliked).add(r));
+        m.put("liked", liked);
+        m.put("disliked", disliked);
+        m.put("storage", storage.describe());
+        return m;
+    }
+
+    private Object rate(Map<String, String> q, String body) throws IOException {
+        String id = requireId(q);
+        Household.load(requireStorage(), id, storeIds());
+        Map<String, Object> in = Json.obj(Json.parse(body));
+        String recipe = in.get("recipe") == null ? null : Json.str(in.get("recipe"));
+        if (recipe == null || repo.catalog().recipe(recipe) == null) throw new IllegalArgumentException("Ismeretlen recept: " + recipe);
+        Object liked = in.get("liked");
+        storage.rate(id, recipe, liked == null ? null : Boolean.TRUE.equals(liked));
+        return profileJson(id);
+    }
+
+    private Object clearRatings(Map<String, String> q) throws IOException {
+        String id = requireId(q);
+        Household.load(requireStorage(), id, storeIds());
+        storage.clearRatings(id);
+        return profileJson(id);
+    }
+
+    private Object check(Map<String, String> q, String body) throws IOException {
+        String id = requireId(q);
+        Household.load(requireStorage(), id, storeIds());
+        Map<String, Object> in = Json.obj(Json.parse(body));
+        String key = Json.str(in.get("key")), item = Json.str(in.get("item"));
+        if (key == null || item == null || key.length() > 200 || item.length() > 200) throw new IllegalArgumentException("Hibás tétel");
+        storage.setChecked(id, key, item, Boolean.TRUE.equals(in.get("on")));
+        return Map.of("checked", storage.checked(id, key));
+    }
+
+    /**
+     * A háztartás heti terve. A mentett hetet tartja (ugyanazok a receptek, amíg a beállítások nem változnak),
+     * action=new: teljesen új hét; action=swap&day=i: az i. nap cseréje; action=set&day=i&recipe=x: konkrét recept arra a napra.
+     */
+    private Object week(PriceRepository.State s, Map<String, String> q) throws IOException {
+        String id = requireId(q);
+        Household h = Household.load(requireStorage(), id, storeIds());
+        String store = h.store();
+        if (store == null) {
+            // még nincs bolt: a mai legjobb (ugyanaz a logika, mint a fejléc „ma itt a legjobb” jelzése)
+            store = s.stores().get(0).id();
+        }
+        var a = s.analysis(h.cards());
+        Map<String, Object> saved = storage.week(id);
+        List<String> ids = new ArrayList<>();
+        List<String> excluded = new ArrayList<>();
+        long seed = 1;
+        if (saved != null && h.planKey().equals(saved.get("planKey"))) {
+            ids.addAll(Household.strings(saved.get("ids")));
+            excluded.addAll(Household.strings(saved.get("excluded")));
+            seed = (long) Json.num(saved.get("seed"), 1);
+        }
+        String action = q.getOrDefault("action", "");
+        int day = intParam(q, "day", -1, -1, 6);
+        List<String> keep = new ArrayList<>(ids);
+        while (keep.size() < h.dinners()) keep.add(null);
+        while (keep.size() > h.dinners()) keep.remove(keep.size() - 1);
+        switch (action) {
+            case "new" -> {
+                excluded.clear();
+                for (String x : ids) if (x != null) excluded.add(x);
+                keep.replaceAll(x -> null);
+                seed++;
+            }
+            case "swap" -> {
+                if (day < 0 || day >= keep.size()) throw new IllegalArgumentException("Hibás nap");
+                if (keep.get(day) != null) excluded.add(keep.get(day));
+                keep.set(day, null);
+                seed++;
+            }
+            case "set" -> {
+                if (day < 0 || day >= keep.size()) throw new IllegalArgumentException("Hibás nap");
+                String recipe = q.get("recipe");
+                if (recipe == null || repo.catalog().recipe(recipe) == null) throw new IllegalArgumentException("Ismeretlen recept");
+                keep.set(day, recipe);
+            }
+            case "" -> { }
+            default -> throw new IllegalArgumentException("Ismeretlen művelet: " + action);
+        }
+        while (excluded.size() > 40) excluded.remove(0);
+        Map<String, Boolean> ratings = storage.ratings(id);
+        Set<String> liked = new TreeSet<>(), disliked = new TreeSet<>();
+        ratings.forEach((r, l) -> (l ? liked : disliked).add(r));
+        var req = new WeeklyPlanner.Request(h.people(), h.dinners(), h.budget(), h.diets(), h.equipment(),
+                liked, disliked, keep, Set.copyOf(excluded), seed, h.stores(), h.bulk());
+        var plan = new WeeklyPlanner(repo.catalog(), a.recommender()).plan(store, req);
+
+        List<String> newIds = new ArrayList<>();
+        for (var d : plan.days()) newIds.add(d.suggestion().recipe().id());
+        Map<String, Object> w = new LinkedHashMap<>();
+        w.put("planKey", h.planKey());
+        w.put("store", store);
+        w.put("ids", newIds);
+        w.put("excluded", excluded);
+        w.put("seed", seed);
+        w.put("date", LocalDate.now().toString());
+        storage.saveWeek(id, w);
+
+        Map<String, Object> m = planJson(s, store, h.people(), plan);
+        String listKey = Integer.toHexString((store + String.join(",", newIds) + h.people()).hashCode());
+        m.put("listKey", listKey);
+        m.put("checked", storage.checked(id, listKey));
+        m.put("dinners", h.dinners());
         return m;
     }
 
@@ -474,15 +658,19 @@ public final class WebServer {
 
     private void staticFile(HttpExchange ex) throws IOException {
         String path = ex.getRequestURI().getPath();
-        if (path.startsWith("/img/recipe/") && path.endsWith(".svg")) {
-            String id = path.substring("/img/recipe/".length(), path.length() - 4);
-            String svg = id.matches("[a-z0-9-]{1,60}") ? art.svg(id) : null;
-            if (svg == null) {
-                send(ex, 404, "text/plain; charset=utf-8", "Nincs ilyen recept: " + id);
+        if (path.startsWith("/img/recipe/")) {
+            String id = path.substring("/img/recipe/".length());
+            if (!id.matches("[a-z0-9-]{1,64}")) {
+                send(ex, 400, "text/plain; charset=utf-8", "Hibás azonosító");
                 return;
             }
-            ex.getResponseHeaders().set("Cache-Control", "public, max-age=86400");
-            sendBytes(ex, 200, "image/svg+xml; charset=utf-8", svg.getBytes(StandardCharsets.UTF_8));
+            Storage.Photo photo = photos == null ? null : photos.photo(id);
+            if (photo == null) {
+                send(ex, 404, "text/plain; charset=utf-8", "Nincs fotó: " + id);
+                return;
+            }
+            ex.getResponseHeaders().set("Cache-Control", "public, max-age=604800");
+            sendBytes(ex, 200, photo.contentType() == null ? "image/jpeg" : photo.contentType(), photo.bytes());
             return;
         }
         if (path.equals("/") || path.isEmpty()) path = "/index.html";
@@ -537,7 +725,7 @@ public final class WebServer {
     }
 
     /** 404-es válaszhoz. */
-    private static final class NotFound extends RuntimeException {
+    static final class NotFound extends RuntimeException {
         NotFound(String m) { super(m); }
     }
 }
