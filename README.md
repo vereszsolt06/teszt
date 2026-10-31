@@ -182,7 +182,7 @@ A korábbi, programból rajzolt illusztrációk kikerültek. Helyettük **valód
 4. A képet 800 px szélesre kicsinyíti (JPEG), és a tárolóba menti a **szerzővel, a licenccel és a forrásoldal linkjével** együtt. A receptlap ki is írja ezeket („Fotó: Kiss Anna, CC BY-SA 4.0 – Wikimedia Commons”), ahogy a licenc kéri.
 5. Ha egyik cikkhez sincs szabad kép, „nincs fotó” bejegyzés kerül a tárolóba, és egy hét múlva próbálja újra; ha nincs net, nem jegyez fel semmit, és egy óra múlva próbálja újra.
 
-A GitHub Actions-ben futtatott próbán a 170 receptből 165-höz talált szabad licencű fotót (a hiányzók forrásait azóta bővítettem). A fotók letöltése az első indulás után a háttérben kb. 5–10 percig tart; a Wikimedia korlátozza a gyors lekérdezést, ezért a szerver lassan, receptenként kb. egy másodperces szünettel halad, és a túlterhelés miatt elutasított kéréseket később újra próbálja.
+A GitHub Actions-ben futtatott próbán mind a 170 recepthez talált szabad licencű fotót. A fotók letöltése az első indulás után a háttérben kb. 5–10 percig tart; a Wikimedia korlátozza a gyors lekérdezést, ezért a szerver lassan, receptenként kb. egy másodperces szünettel halad, és a túlterhelés miatt elutasított kéréseket később újra próbálja.
 
 Ahol nincs fotó, a kártya egy egyszerű színes felületet mutat a recept emojijával – rajz nincs. **Saját fotó:** tedd a `data/kepek/{receptazonosító}.jpg` fájlt a helyére (pl. `data/kepek/lecso.jpg`), az mindig elsőbbséget kap. A fotók a `/img/recipe/{id}` címen érhetők el, egy hétig gyorsítótárazhatók.
 
