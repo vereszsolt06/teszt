@@ -93,7 +93,20 @@ public final class App {
         photos.startBackground();
 
         WebServer server = new WebServer(repo, storage, photos);
-        int actual = server.start(host, port);
+        // ha a port foglalt (pl. másik program vagy egy korábban elindított példány), a következő szabadot veszi
+        int actual = -1;
+        for (int p = port; p < port + 20 && actual < 0; p++) {
+            try {
+                actual = server.start(host, p);
+                if (p != port) System.out.println("[web] A(z) " + port + "-es port foglalt, helyette: " + p);
+            } catch (java.net.BindException e) {
+                if (port == 0) throw e;
+            }
+        }
+        if (actual < 0) {
+            System.err.println("A(z) " + port + "–" + (port + 19) + " portok mind foglaltak. Adj meg másikat: PORT=9000");
+            System.exit(1);
+        }
         System.out.println();
         System.out.println("  Spórolós Konyha fut:  http://" + (host.equals("0.0.0.0") ? "localhost" : host) + ":" + actual);
         System.out.println("  Leállítás: Ctrl+C");
