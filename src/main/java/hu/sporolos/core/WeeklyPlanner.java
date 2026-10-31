@@ -50,17 +50,27 @@ public final class WeeklyPlanner {
      * @param keep     megtartandó receptek napok szerint (null = szabad hely)
      * @param exclude  ezeket ne válassza (pl. a lecserélt receptek)
      * @param seed     véletlen mag ("új hét" gomb)
+     * @param leftoverOf napok szerint: melyik korábbi nap főztjének maradékát esszük (null / -1 = aznap főzünk)
      */
     public record Request(int people, int dinners, double budget, Set<String> diets, Set<String> equipment,
                           Set<String> liked, Set<String> disliked, List<String> keep, Set<String> exclude, long seed,
-                          Collection<String> allowedStores, boolean bulk) {}
+                          Collection<String> allowedStores, boolean bulk, List<Integer> leftoverOf) {
+
+        /** Maradéknapok nélkül (minden nap főzés). */
+        public Request(int people, int dinners, double budget, Set<String> diets, Set<String> equipment,
+                       Set<String> liked, Set<String> disliked, List<String> keep, Set<String> exclude, long seed,
+                       Collection<String> allowedStores, boolean bulk) {
+            this(people, dinners, budget, diets, equipment, liked, disliked, keep, exclude, seed, allowedStores, bulk, List.of());
+        }
+    }
 
     /** Egy nap. */
-    public record Day(String label, Suggestion suggestion, RecipeMeta meta, double shareOfList, boolean kept) {}
+    public record Day(String label, Suggestion suggestion, RecipeMeta meta, double shareOfList, boolean kept,
+                      int leftoverOf, int coversDays) {}
 
     /** A közös bevásárlólista egy sora. */
     public record ListItem(String aisle, Catalog.Product product, PricedIngredient priced, double needed,
-                           List<String> usedIn, double leftover) {}
+                           List<String> usedIn, double leftover, String storeId) {}
 
     /** A teljes terv. */
     public record Plan(List<Day> days, List<ListItem> items, double checkoutTotal, double staplesTotal,
@@ -80,6 +90,17 @@ public final class WeeklyPlanner {
         int people = Math.max(1, Math.min(12, q.people()));
         Random rnd = new Random(q.seed());
 
+        // maradéknapok: lo[i] = melyik nap főztjét esszük az i. napon (-1 = aznap főzünk)
+        int[] lo = new int[dinners];
+        java.util.Arrays.fill(lo, -1);
+        for (int i = 1; i < dinners && q.leftoverOf() != null && i < q.leftoverOf().size(); i++) {
+            Integer k = q.leftoverOf().get(i);
+            if (k == null || k < 0 || k >= i) continue;
+            lo[i] = lo[k] >= 0 ? lo[k] : k;
+        }
+        int[] mult = new int[dinners];
+        for (int i = 0; i < dinners; i++) if (lo[i] < 0) mult[i]++; else mult[lo[i]]++;
+
         // jelöltek, a létszámra árazva
         Map<String, Suggestion> cand = new LinkedHashMap<>();
         for (Suggestion base : rec.suggestionsFor(storeId, q.allowedStores(), q.bulk())) {
@@ -96,46 +117,55 @@ public final class WeeklyPlanner {
         List<String> notes = new ArrayList<>();
         for (int i = 0; i < dinners && q.keep() != null && i < q.keep().size(); i++) {
             String id = q.keep().get(i);
-            if (id == null || id.isBlank()) continue;
-            Suggestion s = rec.suggestion(id, storeId, people, q.allowedStores(), q.bulk());
+            if (id == null || id.isBlank() || lo[i] >= 0) continue;
+            Suggestion s = rec.suggestion(id, storeId, people * mult[i], q.allowedStores(), q.bulk());
             if (s != null) {
                 slots[i] = s;
                 kept[i] = true;
+                cand.remove(id);
             }
         }
 
         double budget = q.budget() > 0 ? q.budget() : Double.MAX_VALUE;
         Map<String, Double> payCache = new HashMap<>();
+        int cookingDays = (int) java.util.Arrays.stream(lo).filter(x -> x < 0).count();
         for (int i = 0; i < dinners; i++) {
-            if (slots[i] != null) continue;
+            if (slots[i] != null || lo[i] >= 0) continue;
             List<Suggestion> chosen = filled(slots);
             Map<String, Double> curNeed = needs(chosen);
             double curCheckout = 0;
             for (Map.Entry<String, Double> e : curNeed.entrySet()) curCheckout += pay(storeId, e.getKey(), e.getValue(), q.bulk(), payCache);
-            int remainingAfter = (int) java.util.Arrays.stream(slots).filter(x -> x == null).count() - 1;
+            int remainingAfter = 0;
+            for (int j = i + 1; j < dinners; j++) if (slots[j] == null && lo[j] < 0) remainingAfter++;
             // a hátralévő napokra legalább ennyi kell (a közös csomagok miatt a legolcsóbb recept ~70%-a)
             double reservePerDinner = 0.7 * cand.values().stream().mapToDouble(Suggestion::checkoutTotal).min().orElse(0);
-            double perDinnerBudget = q.budget() > 0 ? q.budget() / dinners : 1250.0 * people;
+            double perDinnerBudget = (q.budget() > 0 ? q.budget() / dinners : 1250.0 * people) * mult[i];
 
             Suggestion best = null;
             double bestValue = -Double.MAX_VALUE;
-            for (Suggestion s : cand.values()) {
-                if (!varietyOk(s, chosen)) continue;
-                double marginal = 0;
-                for (Map.Entry<String, Double> e : needs(List.of(s)).entrySet()) {
-                    double cur = curNeed.getOrDefault(e.getKey(), 0.0);
-                    marginal += pay(storeId, e.getKey(), cur + e.getValue(), q.bulk(), payCache)
-                            - (cur > 0 ? pay(storeId, e.getKey(), cur, q.bulk(), payCache) : 0);
-                }
-                if (curCheckout + marginal + remainingAfter * reservePerDinner > budget) continue;
-                double value = s.score()
-                        + appeal(s.recipe(), catalog.meta(s.recipe().id()))
-                        + (q.liked().contains(s.recipe().id()) ? 0.35 : 0)
-                        + rnd.nextDouble() * 0.18
-                        - 0.55 * marginal / Math.max(1, perDinnerBudget);
-                if (value > bestValue) {
-                    bestValue = value;
-                    best = s;
+            for (int pass = 0; pass < 2 && best == null; pass++) {
+                for (Suggestion s : cand.values()) {
+                    if (!varietyOk(s, chosen)) continue;
+                    RecipeMeta m = catalog.meta(s.recipe().id());
+                    // több napra csak olyat főzünk, ami másnap is jó (első körben); ha nincs ilyen, bármit
+                    if (pass == 0 && mult[i] > 1 && m != null && !m.keepsWell()) continue;
+                    double marginal = 0;
+                    for (Map.Entry<String, Double> e : needs(List.of(s)).entrySet()) {
+                        double cur = curNeed.getOrDefault(e.getKey(), 0.0);
+                        double add = e.getValue() * mult[i];
+                        marginal += pay(storeId, e.getKey(), cur + add, q.bulk(), payCache)
+                                - (cur > 0 ? pay(storeId, e.getKey(), cur, q.bulk(), payCache) : 0);
+                    }
+                    if (curCheckout + marginal + remainingAfter * reservePerDinner > budget) continue;
+                    double value = s.score()
+                            + appeal(s.recipe(), m)
+                            + (q.liked().contains(s.recipe().id()) ? 0.35 : 0)
+                            + rnd.nextDouble() * 0.18
+                            - 0.55 * marginal / Math.max(1, perDinnerBudget);
+                    if (value > bestValue) {
+                        bestValue = value;
+                        best = s;
+                    }
                 }
             }
             if (best == null) {
@@ -147,8 +177,9 @@ public final class WeeklyPlanner {
                 }
             }
             if (best == null) break;
-            slots[i] = best;
             cand.remove(best.recipe().id());
+            slots[i] = mult[i] == 1 ? best
+                    : rec.suggestion(best.recipe().id(), storeId, people * mult[i], q.allowedStores(), q.bulk());
         }
 
         List<Suggestion> chosen = filled(slots);
@@ -156,20 +187,77 @@ public final class WeeklyPlanner {
         List<Day> days = new ArrayList<>();
         double sumKcal = 0, sumProtein = 0;
         for (int i = 0; i < dinners; i++) {
-            if (slots[i] == null) continue;
-            RecipeMeta m = catalog.meta(slots[i].recipe().id());
-            days.add(new Day(DAYS[i], slots[i], m, b.shareOf.getOrDefault(slots[i].recipe().id(), 0.0), kept[i]));
+            int src = lo[i] >= 0 ? lo[i] : i;
+            if (slots[src] == null) continue;
+            RecipeMeta m = catalog.meta(slots[src].recipe().id());
+            double share = lo[i] >= 0 ? 0 : b.shareOf.getOrDefault(slots[i].recipe().id(), 0.0);
+            days.add(new Day(DAYS[i], slots[src], m, share, kept[src], lo[i], mult[src]));
             if (m != null) {
                 sumKcal += m.kcal();
                 sumProtein += m.protein();
             }
         }
-        if (days.size() < dinners) notes.add("A szűrőknek csak " + days.size() + " recept felelt meg ebben a boltban.");
+        if (chosen.size() < cookingDays) notes.add("A szűrőknek csak " + chosen.size() + " recept felelt meg ebben a boltban.");
         boolean over = q.budget() > 0 && b.checkout > q.budget();
         if (over) notes.add("A terv " + Packaging.Money.ft(b.checkout - q.budget()) + "-tal túllépi a keretet.");
         return new Plan(days, b.items, b.checkout, b.staples, q.budget(), over, b.pantry,
                 days.isEmpty() ? 0 : sumKcal / days.size(), days.isEmpty() ? 0 : sumProtein / days.size(),
                 cand.size() + chosen.size(), notes);
+    }
+
+    /** A terv főzős napjainak receptjei (a maradéknapok nélkül), a bevásárláshoz. */
+    public static List<Suggestion> cooked(Plan p) {
+        List<Suggestion> out = new ArrayList<>();
+        for (Day d : p.days()) if (d.leftoverOf() < 0) out.add(d.suggestion());
+        return out;
+    }
+
+    /** Ugyanannak a hétnek a pénztári ára egy másik boltban. */
+    public record StoreTotal(String storeId, double checkout, double staples, int estimated, List<ListItem> items) {}
+
+    public StoreTotal priceIn(String storeId, List<Suggestion> cooked, boolean bulk) {
+        Basket b = basket(storeId, cooked, bulk);
+        int est = (int) b.items.stream().filter(it -> it.priced().estimated()).count();
+        return new StoreTotal(storeId, b.checkout, b.staples, est, b.items);
+    }
+
+    /**
+     * Két boltos bevásárlás: minden tétel abban a boltban, ahol olcsóbb (a két bolt a legjobb pár a
+     * megadottak közül). Csak akkor ad eredményt, ha legalább {@code minSaving} Ft-ot spórol az egy
+     * boltos legjobbhoz képest.
+     */
+    public record Split(List<String> stores, double checkout, double saving, List<ListItem> items) {}
+
+    public Split bestSplit(List<StoreTotal> totals, double minSaving) {
+        StoreTotal single = totals.stream().min(java.util.Comparator.comparingDouble(StoreTotal::checkout)).orElse(null);
+        if (single == null) return null;
+        Split best = null;
+        for (int a = 0; a < totals.size(); a++) {
+            for (int c = a + 1; c < totals.size(); c++) {
+                StoreTotal x = totals.get(a), y = totals.get(c);
+                Map<String, ListItem> byKey = new HashMap<>();
+                for (ListItem it : y.items()) byKey.put(it.product().key(), it);
+                List<ListItem> items = new ArrayList<>();
+                double sum = 0;
+                for (ListItem ix : x.items()) {
+                    ListItem iy = byKey.get(ix.product().key());
+                    ListItem pick = ix;
+                    if (iy != null) {
+                        boolean xEst = ix.priced().estimated(), yEst = iy.priced().estimated();
+                        if (xEst && !yEst || xEst == yEst && iy.priced().checkoutCost() < ix.priced().checkoutCost()) pick = iy;
+                    }
+                    items.add(pick);
+                    if (!pick.product().staple()) sum += pick.priced().checkoutCost();
+                }
+                if (best == null || sum < best.checkout()) {
+                    best = new Split(List.of(x.storeId(), y.storeId()), sum, single.checkout() - sum, items);
+                }
+            }
+        }
+        if (best == null || best.saving() < minSaving) return null;
+        // ha minden tétel egy boltba esett, az nem két boltos bevásárlás
+        long stores = best.items().stream().filter(it -> !it.product().staple()).map(ListItem::storeId).distinct().count();
+        return stores < 2 ? null : best;
     }
 
     private static final Set<String> CROWD_PLEASERS = Set.of("olasz", "mexikói", "ázsiai", "görög", "spanyol", "comfort");
@@ -274,7 +362,7 @@ public final class WeeklyPlanner {
                     e.getValue() / p.qty(), false, p.staple());
             PricedIngredient pi = rec.priceNeed(storeId, ing, p, e.getValue(), bulk, Math.max(1, usedIn.get(p.key()).size()));
             double leftover = Math.max(0, pi.buyAmount() - e.getValue());
-            items.add(new ListItem(p.aisle(), p, pi, e.getValue(), List.copyOf(new LinkedHashSet<>(usedIn.get(p.key()))), leftover));
+            items.add(new ListItem(p.aisle(), p, pi, e.getValue(), List.copyOf(new LinkedHashSet<>(usedIn.get(p.key()))), leftover, storeId));
             if (p.staple()) staples += pi.checkoutCost();
             else checkout += pi.checkoutCost();
             // a pénztári összeg szétosztása a receptek között a felhasznált mennyiség arányában

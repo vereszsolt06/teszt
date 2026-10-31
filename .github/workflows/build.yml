@@ -50,24 +50,6 @@ jobs:
           curl -fs -X POST -H 'Content-Type: application/json' -d '{"store":"lidl","onboarded":true}' http://127.0.0.1:8080/api/profile | tee profile.json
           docker compose logs app | tail -20
           docker compose exec -T db psql -U sporolos -d sporolos -c "select count(*) as haztartas from household"
-      - name: Receptfotók a Wikimedia Commonsról (tájékoztató)
-        run: |
-          for i in $(seq 1 60); do
-            n=$(docker compose exec -T db psql -U sporolos -d sporolos -tAc "select count(*) from recipe_photo")
-            echo "próbált receptek: $n"
-            [ "$n" -ge 170 ] && break
-            sleep 5
-          done
-          docker compose exec -T db psql -U sporolos -d sporolos -c "select count(*) filter (where image is not null) as van_foto, count(*) filter (where image is null) as nincs_foto from recipe_photo"
-          docker compose exec -T db psql -U sporolos -d sporolos -c "select recipe_id from recipe_photo where image is null order by 1"
-          docker compose exec -T db psql -U sporolos -d sporolos -c "select recipe_id, title, license, left(author, 40) as author from recipe_photo where image is not null order by 1"
-          docker compose logs app | grep -i fot | tail -20 || true
-          ok=$(docker compose exec -T db psql -U sporolos -d sporolos -tAc "select count(*) from recipe_photo where image is not null")
-          miss=$(docker compose exec -T db psql -U sporolos -d sporolos -tAc "select string_agg(recipe_id, ', ' order by recipe_id) from recipe_photo where image is null")
-          found=$(docker compose exec -T db psql -U sporolos -d sporolos -tAc "select string_agg(recipe_id || '=' || coalesce(title,'?') || ' (' || coalesce(license,'?') || ')', '; ' order by recipe_id) from recipe_photo where image is not null")
-          echo "::notice title=Receptfotók::$ok recepthez van szabad licencű fotó"
-          echo "::notice title=Fotó nélkül::$miss"
-          echo "::notice title=Talált fotók::$found"
       - name: Leállítás
         if: always()
         run: docker compose down

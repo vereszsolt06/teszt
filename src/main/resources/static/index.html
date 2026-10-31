@@ -54,6 +54,7 @@
           <a class="ghost" href="#lista" id="week-to-list">Bevásárlólista</a>
         </div>
       </div>
+      <div class="week-compare" id="week-compare" aria-label="Ugyanez a hét a többi boltban"></div>
       <div class="week-notes" id="week-notes"></div>
       <ol class="dinners" id="dinners" aria-label="A hét vacsorái"></ol>
       <p class="fineprint" id="week-fine"></p>
@@ -150,7 +151,7 @@
   </main>
 
   <footer class="foot">
-    <p>Árak: <a href="https://arfigyelo.gvh.hu" target="_blank" rel="noopener">GVH Árfigyelő</a> napi adatai lánconként (a lánc legolcsóbb boltjának ára; a te boltodban lehet drágább) és a felvitt bolti akciók. Fotók: Wikimedia Commons, szabad licenccel – a szerző és a licenc a recept adatlapján. <span id="foot-source"></span></p>
+    <p>Árak: <a href="https://arfigyelo.gvh.hu" target="_blank" rel="noopener">GVH Árfigyelő</a> napi adatai lánconként (a lánc legolcsóbb boltjának ára; a te boltodban lehet drágább) és a felvitt bolti akciók. <span id="foot-source"></span></p>
   </footer>
 
   <nav class="bottom-tabs" aria-label="Fő nézetek">
@@ -169,8 +170,9 @@
   <dialog class="sheet" id="store-sheet" aria-labelledby="store-sheet-title">
     <form method="dialog" class="dialog-close"><button type="submit" class="ghost small">Bezárás</button></form>
     <h2 id="store-sheet-title">Hol vásárolsz ezen a héten?</h2>
-    <p class="hint">A terv és a lista ennek a láncnak a mai áraival számol. A „ma itt a legjobb” jelzés azt mutatja, hol a legkedvezőbbek ma a receptek.</p>
+    <p class="hint">Automatikusan a heted abban a boltban lesz, ahol a legolcsóbb. Ha egy boltot választasz, a terv és a lista annak a mai áraival számol.</p>
     <div class="store-grid" id="store-grid"></div>
+    <label class="check-line"><input type="checkbox" id="split-toggle"> <span>Két boltba is elmegyek, ha megéri – a lista boltonként szétválik</span></label>
   </dialog>
 
   <!-- első indítás -->

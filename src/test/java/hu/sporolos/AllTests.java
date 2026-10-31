@@ -20,7 +20,7 @@ import hu.sporolos.model.Models.Deal;
 import hu.sporolos.model.Models.DealType;
 import hu.sporolos.model.Models.PriceEntry;
 import hu.sporolos.model.Models.Suggestion;
-import hu.sporolos.data.PhotoService;
+import hu.sporolos.core.Amounts;
 import hu.sporolos.store.FileStorage;
 import hu.sporolos.store.PgStorage;
 import hu.sporolos.store.Storage;
@@ -543,10 +543,7 @@ public final class AllTests {
                 new PriceHistory(new FileStorage(dir), 28), new PromoStore(dir.resolve("akciok"), List.of()),
                 Duration.ofHours(1));
         FileStorage storage = new FileStorage(dir);
-        Files.createDirectories(dir.resolve("kepek"));
-        Files.write(dir.resolve("kepek").resolve("lecso.jpg"), tinyJpeg());
-        PhotoService photos = new PhotoService(CATALOG, storage, dir.resolve("kepek"), null);
-        WebServer server = new WebServer(repo, storage, photos);
+        WebServer server = new WebServer(repo, storage);
         int port = server.start("127.0.0.1", 0);
         try {
             HttpClient c = HttpClient.newHttpClient();
@@ -646,14 +643,6 @@ public final class AllTests {
             eq(CATALOG.recipes().size(), all.size(), "minden recept a listában");
             List<Object> gf = Json.arr(Json.parse(get(c, base + "/api/recipes?store=lidl&diets=gluténmentes", 200)));
             check(gf.size() > 10 && gf.size() < all.size(), "gluténmentes szűrő: " + gf.size());
-            // fotó: a saját képek mappájából; ahol nincs, ott image == null és 404
-            var lecso = all.stream().map(o -> Json.obj(Json.obj(o).get("recipe"))).filter(r -> "lecso".equals(r.get("id"))).findFirst().orElseThrow();
-            eq("/img/recipe/lecso", String.valueOf(lecso.get("image")), "saját fotó URL-je");
-            var img = c.send(HttpRequest.newBuilder(URI.create(base + "/img/recipe/lecso")).build(), HttpResponse.BodyHandlers.ofByteArray());
-            eq(200, img.statusCode(), "fotó kiszolgálva");
-            eq("image/jpeg", img.headers().firstValue("content-type").orElse(""), "JPEG");
-            get(c, base + "/img/recipe/bolognai", 404);
-
             // háztartás-profil: létrehozás, hét, csere, kipipálás, értékelés
             String prof = post(c, base + "/api/profile", "{\"store\":\"lidl\",\"people\":3,\"dinners\":4,\"budget\":20000,\"diets\":[\"vega\",\"rossz\"],\"onboarded\":true}", 200);
             Map<String, Object> pm = Json.obj(Json.parse(prof));
@@ -681,7 +670,33 @@ public final class AllTests {
             Map<String, Object> wk3 = Json.obj(Json.parse(get(c, base + "/api/week?id=" + pid, 200)));
             eq("aldi", String.valueOf(wk3.get("store")), "boltváltás után új hét");
             eq(3, Json.arr(wk3.get("days")).size(), "3 vacsora");
-            get(c, base + "/img/recipe/..%2Fpom.xml", 400);
+            // automatikus bolt: a hét abban a boltban, ahol a legolcsóbb; összevetés a többivel
+            send(c, "PUT", base + "/api/profile?id=" + pid, "{\"people\":2,\"dinners\":5,\"onboarded\":true,\"split\":true}", 200);
+            Map<String, Object> auto = Json.obj(Json.parse(get(c, base + "/api/week?id=" + pid, 200)));
+            eq(Boolean.TRUE, auto.get("autoStore"), "automatikus bolt");
+            List<Object> cmp = Json.arr(auto.get("compare"));
+            check(cmp.size() >= 5, "összevetés a boltokkal");
+            eq(auto.get("store"), Json.obj(cmp.get(0)).get("store"), "a legolcsóbb bolt van elöl, és azt választotta");
+            check(Math.abs(Json.num(Json.obj(cmp.get(0)).get("checkout"), 0) - Json.num(auto.get("checkoutTotal"), 0)) < 1, "az összevetés és a terv összege egyezik");
+            // maradék: kedd a hétfő maradéka, a hétfőn dupla adag
+            Map<String, Object> rep = Json.obj(Json.parse(get(c, base + "/api/week?id=" + pid + "&action=repeat&day=0", 200)));
+            List<Object> rdays = Json.arr(rep.get("days"));
+            eq(0.0, Json.num(Json.obj(rdays.get(1)).get("leftoverOf"), -1), "kedd = hétfő maradéka");
+            eq(4.0, Json.num(Json.obj(Json.obj(rdays.get(0)).get("suggestion")).get("servings"), 0), "hétfőn 2 napra főz");
+            eq(0.0, Json.num(Json.obj(rdays.get(1)).get("shareOfList"), -1), "a maradéknapra nem kell vásárolni");
+            Map<String, Object> fresh = Json.obj(Json.parse(get(c, base + "/api/week?id=" + pid + "&action=fresh&day=1", 200)));
+            eq(-1.0, Json.num(Json.obj(Json.arr(fresh.get("days")).get(1)).get("leftoverOf"), 0), "kedden újra főzés");
+            get(c, base + "/api/week?id=" + pid + "&action=repeat&day=4", 400);
+            // kétnaponta főzés
+            send(c, "PUT", base + "/api/profile?id=" + pid, "{\"people\":2,\"dinners\":5,\"onboarded\":true,\"cookMode\":\"every2\"}", 200);
+            List<Object> e2 = Json.arr(Json.obj(Json.parse(get(c, base + "/api/week?id=" + pid, 200))).get("days"));
+            long cooks = e2.stream().filter(d -> Json.num(Json.obj(d).get("leftoverOf"), -1) < 0).count();
+            eq(3L, cooks, "5 vacsora, 3 főzés");
+            // a recept mennyiségei az adagszámhoz igazodnak
+            Map<String, Object> bk = Json.obj(Json.parse(get(c, base + "/api/recipe?id=bundas-kenyer&store=lidl&servings=2", 200)));
+            var tomato = Json.arr(bk.get("ingredients")).stream().map(Json::obj).filter(i -> "Paradicsom".equals(i.get("label"))).findFirst().orElseThrow();
+            eq("1 db", tomato.get("amount"), "4 adagra 2 db → 2 adagra 1 db");
+            get(c, base + "/img/recipe/lecso", 404);
             get(c, base + "/../pom.xml", 400);
         } finally {
             server.stop();
@@ -734,53 +749,24 @@ public final class AllTests {
         check(CATALOG.recipes().size() >= 150, "legalább 150 recept: " + CATALOG.recipes().size());
     }
 
-    static void testPhotoServiceWikimedia() throws Exception {
-        Path dir = Files.createTempDirectory("fotok");
-        try {
-            FileStorage st = new FileStorage(dir);
-            byte[] jpeg = bigJpeg();
-            List<String> calls = new ArrayList<>();
-            PhotoService.Http http = url -> {
-                calls.add(url);
-                if (url.contains("wikipedia.org/api/rest_v1/page/summary/Paella")) {
-                    return json("{\"type\":\"standard\",\"title\":\"Paella\",\"thumbnail\":{\"source\":\"https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Paella_dish.jpg/330px-Paella_dish.jpg\"}}");
-                }
-                if (url.contains("wikipedia.org/api/rest_v1/page/summary/Lasagna")) {
-                    // helyi, nem szabad („fair use”) kép a Wikipédián
-                    return json("{\"type\":\"standard\",\"title\":\"Lasagna\",\"thumbnail\":{\"source\":\"https://upload.wikimedia.org/wikipedia/en/thumb/1/12/Las.jpg/330px-Las.jpg\"}}");
-                }
-                if (url.contains("commons.wikimedia.org/w/api.php") && url.contains("Paella_dish.jpg")) {
-                    return json("{\"query\":{\"pages\":{\"1\":{\"imageinfo\":[{\"thumburl\":\"https://upload.wikimedia.org/x/800px-Paella_dish.jpg\","
-                            + "\"descriptionurl\":\"https://commons.wikimedia.org/wiki/File:Paella_dish.jpg\",\"extmetadata\":{"
-                            + "\"Artist\":{\"value\":\"<a href='x'>Kiss Anna</a>\"},\"LicenseShortName\":{\"value\":\"CC BY-SA 4.0\"},"
-                            + "\"LicenseUrl\":{\"value\":\"https://creativecommons.org/licenses/by-sa/4.0\"}}}]}}}}");
-                }
-                if (url.endsWith("800px-Paella_dish.jpg")) return new PhotoService.Http.Response(200, "image/jpeg", jpeg);
-                return new PhotoService.Http.Response(404, "application/json", "{}".getBytes(StandardCharsets.UTF_8));
-            };
-            PhotoService ps = new PhotoService(CATALOG, st, dir.resolve("kepek"), http);
-            var p = ps.fetchNow("csirkes-paella");
-            check(p != null && p.present(), "a paella fotója megvan");
-            eq("CC BY-SA 4.0", p.license(), "licenc");
-            eq("Kiss Anna", p.author(), "szerző HTML nélkül");
-            check(ps.has("csirkes-paella"), "indexben");
-            check(javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(st.photo("csirkes-paella").bytes())).getWidth() == 800, "800 px-re kicsinyítve");
-            // a lasagne-nek csak nem szabad képe van: „nincs fotó” bejegyzés
-            check(ps.fetchNow("lasagne") == null, "nem szabad kép kihagyva");
-            check(!ps.has("lasagne"), "lasagne: nincs fotó");
-            check(st.photo("lasagne") != null && !st.photo("lasagne").present(), "a sikertelen próba feljegyezve");
-            check(calls.stream().noneMatch(u -> u.contains("Las.jpg") && u.contains("commons.wikimedia.org")), "a helyi képet le sem kérdezte");
-            // hálózati hiba: nem jegyzi fel (legközelebb újra próbálja)
-            PhotoService offline = new PhotoService(CATALOG, st, null, url -> { throw new IOException("nincs net"); });
-            check(offline.fetchNow("lecso") == null && st.photo("lecso") == null, "hálózati hibánál nincs bejegyzés");
-            // saját fotó mindig elsőbbséget kap
-            Files.createDirectories(dir.resolve("kepek"));
-            Files.write(dir.resolve("kepek").resolve("lasagne.jpg"), tinyJpeg());
-            check(ps.has("lasagne") && ps.photo("lasagne").present(), "saját fotó");
-            // minden receptnek van legalább egy fotóforrása
-            for (var r : CATALOG.recipes()) check(!CATALOG.photoSources(r.id()).isEmpty(), "fotóforrás: " + r.id());
-        } finally {
-            deleteTree(dir);
+    static void testAmountScaling() {
+        eq("1 db", Amounts.scale("2 db", 0.5), "fél adag");
+        eq("4 szelet", Amounts.scale("8 szelet", 0.5), "szelet");
+        eq("0,5 dl", Amounts.scale("1 dl", 0.5), "dl");
+        eq("75 dkg", Amounts.scale("50 dkg", 1.5), "dkg");
+        eq("1,5 kg", Amounts.scale("75 dkg", 2), "dkg → kg");
+        eq("1,5 l", Amounts.scale("7,5 dl", 2), "dl → l");
+        eq("fél fej", Amounts.scale("1 fej", 0.5), "fél fej");
+        eq("1 vekni", Amounts.scale("fél vekni", 2), "fél → 1");
+        eq("3 ek", Amounts.scale("másfél ek", 2), "másfél");
+        eq("mellé", Amounts.scale("mellé", 2), "nem szám: változatlan");
+        eq("2 db (salátának)", Amounts.scale("1 db (salátának)", 2), "megjegyzés marad");
+        eq("8 szelet", Amounts.scale("8 szelet", 1), "1-es szorzó");
+        // minden recept minden mennyisége értelmes marad fél és dupla adagra is
+        for (var r : CATALOG.recipes()) for (var i : r.ingredients()) {
+            String a = i.amount();
+            if (a == null) continue;
+            check(!Amounts.scale(a, 0.5).isBlank() && !Amounts.scale(a, 2).contains("NaN"), r.id() + ": " + a);
         }
     }
 
@@ -851,15 +837,6 @@ public final class AllTests {
         var pd = st.prices(d, d.plusDays(1));
         eq(1, pd.days(), "egy nap");
         eq(List.of(499.5), pd.prices().get("x2|aldi"), "ár visszaolvasva");
-        byte[] img = tinyJpeg();
-        String rid = "foto" + System.nanoTime() % 100000;
-        st.savePhoto(new Storage.Photo(rid, "image/jpeg", img, "Lecsó", "https://x", "Szerző", "CC0", null, java.time.Instant.now()));
-        check(java.util.Arrays.equals(img, st.photo(rid).bytes()), "fotó bájtjai");
-        eq("Szerző", st.photo(rid).author(), "fotó szerzője");
-        st.savePhoto(new Storage.Photo(rid + "-nincs", null, null, null, null, null, null, null, java.time.Instant.now()));
-        check(!st.photo(rid + "-nincs").present(), "„nincs fotó” bejegyzés");
-        eq(Boolean.TRUE, st.photoIndex().get(rid), "fotóindex");
-        eq(Boolean.FALSE, st.photoIndex().get(rid + "-nincs"), "fotóindex: nincs");
         st.saveManualPromos(List.of(Map.of("id", "p1", "store", "lidl", "name", "Csirke", "price", 999)));
         eq("Csirke", st.manualPromos().get(0).get("name"), "kézi akció");
         st.saveManualPromos(List.of());
@@ -908,6 +885,36 @@ public final class AllTests {
         var other = wp.plan("lidl", req(2, 5, 0, Set.of(), Set.of(), List.of(), Set.of(), 7));
         check(!other.days().stream().map(d -> d.suggestion().recipe().id()).toList()
                 .equals(plan.days().stream().map(d -> d.suggestion().recipe().id()).toList()), "más mag, más hét");
+
+        // maradék: kedd = hétfő, szerda = hétfő (3 napra főz), a többi nap új recept
+        var lo = new WeeklyPlanner.Request(2, 5, 0, Set.of(), Set.of(), Set.of(), Set.of(), List.of(), Set.of(), 1,
+                null, false, java.util.Arrays.asList(-1, 0, 0, -1, -1));
+        var lp = wp.plan("lidl", lo);
+        eq(5, lp.days().size(), "5 nap maradékkal");
+        eq(6, lp.days().get(0).suggestion().servings(), "hétfőn 3 napra főz (6 adag)");
+        eq(3, lp.days().get(0).coversDays(), "3 napra elég");
+        eq(lp.days().get(0).suggestion().recipe().id(), lp.days().get(2).suggestion().recipe().id(), "szerdán a hétfői");
+        eq(0.0, lp.days().get(1).shareOfList(), "maradéknapra nincs vásárlás");
+        check(lp.days().get(0).meta().keepsWell(), "több napra csak eltartható étel");
+        eq(3, WeeklyPlanner.cooked(lp).size(), "3 főzés");
+        java.util.Set<String> distinct = new java.util.HashSet<>();
+        for (var s0 : WeeklyPlanner.cooked(lp)) check(distinct.add(s0.recipe().id()), "a főzések különbözők");
+
+        // ugyanaz a hét több boltban, és a két boltos bevásárlás sosem drágább
+        List<WeeklyPlanner.StoreTotal> totals = new ArrayList<>();
+        for (String st : stores) totals.add(wp.priceIn(st, WeeklyPlanner.cooked(plan), false));
+        WeeklyPlanner.StoreTotal lidlTotal = totals.stream().filter(t -> t.storeId().equals("lidl")).findFirst().orElseThrow();
+        check(Math.abs(lidlTotal.checkout() - plan.checkoutTotal()) < 1, "ugyanaz a bolt, ugyanaz az összeg");
+        var split = wp.bestSplit(totals, 0);
+        double single = totals.stream().mapToDouble(WeeklyPlanner.StoreTotal::checkout).min().orElseThrow();
+        if (split != null) {
+            check(split.checkout() <= single + 0.5, "két bolt nem drágább");
+            eq(2, split.stores().size(), "két bolt");
+            check(split.items().stream().allMatch(it -> split.stores().contains(it.storeId())), "minden tétel a két bolt egyikéből");
+        }
+        check(wp.bestSplit(totals, 1_000_000) == null, "kis megtakarításért nem bontja két boltra");
+        // a rántott / ropogós ételek nem „eltarthatók”
+        check(!CATALOG.meta("rantott-hus").keepsWell() && CATALOG.meta("gulyasleves").keepsWell(), "keepsWell");
     }
 
     static WeeklyPlanner.Request req(int people, int dinners, double budget, Set<String> diets, Set<String> eq,
@@ -944,29 +951,6 @@ public final class AllTests {
     static List<String> recipeIds(Map<String, Object> plan) {
         return Json.arr(plan.get("days")).stream()
                 .map(d -> String.valueOf(Json.obj(Json.obj(Json.obj(d).get("suggestion")).get("recipe")).get("id"))).toList();
-    }
-
-    static PhotoService.Http.Response json(String s) {
-        return new PhotoService.Http.Response(200, "application/json", s.getBytes(StandardCharsets.UTF_8));
-    }
-
-    static byte[] tinyJpeg() throws IOException {
-        return jpeg(16, 10);
-    }
-
-    static byte[] bigJpeg() throws IOException {
-        return jpeg(1200, 800);
-    }
-
-    static byte[] jpeg(int w, int h) throws IOException {
-        var img = new java.awt.image.BufferedImage(w, h, java.awt.image.BufferedImage.TYPE_INT_RGB);
-        var g = img.createGraphics();
-        g.setPaint(new java.awt.GradientPaint(0, 0, java.awt.Color.ORANGE, w, h, java.awt.Color.RED));
-        g.fillRect(0, 0, w, h);
-        g.dispose();
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        javax.imageio.ImageIO.write(img, "jpeg", out);
-        return out.toByteArray();
     }
 
     static void deleteTree(Path dir) throws IOException {

@@ -8,7 +8,6 @@ import hu.sporolos.core.PriceRepository;
 import hu.sporolos.core.PromoMerger;
 import hu.sporolos.data.Catalog;
 import hu.sporolos.data.Promo;
-import hu.sporolos.data.PhotoService;
 import hu.sporolos.data.PromoStore;
 import hu.sporolos.core.WeeklyPlanner;
 import hu.sporolos.store.Ids;
@@ -64,9 +63,9 @@ import java.util.zip.GZIPOutputStream;
  *  PUT    /api/profile?id=…                             – beállítások mentése
  *  POST   /api/rate?id=…        {recipe, liked}         – „Nom vagy nem” (liked: true / false / null)
  *  DELETE /api/rate?id=…                                – minden értékelés törlése
- *  GET    /api/week?id=…[&action=new|swap|set&day=2&recipe=…] – a háztartás heti terve (mentve marad)
+ *  GET    /api/week?id=…[&action=new|swap|set|repeat|fresh&day=2&recipe=…] – a háztartás heti terve (mentve marad);
+ *              repeat: a következő nap is ebből (több adag, maradék), fresh: maradéknap helyett új recept
  *  POST   /api/check?id=…       {key, item, on}         – bevásárlólista-tétel kipipálása
- *  GET    /img/recipe/{id}                              – a recept fotója (Wikimedia Commons vagy saját)
  *  GET    /api/promos                                   – a láncok saját akciói és állapotuk
  *  POST   /api/promos                                   – új akció (JSON), vagy import: {"text": "<CSV vagy JSON>"}
  *  DELETE /api/promos?id=…                              – kézi akció törlése
@@ -78,20 +77,17 @@ public final class WebServer {
 
     private final PriceRepository repo;
     private final Storage storage;
-    private final PhotoService photos;
     private HttpServer server;
     private ExecutorService executor;
 
     public WebServer(PriceRepository repo) {
-        this(repo, null, null);
+        this(repo, null);
     }
 
-    public WebServer(PriceRepository repo, Storage storage, PhotoService photos) {
+    public WebServer(PriceRepository repo, Storage storage) {
         this.repo = repo;
         this.storage = storage;
-        this.photos = photos;
         ApiMapper.catalog = repo.catalog();
-        ApiMapper.photos = photos;
     }
 
     public int start(String host, int port) throws IOException {
@@ -241,7 +237,6 @@ public final class WebServer {
         Suggestion main = rec.suggestion(id, store, servings, p.stores(), p.bulk());
         if (main == null) throw new NotFound("Nincs ilyen recept: " + id);
         Map<String, Object> m = new LinkedHashMap<>(ApiMapper.suggestion(main));
-        m.put("photo", photos == null ? null : photos.credit(id));
         List<Object> stores = new ArrayList<>();
         for (Store st : s.stores()) {
             if (!p.stores().isEmpty() && !p.stores().contains(st.id()) && !st.id().equals(store)) continue;
@@ -334,26 +329,13 @@ public final class WebServer {
             dm.put("label", d.label());
             dm.put("kept", d.kept());
             dm.put("shareOfList", d.shareOfList());
+            dm.put("leftoverOf", d.leftoverOf());
+            dm.put("coversDays", d.coversDays());
             dm.put("suggestion", ApiMapper.suggestion(d.suggestion()));
             days.add(dm);
         }
         m.put("days", days);
-        List<Object> aisles = new ArrayList<>();
-        for (var e : WeeklyPlanner.byAisle(plan).entrySet()) {
-            Map<String, Object> am = new LinkedHashMap<>();
-            am.put("aisle", e.getKey());
-            List<Object> items = new ArrayList<>();
-            for (var it : e.getValue()) {
-                Map<String, Object> im = new LinkedHashMap<>(ApiMapper.ingredient(it.priced()));
-                im.put("label", it.product().name());
-                im.put("needed", Packaging.Qty.fmt(it.needed(), it.product().unit()));
-                im.put("usedIn", it.usedIn());
-                im.put("leftover", it.leftover() > 0.0001 ? Packaging.Qty.fmt(it.leftover(), it.product().unit()) : null);
-                items.add(im);
-            }
-            am.put("items", items);
-            aisles.add(am);
-        }
+        List<Object> aisles = aislesJson(plan.items());
         m.put("aisles", aisles);
         return m;
     }
@@ -430,98 +412,247 @@ public final class WebServer {
         return Map.of("checked", storage.checked(id, key));
     }
 
-    /**
-     * A háztartás heti terve. A mentett hetet tartja (ugyanazok a receptek, amíg a beállítások nem változnak),
-     * action=new: teljesen új hét; action=swap&day=i: az i. nap cseréje; action=set&day=i&recipe=x: konkrét recept arra a napra.
-     */
     private Object week(PriceRepository.State s, Map<String, String> q) throws IOException {
         String id = requireId(q);
         Household h = Household.load(requireStorage(), id, storeIds());
-        String store = h.store();
-        if (store == null) {
-            // még nincs bolt: a mai legjobb (ugyanaz a logika, mint a fejléc „ma itt a legjobb” jelzése)
-            store = s.stores().get(0).id();
-        }
         var a = s.analysis(h.cards());
+        List<String> allowed = new ArrayList<>();
+        for (Store st : s.stores()) if (h.stores().isEmpty() || h.stores().contains(st.id())) allowed.add(st.id());
+        if (allowed.isEmpty()) allowed.addAll(storeIds());
+
+        // mentett hét: "recept" = aznap főzünk, "=k" = a k. nap maradéka
         Map<String, Object> saved = storage.week(id);
-        List<String> ids = new ArrayList<>();
+        List<String> slots = new ArrayList<>();
         List<String> excluded = new ArrayList<>();
         long seed = 1;
+        String savedStore = null;
         if (saved != null && h.planKey().equals(saved.get("planKey"))) {
-            ids.addAll(Household.strings(saved.get("ids")));
+            slots.addAll(Household.strings(saved.get("ids")));
             excluded.addAll(Household.strings(saved.get("excluded")));
             seed = (long) Json.num(saved.get("seed"), 1);
+            savedStore = saved.get("store") == null ? null : Json.str(saved.get("store"));
         }
+        int n = h.dinners();
+        while (slots.size() < n) slots.add(null);
+        while (slots.size() > n) slots.remove(slots.size() - 1);
+        if (saved == null || !h.planKey().equals(saved.get("planKey"))) {
+            // új hét: kétnaponta főzésnél minden második nap az előző maradéka
+            if (Household.EVERY_OTHER.equals(h.cookMode())) for (int i = 1; i < n; i += 2) slots.set(i, "=" + (i - 1));
+        }
+
         String action = q.getOrDefault("action", "");
         int day = intParam(q, "day", -1, -1, 6);
-        List<String> keep = new ArrayList<>(ids);
-        while (keep.size() < h.dinners()) keep.add(null);
-        while (keep.size() > h.dinners()) keep.remove(keep.size() - 1);
+        if (!action.isEmpty() && !action.equals("new") && (day < 0 || day >= n)) throw new IllegalArgumentException("Hibás nap");
         switch (action) {
             case "new" -> {
                 excluded.clear();
-                for (String x : ids) if (x != null) excluded.add(x);
-                keep.replaceAll(x -> null);
+                for (String x : slots) if (x != null && !x.startsWith("=")) excluded.add(x);
+                for (int i = 0; i < n; i++) if (slots.get(i) != null && !slots.get(i).startsWith("=")) slots.set(i, null);
                 seed++;
             }
             case "swap" -> {
-                if (day < 0 || day >= keep.size()) throw new IllegalArgumentException("Hibás nap");
-                if (keep.get(day) != null) excluded.add(keep.get(day));
-                keep.set(day, null);
+                int cook = cookDay(slots, day);
+                String cur = slots.get(cook);
+                if (cur != null) excluded.add(cur);
+                slots.set(cook, null);
                 seed++;
             }
             case "set" -> {
-                if (day < 0 || day >= keep.size()) throw new IllegalArgumentException("Hibás nap");
                 String recipe = q.get("recipe");
                 if (recipe == null || repo.catalog().recipe(recipe) == null) throw new IllegalArgumentException("Ismeretlen recept");
-                keep.set(day, recipe);
+                // ha egy maradéknapra teszünk receptet, az a nap ezentúl főzős nap
+                slots.set(day, recipe);
+                detachLeftovers(slots, day);
+            }
+            case "repeat" -> {
+                // a következő nap is ebből: többet főzünk, a maradék holnapra
+                if (day + 1 >= n) throw new IllegalArgumentException("Ez a hét utolsó vacsorája");
+                int cook = cookDay(slots, day);
+                String next = slots.get(day + 1);
+                if (next != null && !next.startsWith("=")) excluded.add(next);
+                detachLeftovers(slots, day + 1);
+                slots.set(day + 1, "=" + cook);
+            }
+            case "fresh" -> {
+                // a maradéknap helyett aznap mást főzünk
+                if (slots.get(day) != null && slots.get(day).startsWith("=")) {
+                    slots.set(day, null);
+                    seed++;
+                }
             }
             case "" -> { }
             default -> throw new IllegalArgumentException("Ismeretlen művelet: " + action);
         }
         while (excluded.size() > 40) excluded.remove(0);
+
+        List<String> keep = new ArrayList<>();
+        List<Integer> leftoverOf = new ArrayList<>();
+        for (String x : slots) {
+            boolean lo = x != null && x.startsWith("=");
+            keep.add(lo ? null : x);
+            leftoverOf.add(lo ? Integer.parseInt(x.substring(1)) : -1);
+        }
         Map<String, Boolean> ratings = storage.ratings(id);
         Set<String> liked = new TreeSet<>(), disliked = new TreeSet<>();
         ratings.forEach((r, l) -> (l ? liked : disliked).add(r));
-        var req = new WeeklyPlanner.Request(h.people(), h.dinners(), h.budget(), h.diets(), h.equipment(),
-                liked, disliked, keep, Set.copyOf(excluded), seed, h.stores(), h.bulk());
-        var plan = new WeeklyPlanner(repo.catalog(), a.recommender()).plan(store, req);
 
-        List<String> newIds = new ArrayList<>();
-        for (var d : plan.days()) newIds.add(d.suggestion().recipe().id());
+        // a tervezés boltja: a megadott; automatikusnál a mentett, vagy ahol ma a legjobb a kínálat
+        String planStore = h.autoStore()
+                ? (savedStore != null && allowed.contains(savedStore) ? savedStore : bestStore(a, allowed, h))
+                : h.store();
+        WeeklyPlanner planner = new WeeklyPlanner(repo.catalog(), a.recommender());
+        var req = new WeeklyPlanner.Request(h.people(), n, h.budget(), h.diets(), h.equipment(),
+                liked, disliked, keep, Set.copyOf(excluded), seed, h.stores(), h.bulk(), leftoverOf);
+        var plan = planner.plan(planStore, req);
+
+        // ugyanez a hét a többi boltban
+        List<WeeklyPlanner.StoreTotal> totals = new ArrayList<>();
+        List<Suggestion> cooked = WeeklyPlanner.cooked(plan);
+        for (String st : allowed) totals.add(planner.priceIn(st, cooked, h.bulk()));
+        String store = planStore;
+        if (h.autoStore()) {
+            // automatikus: ahol a hét a legolcsóbb (a becsült, ott nem kapható tételek büntetésével)
+            WeeklyPlanner.StoreTotal cheapest = totals.stream()
+                    .min(Comparator.comparingDouble(t -> t.checkout() + 400.0 * t.estimated())).orElse(null);
+            if (cheapest != null && !cheapest.storeId().equals(planStore)) {
+                store = cheapest.storeId();
+                List<String> ids = new ArrayList<>();
+                for (var d : plan.days()) ids.add(d.leftoverOf() >= 0 ? null : d.suggestion().recipe().id());
+                var req2 = new WeeklyPlanner.Request(h.people(), n, h.budget(), h.diets(), h.equipment(),
+                        liked, disliked, ids, Set.copyOf(excluded), seed, h.stores(), h.bulk(), leftoverOf);
+                plan = planner.plan(store, req2);
+            }
+        }
+
+        List<String> newSlots = new ArrayList<>();
+        int idx = 0;
+        for (var d : plan.days()) {
+            newSlots.add(d.leftoverOf() >= 0 ? "=" + d.leftoverOf() : d.suggestion().recipe().id());
+            idx++;
+        }
         Map<String, Object> w = new LinkedHashMap<>();
         w.put("planKey", h.planKey());
         w.put("store", store);
-        w.put("ids", newIds);
+        w.put("ids", newSlots);
         w.put("excluded", excluded);
         w.put("seed", seed);
         w.put("date", LocalDate.now().toString());
         storage.saveWeek(id, w);
 
         Map<String, Object> m = planJson(s, store, h.people(), plan);
-        String listKey = Integer.toHexString((store + String.join(",", newIds) + h.people()).hashCode());
+        m.put("autoStore", h.autoStore());
+        List<Object> compare = new ArrayList<>();
+        // ugyanazzal a mércével, mint az automatikus választás (a nem kapható, becsült tételek büntetésével)
+        totals.sort(Comparator.comparingDouble(t -> t.checkout() + 400.0 * t.estimated()));
+        for (var t : totals) {
+            Map<String, Object> c = new LinkedHashMap<>();
+            c.put("store", t.storeId());
+            c.put("name", storeName(s, t.storeId()));
+            c.put("color", s.stores().stream().filter(x -> x.id().equals(t.storeId())).map(Store::color).findFirst().orElse("#888"));
+            c.put("checkout", t.checkout());
+            c.put("estimated", t.estimated());
+            compare.add(c);
+        }
+        m.put("compare", compare);
+        if (h.split() && totals.size() > 1) {
+            var split = planner.bestSplit(totals, Math.max(300, 0.04 * plan.checkoutTotal()));
+            if (split != null) {
+                Map<String, Object> sp = new LinkedHashMap<>();
+                sp.put("stores", split.stores().stream().map(x -> Map.of("store", x, "name", storeName(s, x))).toList());
+                sp.put("checkout", split.checkout());
+                sp.put("saving", split.saving());
+                List<Object> groups = new ArrayList<>();
+                for (String st : split.stores()) {
+                    List<WeeklyPlanner.ListItem> items = split.items().stream().filter(it -> it.storeId().equals(st)).toList();
+                    if (items.isEmpty()) continue;
+                    Map<String, Object> g = new LinkedHashMap<>();
+                    g.put("store", st);
+                    g.put("name", storeName(s, st));
+                    g.put("checkout", items.stream().filter(it -> !it.product().staple()).mapToDouble(it -> it.priced().checkoutCost()).sum());
+                    g.put("aisles", aislesJson(items));
+                    groups.add(g);
+                }
+                sp.put("groups", groups);
+                m.put("split", sp);
+            }
+        }
+        String listKey = Integer.toHexString((store + String.join(",", newSlots) + h.people()).hashCode());
         m.put("listKey", listKey);
         m.put("checked", storage.checked(id, listKey));
-        m.put("dinners", h.dinners());
+        m.put("dinners", n);
+        m.put("cookMode", h.cookMode());
         return m;
+    }
+
+    /** A nap főzős napja (maradéknapnál az, amelyiknek a maradékát esszük). */
+    private static int cookDay(List<String> slots, int day) {
+        String x = slots.get(day);
+        return x != null && x.startsWith("=") ? Integer.parseInt(x.substring(1)) : day;
+    }
+
+    /** Ha egy nap főzős nappá (vagy más maradékává) válik, a rá hivatkozó maradéknapok új receptet kapnak. */
+    private static void detachLeftovers(List<String> slots, int day) {
+        for (int i = day + 1; i < slots.size(); i++) if (("=" + day).equals(slots.get(i))) slots.set(i, null);
+    }
+
+    /** Ahol ma a legjobb receptek vannak (a fejléc „ma itt a legjobb” jelzésével egyezően). */
+    private static String bestStore(PriceRepository.Analysis a, List<String> allowed, Household h) {
+        String best = allowed.get(0);
+        double bestScore = -1;
+        for (String st : allowed) {
+            List<Suggestion> l = a.recommender().suggestionsFor(st, h.stores(), h.bulk());
+            double sc = l.isEmpty() ? 0 : l.get(0).score();
+            if (sc > bestScore) {
+                bestScore = sc;
+                best = st;
+            }
+        }
+        return best;
+    }
+
+    private static List<Object> aislesJson(List<WeeklyPlanner.ListItem> list) {
+        Map<String, List<WeeklyPlanner.ListItem>> by = new LinkedHashMap<>();
+        for (var it : list) by.computeIfAbsent(it.aisle(), k -> new ArrayList<>()).add(it);
+        List<Object> aisles = new ArrayList<>();
+        for (var e : by.entrySet()) {
+            Map<String, Object> am = new LinkedHashMap<>();
+            am.put("aisle", e.getKey());
+            List<Object> items = new ArrayList<>();
+            for (var it : e.getValue()) {
+                Map<String, Object> im = new LinkedHashMap<>(ApiMapper.ingredient(it.priced()));
+                im.put("label", it.product().name());
+                im.put("needed", Packaging.Qty.fmt(it.needed(), it.product().unit()));
+                im.put("usedIn", it.usedIn());
+                im.put("leftover", it.leftover() > 0.0001 ? Packaging.Qty.fmt(it.leftover(), it.product().unit()) : null);
+                im.put("store", it.storeId());
+                items.add(im);
+            }
+            am.put("items", items);
+            aisles.add(am);
+        }
+        return aisles;
     }
 
     private Object recipes(PriceRepository.State s, Map<String, String> q, Prefs p) {
         String store = requireStore(s, q);
         var rec = s.analysis(p.cards()).recommender();
         Set<String> diets = csv(q.get("diets")), equipment = csv(q.get("equipment"));
+        int servings = intParam(q, "servings", 0, 0, 40); // 0 = a recept alapadagja
         List<Object> out = new ArrayList<>();
         for (var r : repo.catalog().recipes()) {
             var meta = repo.catalog().meta(r.id());
             if (meta != null && (!meta.fits(diets) || !meta.cookableWith(equipment))) continue;
-            Suggestion sug = rec.suggestion(r.id(), store, 0, p.stores(), p.bulk());
+            Suggestion sug = rec.suggestion(r.id(), store, servings, p.stores(), p.bulk());
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("recipe", ApiMapper.recipe(r));
+            m.put("ingredientNames", r.ingredients().stream().filter(i -> !i.pantry()).map(i -> i.label()).toList());
             if (sug != null) {
                 m.put("totalCost", sug.totalCost());
                 m.put("checkoutTotal", sug.checkoutTotal());
                 m.put("dealCount", sug.dealCount());
                 m.put("coverage", Math.round(sug.coverage() * 100) / 100.0);
+                m.put("servings", sug.servings());
+                m.put("score", Math.round(sug.score() * 1000) / 1000.0);
             }
             out.add(m);
         }
@@ -658,21 +789,6 @@ public final class WebServer {
 
     private void staticFile(HttpExchange ex) throws IOException {
         String path = ex.getRequestURI().getPath();
-        if (path.startsWith("/img/recipe/")) {
-            String id = path.substring("/img/recipe/".length());
-            if (!id.matches("[a-z0-9-]{1,64}")) {
-                send(ex, 400, "text/plain; charset=utf-8", "Hibás azonosító");
-                return;
-            }
-            Storage.Photo photo = photos == null ? null : photos.photo(id);
-            if (photo == null) {
-                send(ex, 404, "text/plain; charset=utf-8", "Nincs fotó: " + id);
-                return;
-            }
-            ex.getResponseHeaders().set("Cache-Control", "public, max-age=604800");
-            sendBytes(ex, 200, photo.contentType() == null ? "image/jpeg" : photo.contentType(), photo.bytes());
-            return;
-        }
         if (path.equals("/") || path.isEmpty()) path = "/index.html";
         if (path.contains("..") || path.contains("\\")) {
             send(ex, 400, "text/plain; charset=utf-8", "Hibás útvonal");

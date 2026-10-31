@@ -18,8 +18,6 @@ final class ApiMapper {
 
     /** A receptek származtatott adataihoz (tápérték, diéták); a WebServer állítja be. */
     static volatile hu.sporolos.data.Catalog catalog;
-    /** A receptfotók; null = nincs fotó-szolgáltatás. */
-    static volatile hu.sporolos.data.PhotoService photos;
 
     static Map<String, Object> entry(PriceEntry e) {
         if (e == null) return null;
@@ -73,7 +71,6 @@ final class ApiMapper {
         m.put("difficulty", r.difficulty());
         m.put("tags", r.tags());
         m.put("steps", r.steps());
-        m.put("image", photos != null && photos.has(r.id()) ? "/img/recipe/" + r.id() : null);
         hu.sporolos.data.RecipeMeta meta = catalog == null ? null : catalog.meta(r.id());
         if (meta != null) {
             Map<String, Object> n = new LinkedHashMap<>();

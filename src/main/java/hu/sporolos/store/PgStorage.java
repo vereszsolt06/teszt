@@ -85,6 +85,8 @@ public final class PgStorage implements Storage {
               data     jsonb NOT NULL
             );
             """,
+            // 2: a receptfotók kikerültek az appból
+            "DROP TABLE IF EXISTS recipe_photo",
     };
 
     private final String url;
@@ -348,50 +350,6 @@ public final class PgStorage implements Storage {
             int days = Integer.parseInt(c.query("SELECT count(*) FROM price_day WHERE day >= $1::date AND day < $2::date",
                     from.toString(), toExclusive.toString()).rows().get(0)[0]);
             return new PriceDays(out, days);
-        });
-    }
-
-    // ---------- fotók ----------
-
-    private static final DateTimeFormatter PG_TS = new DateTimeFormatterBuilder()
-            .appendPattern("yyyy-MM-dd HH:mm:ss")
-            .optionalStart().appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, true).optionalEnd()
-            .appendPattern("X")
-            .toFormatter();
-
-    @Override
-    public Photo photo(String recipeId) throws IOException {
-        Ids.check(recipeId);
-        return with(c -> {
-            var rows = c.query("""
-                    SELECT content_type, image, title, page_url, author, license, license_url, fetched_at::text
-                    FROM recipe_photo WHERE recipe_id = $1""", recipeId).rows();
-            if (rows.isEmpty()) return null;
-            String[] r = rows.get(0);
-            return new Photo(recipeId, r[0], PgClient.bytea(r[1]), r[2], r[3], r[4], r[5], r[6],
-                    OffsetDateTime.parse(r[7], PG_TS).toInstant());
-        });
-    }
-
-    @Override
-    public void savePhoto(Photo p) throws IOException {
-        Ids.check(p.recipeId());
-        with(c -> c.query("""
-                INSERT INTO recipe_photo(recipe_id, content_type, image, title, page_url, author, license, license_url, fetched_at)
-                VALUES ($1, $2, $3::bytea, $4, $5, $6, $7, $8, $9::timestamptz)
-                ON CONFLICT (recipe_id) DO UPDATE SET content_type = excluded.content_type, image = excluded.image,
-                  title = excluded.title, page_url = excluded.page_url, author = excluded.author,
-                  license = excluded.license, license_url = excluded.license_url, fetched_at = excluded.fetched_at""",
-                p.recipeId(), p.contentType(), p.present() ? p.bytes() : null, p.title(), p.pageUrl(), p.author(),
-                p.license(), p.licenseUrl(), (p.fetchedAt() == null ? Instant.now() : p.fetchedAt()).toString()));
-    }
-
-    @Override
-    public Map<String, Boolean> photoIndex() throws IOException {
-        return with(c -> {
-            Map<String, Boolean> out = new HashMap<>();
-            for (String[] r : c.query("SELECT recipe_id, image IS NOT NULL FROM recipe_photo").rows()) out.put(r[0], "t".equals(r[1]));
-            return out;
         });
     }
 

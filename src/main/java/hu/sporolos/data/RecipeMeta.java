@@ -25,13 +25,23 @@ import java.util.regex.Pattern;
  * @param airfryerOk  a sütős rész airfryerben is elkészíthető
  * @param moods       "fehérjedús", "könnyed", "laktató" + a recept saját címkéi közül a "comfort"
  * @param mainKey     a fő alapanyag kulcsa (a hús/hal, ennek híján a legnagyobb tömegű hozzávaló)
+ * @param keepsWell   másnap is jó (egytálétel, leves, főzelék, ragu…) – több napra főzhető;
+ *                    a frissen sült, ropogós, rántott ételek és a saláták nem
  */
 public record RecipeMeta(double kcal, double protein, double carbs, double fat, Set<String> diets,
                          boolean needsOven, boolean needsStove, boolean airfryerOk, List<String> moods,
-                         String mainKey) {
+                         String mainKey, boolean keepsWell) {
 
     public static final String VEGA = "vega", GLUTEN_FREE = "gluténmentes", LACTOSE_FREE = "laktózmentes";
     public static final String STOVE = "tuzhely", OVEN = "suto", AIRFRYER = "airfryer";
+
+    /** Frissen az igazi: rántott, ropogós, sült tészta, saláta, pizza, palacsinta… */
+    private static final Pattern FRESH_ONLY = Pattern.compile(
+            "rántott|ropogós|lángos|tócsni|palacsint|saláta|burger|hot dog|fajitas|taco|quesadilla|omlett|rántotta|"
+                    + "bundás|shakshuka|frittata|melegszendvics|camembert|csirkefalat|pizza|halfilé|lazac|gyros|souvlaki|"
+                    + "wok|pirított|ramen|carbonara|pad thai|tortilla|burrito|hummusz|cordon|csirkeszárny|pogácsa|"
+                    + "reggeli|körözött|parasztreggeli|hal |sült hal",
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
 
     private static final Pattern OVEN_WORDS = Pattern.compile(
             "sütőben|sütőbe |sütőt|forró sütő|fokon|fokos|tepsi|sütőpapír|airfryer", Pattern.CASE_INSENSITIVE);
@@ -92,7 +102,8 @@ public record RecipeMeta(double kcal, double protein, double carbs, double fat, 
         if (kcalPer > 0 && kcalPer <= 450 && !hearty) moods.add("könnyed");
         if (hearty) moods.add("laktató");
         return new RecipeMeta(kcalPer, proteinPer, c / n, f / n, Set.copyOf(diets), oven, stove,
-                airfryerOk, List.copyOf(moods), mainMeat != null ? mainMeat : heaviest);
+                airfryerOk, List.copyOf(moods), mainMeat != null ? mainMeat : heaviest,
+                !FRESH_ONLY.matcher(r.name()).find() && !r.tags().contains("hal"));
     }
 
     /** Elkészíthető-e a megadott konyhai eszközökkel ("tuzhely", "suto", "airfryer"); üres halmaz = mindegy. */

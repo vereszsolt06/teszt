@@ -78,7 +78,6 @@ public final class Catalog {
     private final int foodCategoryMaxId;
     private final List<String> aisles = new ArrayList<>();
     private final Map<String, RecipeMeta> meta = new LinkedHashMap<>();
-    private final Map<String, List<String>> photos = new LinkedHashMap<>();
 
     public static Catalog loadDefault() {
         try {
@@ -149,15 +148,12 @@ public final class Catalog {
                     Json.str(r.get("difficulty")), tags, ings, steps);
             recipes.add(recipe);
             meta.put(recipe.id(), RecipeMeta.of(recipe, products, Boolean.TRUE.equals(r.get("airfryer"))));
-            photos.put(recipe.id(), Json.arr(r.get("photo")).stream().map(Json::str).toList());
         }
     }
 
     public Map<String, Product> products() { return products; }
     public List<String> aisles() { return aisles; }
     public RecipeMeta meta(String recipeId) { return meta.get(recipeId); }
-    /** A recept fotójának lehetséges forrásai ("en:Paella", "hu:Lecsó" – Wikipédia-cikkek), sorrendben. */
-    public List<String> photoSources(String recipeId) { return photos.getOrDefault(recipeId, List.of()); }
     public Recipe recipe(String id) {
         for (Recipe r : recipes) if (r.id().equals(id)) return r;
         return null;

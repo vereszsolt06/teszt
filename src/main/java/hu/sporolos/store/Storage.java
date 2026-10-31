@@ -3,7 +3,6 @@ package hu.sporolos.store;
 import hu.sporolos.model.Models.PriceEntry;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -11,7 +10,7 @@ import java.util.Set;
 
 /**
  * Az app tartós adatai: háztartás-profilok (beállítások, „Nom vagy nem” értékelések, a mentett hét,
- * a kipipált listatételek), napi árelőzmények, a receptfotók gyorsítótára és a kézi akciók.
+ * a kipipált listatételek), napi árelőzmények és a kézi akciók.
  *
  * Két megvalósítás van: {@link FileStorage} (JSON/TSV fájlok a data/ mappában – alapértelmezés)
  * és {@link PgStorage} (PostgreSQL, pl. a docker-compose-ban). A DATABASE_URL dönt.
@@ -56,27 +55,6 @@ public interface Storage extends AutoCloseable {
     PriceDays prices(LocalDate from, LocalDate toExclusive) throws IOException;
 
     record PriceDays(Map<String, List<Double>> prices, int days) {}
-
-    // ---------- receptfotók ----------
-
-    /** A tárolt fotó (vagy a "nincs fotó" bejegyzés), vagy null, ha még nem próbáltuk. */
-    Photo photo(String recipeId) throws IOException;
-
-    void savePhoto(Photo photo) throws IOException;
-
-    /** A tárolt fotók állapota bájtok nélkül: receptazonosító → van-e kép. */
-    Map<String, Boolean> photoIndex() throws IOException;
-
-    /**
-     * Egy receptfotó a forrásával és licencével. bytes == null: megpróbáltuk, de nincs szabad licencű kép
-     * (fetchedAt után egy héttel újra próbáljuk).
-     */
-    record Photo(String recipeId, String contentType, byte[] bytes, String title, String pageUrl,
-                 String author, String license, String licenseUrl, Instant fetchedAt) {
-        public boolean present() {
-            return bytes != null && bytes.length > 0;
-        }
-    }
 
     // ---------- kézi akciók ----------
 

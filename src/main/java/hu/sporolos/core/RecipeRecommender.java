@@ -200,7 +200,10 @@ public final class RecipeRecommender {
         double total = 0, checkout = 0, staples = 0, altTotal = 0, altCheckout = 0;
         int pricedCount = 0, real = 0, dealCount = 0;
         Map<String, List<PriceEntry>> storeIndex = index.getOrDefault(storeId, Map.of());
-        for (Ingredient ing : r.ingredients()) {
+        for (Ingredient orig : r.ingredients()) {
+            // a felületen mutatott mennyiség is az adagszámhoz igazodik ("2 db" 4 adagra → "1 db" 2 adagra)
+            Ingredient ing = factor == 1.0 || orig.pantry() ? orig : new Ingredient(orig.productKey(), orig.label(),
+                    Amounts.scale(orig.amount(), factor), orig.share(), orig.pantry(), orig.staple());
             if (ing.pantry()) {
                 items.add(new PricedIngredient(ing, null, null, 0, false, 0, 0, 0, false, "", "", null));
                 continue;

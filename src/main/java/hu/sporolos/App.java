@@ -6,7 +6,6 @@ import hu.sporolos.data.Catalog;
 import hu.sporolos.data.DemoPriceProvider;
 import hu.sporolos.data.PriceHistory;
 import hu.sporolos.data.PriceProvider;
-import hu.sporolos.data.PhotoService;
 import hu.sporolos.data.PromoStore;
 import hu.sporolos.store.FileStorage;
 import hu.sporolos.store.PgStorage;
@@ -37,8 +36,6 @@ import java.util.Properties;
  *   promo.dir       (PROMO_DIR)       – a láncok saját akcióinak mappája (*.json, *.csv; alap: data/akciok)
  *   promo.feeds     (PROMO_FEEDS)     – akció-feedek URL-jei vesszővel elválasztva (ugyanilyen JSON/CSV)
  *   database.url    (DATABASE_URL)    – postgres://felh:jelszo@host:5432/db; ha üres, fájlokban tárol (data/)
- *   photos          (PHOTOS)          – on | off: receptfotók letöltése a Wikimedia Commonsról (alap: on)
- *   photo.dir       (PHOTO_DIR)       – saját receptfotók mappája ({receptazonosító}.jpg; alap: data/kepek)
  */
 public final class App {
 
@@ -55,7 +52,6 @@ public final class App {
         String file = get(cfg, "arfigyelo.file", "ARFIGYELO_FILE", "");
         long refreshHours = Long.parseLong(get(cfg, "refresh.hours", "REFRESH_HOURS", "6"));
 
-        System.setProperty("java.awt.headless", "true");
         String dbUrl = get(cfg, "database.url", "DATABASE_URL", "");
         Path promoDirEarly = Path.of(get(cfg, "promo.dir", "PROMO_DIR", dataDir.resolve("akciok").toString()));
         Storage storage;
@@ -86,13 +82,7 @@ public final class App {
                 new PriceHistory(storage, 28), promos, Duration.ofHours(refreshHours));
         repo.reload();
 
-        boolean photosOn = !get(cfg, "photos", "PHOTOS", "on").equalsIgnoreCase("off");
-        PhotoService photos = new PhotoService(catalog, storage,
-                Path.of(get(cfg, "photo.dir", "PHOTO_DIR", dataDir.resolve("kepek").toString())),
-                photosOn ? PhotoService.defaultHttp() : null);
-        photos.startBackground();
-
-        WebServer server = new WebServer(repo, storage, photos);
+        WebServer server = new WebServer(repo, storage);
         // ha a port foglalt (pl. másik program vagy egy korábban elindított példány), a következő szabadot veszi
         int actual = -1;
         for (int p = port; p < port + 20 && actual < 0; p++) {

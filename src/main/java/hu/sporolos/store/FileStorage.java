@@ -25,7 +25,6 @@ import java.util.stream.Stream;
  * <pre>
  * data/profilok/{id}.json        egy háztartás: beállítások, értékelések, hét, kipipált tételek
  * data/history/ÉÉÉÉ-HH-NN.tsv    napi árak (termék, lánc, ár)
- * data/kepek-cache/{id}.json|img receptfotók és forrásuk
  * data/akciok/sajat-akciok.json  kézi akciók
  * </pre>
  */
@@ -196,63 +195,6 @@ public final class FileStorage implements Storage {
         return new PriceDays(past, days);
     }
 
-    // ---------- fotók ----------
-
-    private Path photoDir() {
-        return root.resolve("kepek-cache");
-    }
-
-    @Override
-    public synchronized Photo photo(String recipeId) throws IOException {
-        Path meta = photoDir().resolve(Ids.check(recipeId) + ".json");
-        if (!Files.exists(meta)) return null;
-        Map<String, Object> m = Json.obj(Json.parse(Files.readString(meta, StandardCharsets.UTF_8)));
-        Path img = photoDir().resolve(recipeId + ".img");
-        byte[] bytes = Files.exists(img) ? Files.readAllBytes(img) : null;
-        return new Photo(recipeId, str(m, "contentType"), bytes, str(m, "title"), str(m, "pageUrl"),
-                str(m, "author"), str(m, "license"), str(m, "licenseUrl"),
-                m.get("fetchedAt") == null ? Instant.EPOCH : Instant.parse(Json.str(m.get("fetchedAt"))));
-    }
-
-    @Override
-    public synchronized void savePhoto(Photo p) throws IOException {
-        String id = Ids.check(p.recipeId());
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("contentType", p.contentType());
-        m.put("title", p.title());
-        m.put("pageUrl", p.pageUrl());
-        m.put("author", p.author());
-        m.put("license", p.license());
-        m.put("licenseUrl", p.licenseUrl());
-        m.put("fetchedAt", p.fetchedAt().toString());
-        Path img = photoDir().resolve(id + ".img");
-        if (p.present()) {
-            Files.createDirectories(photoDir());
-            Path tmp = photoDir().resolve(id + ".img.tmp");
-            Files.write(tmp, p.bytes());
-            Files.move(tmp, img, StandardCopyOption.REPLACE_EXISTING);
-        } else {
-            Files.deleteIfExists(img);
-        }
-        write(photoDir().resolve(id + ".json"), Json.write(m));
-    }
-
-    @Override
-    public synchronized Map<String, Boolean> photoIndex() throws IOException {
-        Map<String, Boolean> out = new HashMap<>();
-        if (!Files.isDirectory(photoDir())) return out;
-        try (Stream<Path> s = Files.list(photoDir())) {
-            for (Path p : s.toList()) {
-                String n = p.getFileName().toString();
-                if (n.endsWith(".json")) {
-                    String id = n.substring(0, n.length() - 5);
-                    out.put(id, Files.exists(photoDir().resolve(id + ".img")));
-                }
-            }
-        }
-        return out;
-    }
-
     // ---------- kézi akciók ----------
 
     @Override
@@ -282,10 +224,6 @@ public final class FileStorage implements Storage {
         Path tmp = f.resolveSibling(f.getFileName() + ".tmp");
         Files.writeString(tmp, content, StandardCharsets.UTF_8);
         Files.move(tmp, f, StandardCopyOption.REPLACE_EXISTING);
-    }
-
-    private static String str(Map<String, Object> m, String k) {
-        return m.get(k) == null ? null : Json.str(m.get(k));
     }
 
     @Override

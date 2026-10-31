@@ -20,14 +20,17 @@ import java.util.TreeSet;
  * a böngésző megjegyez, és egy linkkel megosztható a háztartás többi tagjával.
  */
 record Household(String store, int people, int dinners, int budget, Set<String> diets, Set<String> equipment,
-                 Set<String> stores, boolean bulk, Set<String> cards, boolean onboarded) {
+                 Set<String> stores, boolean bulk, Set<String> cards, boolean onboarded, String cookMode, boolean split) {
+
+    /** Minden nap főz / kétnaponta főz (a maradék másnapra). */
+    static final String DAILY = "daily", EVERY_OTHER = "every2";
 
     static final Set<String> DIETS = Set.of(RecipeMeta.VEGA, RecipeMeta.GLUTEN_FREE, RecipeMeta.LACTOSE_FREE);
     static final Set<String> EQUIPMENT = Set.of(RecipeMeta.STOVE, RecipeMeta.OVEN, RecipeMeta.AIRFRYER);
 
     static Household defaults() {
         return new Household(null, 2, 5, 15000, Set.of(), Set.of(RecipeMeta.STOVE, RecipeMeta.OVEN),
-                Set.of(), false, Set.of(), false);
+                Set.of(), false, Set.of(), false, DAILY, false);
     }
 
     /** JSON-ból, minden mezőt ellenőrizve; az ismeretlen / hibás értékek helyett alapérték. */
@@ -46,7 +49,9 @@ record Household(String store, int people, int dinners, int budget, Set<String> 
                 subset(m.get("stores"), Set.copyOf(knownStores)),
                 Boolean.TRUE.equals(m.get("bulk")),
                 subset(m.get("cards"), Set.copyOf(knownStores)),
-                Boolean.TRUE.equals(m.get("onboarded")));
+                Boolean.TRUE.equals(m.get("onboarded")),
+                EVERY_OTHER.equals(m.get("cookMode")) ? EVERY_OTHER : DAILY,
+                Boolean.TRUE.equals(m.get("split")));
     }
 
     Map<String, Object> toJson() {
@@ -61,12 +66,19 @@ record Household(String store, int people, int dinners, int budget, Set<String> 
         m.put("bulk", bulk);
         m.put("cards", new ArrayList<>(cards));
         m.put("onboarded", onboarded);
+        m.put("cookMode", cookMode);
+        m.put("split", split);
         return m;
+    }
+
+    /** A bolt null: automatikus – ahol a hét a legolcsóbb. */
+    boolean autoStore() {
+        return store == null;
     }
 
     /** A hét újratervezését kívánó beállítások „ujjlenyomata”: ha ez változik, új hetet kell tervezni. */
     String planKey() {
-        return store + "|" + people + "|" + dinners + "|" + budget + "|" + diets + "|" + equipment + "|" + stores + "|" + bulk + "|" + cards;
+        return store + "|" + people + "|" + dinners + "|" + budget + "|" + diets + "|" + equipment + "|" + stores + "|" + bulk + "|" + cards + "|" + cookMode;
     }
 
     static Household load(Storage storage, String id, Collection<String> knownStores) throws IOException {

@@ -2,7 +2,7 @@
 
 [![Build és tesztek](https://github.com/vereszsolt06/teszt/actions/workflows/build.yml/badge.svg)](https://github.com/vereszsolt06/teszt/actions/workflows/build.yml)
 
-Heti vacsoratervező a **GVH Árfigyelő** napi boltárai alapján, a [NomNom Planner](https://nomnomplanner.com/hu/) mintájára: egyszer megadod, hol vásárolsz, hányan esztek, mennyi a heti keret, mit nem esztek és mivel főzöl – az app összerak egy hetet valódi vacsorákból, fotóval, adagárral és tápértékkel, és egyetlen, bolti osztályok szerint rendezett bevásárlólistát ír hozzá. Bármelyik vacsora vagy az egész hét lecserélhető, a „Nom vagy nem” lapozóval megtaníthatod, mit szeretsz. A háztartás tagjai egy linkkel ugyanazt a hetet és listát látják, a kipipálás közös.
+Heti vacsoratervező a **GVH Árfigyelő** napi boltárai alapján, a [NomNom Planner](https://nomnomplanner.com/hu/) mintájára: egyszer megadod, hányan esztek, milyen gyakran főzöl, mennyi a heti keret, mit nem esztek, mivel főzöl és melyik boltokba jársz – az app összerak egy hetet valódi vacsorákból, adagárral és tápértékkel, abban a boltban, ahol a heted a legolcsóbb, és egyetlen, bolti osztályok szerint rendezett bevásárlólistát ír hozzá. Nem kell minden nap mást főzni: bármelyik vacsorából főzhetsz másnapra is, vagy kérheted, hogy kétnaponta főzz. Bármelyik vacsora vagy az egész hét lecserélhető, a „Nom vagy nem” lapozóval megtaníthatod, mit szeretsz. A háztartás tagjai egy linkkel ugyanazt a hetet és listát látják, a kipipálás közös.
 
 Megmaradt az eredeti ötlet is: a **Receptek** fülön az látszik, mit érdemes ma főzni abból, ami a boltodban épp kiemelkedően jó áron van, a bolti akciók felvihetők, a nem kedvelt láncok kizárhatók, és a kiszerelést (darab / kiló, háztartási vagy nagy csomag) gondosan kezeli.
 
@@ -10,15 +10,11 @@ Java 21, **külső függőség nélkül** (beépített JDK webszerver, saját JS
 
 ![Heti terv](docs/het.png)
 
-<img src="docs/het-mobil.png" alt="Heti terv telefonon" width="250"> <img src="docs/recept-mobil.png" alt="Receptlap telefonon" width="250"> <img src="docs/elso-inditas-mobil.png" alt="Első indítás: hol vásárolsz?" width="250">
+<img src="docs/het-mobil.png" alt="Heti terv telefonon, maradéknapokkal" width="250"> <img src="docs/recept-mobil.png" alt="Receptlap telefonon" width="250"> <img src="docs/elso-inditas-mobil.png" alt="Első indítás: milyen gyakran főzöl?" width="250">
 
-<img src="docs/lista.png" alt="Bevásárlólista bolti osztályok szerint" width="640"> <img src="docs/nom-mobil.png" alt="Nom vagy nem" width="250">
+<img src="docs/lista.png" alt="Bevásárlólista két boltra bontva" width="640"> <img src="docs/nom-mobil.png" alt="Nom vagy nem" width="250">
 
-<img src="docs/receptek.png" alt="Receptek: ma kifizetődő, most jó áron, összes recept" width="640"> <img src="docs/receptek-racs.png" alt="Az összes recept fotóval" width="640">
-
-<img src="docs/recept.png" alt="Receptlap: fotó, adagár, makrók, hozzávalók a bolti termékkel" width="640">
-
-> A képernyőképeket a GitHub Actions készíti a futó appról (`Képernyőképek` workflow, kézzel indítható): a fotók valódi, szabad licencű Wikimedia Commons-képek, szerzőjük és licencük a receptlapon látszik. Ahol színes kártya és emoji van, ott (még) nincs fotó. Lásd a [Képek](#7-képek-photoservice) részt.
+<img src="docs/recept.png" alt="Receptlap: amit a pénztárnál fizetsz, makrók, hozzávalók a bolti termékkel" width="640"> <img src="docs/receptek.png" alt="Receptek: ma kifizetődő, most jó áron, összes recept" width="640">
 
 ## Indítás
 
@@ -66,18 +62,17 @@ Parancssorból (`-Dport=9000`), környezeti változóval (`PORT=9000`) vagy egy 
 | `promo.dir` | `PROMO_DIR` | `data/akciok` | a láncok saját akcióinak mappája (`*.json`, `*.csv`) |
 | `promo.feeds` | `PROMO_FEEDS` | – | akció-feedek URL-jei vesszővel elválasztva (ugyanilyen JSON/CSV) |
 | `database.url` | `DATABASE_URL` | – | `postgres://felh:jelszo@host:5432/db`; ha üres, a `data/` mappába ment |
-| `photos` | `PHOTOS` | `on` | `off`: nem tölt le fotót a Wikimedia Commonsról |
-| `photo.dir` | `PHOTO_DIR` | `data/kepek` | saját fotók: `{receptazonosító}.jpg` / `.png` / `.webp`, ezek mindig elsőbbséget kapnak |
 
 ## Mit tud
 
-- **Első indítás (kb. egy perc):** bolt → hányan esztek, hány vacsora → heti keret → diéta (húsmentes, gluténmentes, laktózmentes) → konyha (tűzhely, sütő, airfryer). Utána rögtön kész a hét. Minden később a Beállításokban módosítható.
-- **Hét:** „Ez a hét ≈ 6 894 Ft”, alatta a keret-sáv („keret 20 000 Ft · 13 106 Ft marad”), átlagos kalória és fehérje. A vacsorák fotós kártyákon: nap, név, adagár, adagszám, idő, kalória, fehérje, hangulat- és diéta-címkék. Minden kártyán **Csere** (a többi nap marad), felül **Új hetet kérek**. A hét mentve marad, amíg a beállításokat nem változtatod.
-- **Receptlap:** nagy fotó (szerzővel és licenccel), adagár polccímkén, adagszám-állító, kalória / fehérje / szénhidrát / zsír, hozzávalók a konkrét bolti termékkel, árral és a „jó ár” okával, nagy kiszerelés alternatívaként („Ezt veszem”), elkészítés lépésenként, és hogy mennyibe kerülne a többi boltodban. Innen egy recept bármelyik napra betehető a hétre, vagy kedvencnek jelölhető.
-- **Lista:** a hét összes hozzávalója egy listán, bolti osztályok szerint (zöldség, pékáru, hús, felvágott és sajt, tejtermék, száraz áru, konzerv, mélyhűtött), egész csomagokkal; soronként, melyik vacsorához kell és mennyi marad. Kipipálható (a háztartás minden eszközén látszik), megosztható / másolható. A „ha nincs otthon” kamraáru és a fűszerek külön.
+- **Első indítás (kb. egy perc):** hányan esztek, hány vacsora → milyen gyakran főzöl (minden nap / kétnaponta) → heti keret → diéta (húsmentes, gluténmentes, laktózmentes) → konyha (tűzhely, sütő, airfryer) → melyik boltokba jársz (és hogy két boltba is elmennél-e). Boltot nem kell választani: a hét abban lesz, ahol a legolcsóbb. Minden később módosítható.
+- **Hét:** „Ez a hét ≈ 5 030 Ft”, alatta a keret-sáv („keret 15 000 Ft · 9 970 Ft marad”), és hogy **ugyanez a hét mennyi lenne a többi boltban** („Penny 5 030 · Tesco 5 308 · Auchan 5 395…”) – egy koppintással átválthatsz. A vacsorák kártyákon: nap, név, adagár, adagszám, idő, kalória, fehérje, címkék. Minden kártyán **Csere** (a többi nap marad), felül **Új hetet kérek**.
+- **Maradék, több napra főzés:** bármelyik vacsoránál **„Holnapra is főzök”** – aznap dupla adag készül, másnap a maradékot eszed (nem kell főzni, nem kell vásárolni). A maradéknapon „Holnap is ez” (3 napra) vagy „Inkább mást főzök”. A **kétnaponta főzök** beállításnál a terv eleve így áll össze. Több napra csak olyat tesz, ami másnap is jó (egytálétel, leves, főzelék, pörkölt, rakott étel), rántott, ropogós ételt, salátát, halat nem.
+- **Receptlap:** elöl az, amit **a pénztárnál fizetsz** (egész csomagokkal) és az adagonkénti ár; alatta, mennyi fogy el belőle a receptben (a többi megmarad). Kalória / fehérje / szénhidrát / zsír, hozzávalók a konkrét bolti termékkel és **a mennyiség az adagszámhoz igazítva** (4 adagos receptnél 2 adagra „1 db paradicsom”, nem „2 db”), nagy kiszerelés alternatívaként, elkészítés, és mennyit fizetnél érte a többi boltban.
+- **Lista:** a hét összes hozzávalója egy listán (két bolt esetén boltonként szétbontva), bolti osztályok szerint (zöldség, pékáru, hús, felvágott és sajt, tejtermék, száraz áru, konzerv, mélyhűtött), egész csomagokkal; soronként, melyik vacsorához kell és mennyi marad. Kipipálható (a háztartás minden eszközén látszik), megosztható / másolható. A „ha nincs otthon” kamraáru és a fűszerek külön.
 - **Nom vagy nem:** kártyás lapozó (húzás, gombok, ← / →). A *Nom* receptek előnyt kapnak a tervben, a *Nem* receptek kimaradnak. Kedvencek listája.
-- **Receptek:** „Ma kifizetődő” (az eredeti ötlet: ami ma a boltodban jó áron összevásárolható), „Most jó áron” termékek kereséssel, és mind a 170 recept fotóval, adagárral, kalóriával; szűrés fehérjedús / könnyed / laktató / diéta / gyors / airfryer / kedvencek szerint, rendezés ár, „ma a legjobb ár”, idő, fehérje, kalória szerint.
-- **Bolt** a fejlécben: egy koppintással váltható; a „ma itt a legjobb” jelzés azt mutatja, hol a legkedvezőbbek ma a receptek.
+- **Receptek:** „Ma kifizetődő” (az eredeti ötlet: ami ma a boltodban jó áron összevásárolható), „Most jó áron” termékek kereséssel, és mind a 170 recept a háztartásod létszámára árazva („1 807 Ft · 2 adag”), kalóriával; szűrés fehérjedús / könnyed / laktató / diéta / gyors / airfryer / kedvencek szerint, rendezés ár, „ma a legjobb ár”, idő, fehérje, kalória szerint.
+- **Bolt** a fejlécben: **automatikus** (ahol a heted a legolcsóbb) vagy egy rögzített lánc. **Két bolt:** ha bekapcsolod, és legalább ~300 Ft-ot (vagy a hét 4%-át) spórolsz vele, a lista két boltra bomlik – minden tétel ott, ahol olcsóbb.
 - **Beállítások:** háztartás, keret, diéta, konyha, **boltjaim** (a nem kedvelt lánc kizárható), **kiszerelés** (háztartási vagy nagy), **hűségkártyák**, **bolti akciók** felvitele (kézzel vagy CSV/JSON), **közös háztartás** link, árfrissítés.
 - **Közös háztartás:** a Beállításokban kapott linkkel (`…/#profil=…`) a párod vagy a családod ugyanazt a profilt használja: ugyanaz a hét, ugyanaz a lista, közös pipák.
 - **Termékrészletek:** bármelyik termékre koppintva látod az árát minden láncban, hány boltjukban kapható, és mennyi a legdrágább boltjukban.
@@ -173,18 +168,18 @@ Minden alapanyaghoz tápérték tartozik 100 g-ra (kcal, fehérje, szénhidrát,
 - **Hangulat:** *fehérjedús* (≥ 30 g fehérje vagy a kalória ≥ 30%-a), *könnyed* (≤ 450 kcal), *laktató* (≥ 750 kcal vagy kiadós egytál).
 - Bő olajban sütésnél az olajnak csak 20%-át számolja (ennyi marad az ételben).
 
-### 7. Képek (`PhotoService`)
-A korábbi, programból rajzolt illusztrációk kikerültek. Helyettük **valódi ételfotók**, szabad licenccel:
+### 7. Árak: mit mutat az app?
+A korábbi változat a recept mellett a **felhasznált mennyiség** árát mutatta („8 szelet kenyér 180 Ft”), ami félrevezető: a boltban az egész vekni 449 Ft. Most mindenhol **az áll elöl, amit ténylegesen fizetsz**:
 
-1. Minden recepthez a `recipes.json` `photo` mezője ad 1–3 Wikipédia-cikket, sorrendben (pl. a csirkés paellához `en:Paella`, a lecsóhoz `en:Lecsó`, `hu:Lecsó`).
-2. A szerver a háttérben (indításkor és 6 óránként, lassan, hogy ne terhelje a Wikimédiát) lekéri a cikk vezetőképét a Wikipédia REST API-jából.
-3. Csak a **Wikimedia Commonson** lévő képet fogadja el, és csak szabad licenccel (CC0, CC BY, CC BY-SA, közkincs). A Wikipédiára helyben feltöltött, „fair use” képeket és a nem kereskedelmi (NC) licenceket kihagyja.
-4. A képet 800 px szélesre kicsinyíti (JPEG), és a tárolóba menti a **szerzővel, a licenccel és a forrásoldal linkjével** együtt. A receptlap ki is írja ezeket („Fotó: Kiss Anna, CC BY-SA 4.0 – Wikimedia Commons”), ahogy a licenc kéri.
-5. Ha egyik cikkhez sincs szabad kép, „nincs fotó” bejegyzés kerül a tárolóba, és egy hét múlva próbálja újra; ha nincs net, nem jegyez fel semmit, és egy óra múlva próbálja újra.
+- **Receptlap:** soronként a megvett csomag ára (pl. 449 Ft a kenyér), mellette, hogy ebből mennyi fogy el a receptben, és hogy a többi megmarad. A fejlécben a pénztári összeg és az adagonkénti ár (pénztári összeg / adag).
+- **Receptek, Nom vagy nem, Ma kifizetődő:** „1 807 Ft · 2 adag” – egész csomagokkal, a háztartásod létszámára.
+- **Hét:** a hét ára a közös lista pénztári összege. A vacsorakártyán az adagár a közös listából rá eső rész: ha a hétfői rántott párizsihoz vett tojásból kedden is jut, a tálca ára megoszlik a kettő között. Így a kártyák összege mindig kiadja a hét árát.
+- Az olaj, a liszt, a cukor és a fűszerek („kamraáru”) nincsenek benne az összegben, külön „ha nincs otthon” sorban szerepelnek.
+- A mennyiségek az adagszámmal együtt változnak (`Amounts`): „2 db” → „1 db”, „1 dl” → „0,5 dl”, „50 dkg” → „75 dkg”, „75 dkg” → „1,5 kg”.
 
-A GitHub Actions-ben futtatott próbán mind a 170 recepthez talált szabad licencű fotót. A fotók letöltése az első indulás után a háttérben kb. 5–10 percig tart; a Wikimedia korlátozza a gyors lekérdezést, ezért a szerver lassan, receptenként kb. egy másodperces szünettel halad, és a túlterhelés miatt elutasított kéréseket később újra próbálja.
-
-Ahol nincs fotó, a kártya egy egyszerű színes felületet mutat a recept emojijával – rajz nincs. **Saját fotó:** tedd a `data/kepek/{receptazonosító}.jpg` fájlt a helyére (pl. `data/kepek/lecso.jpg`), az mindig elsőbbséget kap. A fotók a `/img/recipe/{id}` címen érhetők el, egy hétig gyorsítótárazhatók.
+### 7.1 Melyik boltban? (automatikus bolt, két bolt)
+- **Automatikus:** a hetet a boltjaid közül abban tervezi, ahol ma a legjobb a kínálat, majd ugyanazt a hetet beárazza mind a 6 láncban, és abba vált, ahol a legolcsóbb (ahol egy tétel nincs az Árfigyelőben, azt büntetéssel számolja). A „Ugyanez a hét” sáv mutatja a többi bolt árát.
+- **Két bolt:** minden boltpárra kiszámolja, mennyi lenne, ha minden tételt a kettő közül ott vennél, ahol olcsóbb; a legjobb párt ajánlja, ha legalább 300 Ft-ot vagy a hét 4%-át spórolja. Kettőnél több boltot nem ajánl, mert annyi utat nem ér meg.
 
 ### 8. Tárolás: fájl vagy PostgreSQL (`store/`)
 A tartós adatok egy `Storage` felület mögött vannak, két megvalósítással:
@@ -196,7 +191,6 @@ A tartós adatok egy `Storage` felület mögött vannak, két megvalósítással
 | mentett hét | a profil fájljában | `saved_week` (jsonb) |
 | kipipált listatételek | a profil fájljában | `checked_item` |
 | napi árelőzmény | `data/history/ÉÉÉÉ-HH-NN.tsv` | `price_day`, `price_history` |
-| receptfotók | `data/kepek-cache/` | `recipe_photo` (bytea) |
 | kézi akciók | `data/akciok/sajat-akciok.json` | `manual_promo` |
 
 A PostgreSQL-kapcsolathoz **nincs JDBC-driver**: a `PgClient` a PostgreSQL 3-as wire protokollját beszéli (SCRAM-SHA-256 / MD5 belépés, paraméterezett lekérdezések a kiterjesztett protokollal, így nincs SQL-befecskendezés), egy kis kapcsolatkészlettel. A séma induláskor magától létrejön / frissül (`schema_version` tábla, zárolással, hogy több példány se ütközzön). TLS nincs, mert a docker-compose belső hálózatára készült; távoli adatbázishoz SSH-alagút vagy helyi hálózat ajánlott.
@@ -215,14 +209,13 @@ A PostgreSQL-kapcsolathoz **nincs JDBC-driver**: a `PgClient` a PostgreSQL 3-as 
 | `GET /api/search?q=tej&store=lidl&limit=30` | keresés a termékek között, egységár szerint |
 | `GET /api/ingredients` | a recept-alapanyagok listája (az akció-űrlaphoz) |
 | `GET /api/plan?store=lidl&people=2&dinners=5&budget=15000&diets=vega&equipment=tuzhely,suto&liked=…&disliked=…&keep=a,_,c&exclude=…&seed=3` | heti vacsoraterv közös, osztályonként rendezett bevásárlólistával |
-| `GET /api/recipes?store=lidl&diets=gluténmentes` | az összes recept képpel, tápértékkel, adagonkénti árral |
+| `GET /api/recipes?store=lidl&servings=2&diets=gluténmentes` | az összes recept tápértékkel, a megadott adagszámra árazva |
 | `POST /api/profile` | új háztartás-profil (törzs: beállítások) → `{id, settings, liked, disliked}` |
 | `GET` / `PUT /api/profile?id=…` | a profil lekérése / beállítások mentése |
 | `POST /api/rate?id=…` | `{"recipe": "lecso", "liked": true \| false \| null}` – Nom vagy nem |
 | `DELETE /api/rate?id=…` | minden értékelés törlése |
-| `GET /api/week?id=…[&action=new\|swap\|set&day=2&recipe=…]` | a háztartás heti terve (mentve marad); új hét, egy nap cseréje, konkrét recept egy napra |
+| `GET /api/week?id=…[&action=new\|swap\|set\|repeat\|fresh&day=2&recipe=…]` | a háztartás heti terve (mentve marad); új hét, egy nap cseréje, konkrét recept egy napra, „holnapra is főzök”, „inkább mást főzök”; automatikus boltnál a legolcsóbb bolt, `compare`: ugyanez a hét a többi boltban, `split`: két boltos lista |
 | `POST /api/check?id=…` | `{"key", "item", "on"}` – listatétel kipipálása |
-| `GET /img/recipe/{id}` | a recept fotója (Wikimedia Commons vagy saját), 404, ha nincs |
 | `GET /api/promos` | a láncok saját akciói és állapotuk (beépítve / már benne / lejárt / kártya kell…) |
 | `POST /api/promos` | új akció (JSON), vagy import: `{"text": "<CSV vagy JSON>"}` |
 | `DELETE /api/promos?id=…` | kézi akció törlése |
@@ -247,7 +240,6 @@ src/main/java/hu/sporolos/
   data/  ArfigyeloExcelProvider  napi Excel letöltése / beolvasása / gyorsítótár
          XlsxReader              folyamatos xlsx-olvasó (ZIP + StAX, XXE ellen védve)
          PriceHistory            napi árelőzmények (a tárolón át)
-         PhotoService            receptfotók a Wikimedia Commonsról, licenccel
          DemoPriceProvider       tartalék demó árak
          Catalog                 alapanyagok, láncok, receptek, illesztés
          RecipeMeta              tápérték, diéták, eszközök, hangulat receptenként
@@ -279,15 +271,16 @@ Dockerfile, docker-compose.yml   konténer: app + postgres:16
 - háztartási mód nagy kiszerelés alternatívával és fordítva, valamint a boltszűrő hatása;
 - akciók: CSV-beolvasás, az összefésülés minden ága (felülír / már benne / új tétel / kártya kell / lejárt / még nem / ismeretlen bolt), és hogy egy akciós tonhal árazhatóvá teszi a tonhalas tésztát;
 - az ajánló rangsorolása és adagköltsége;
-- receptadatok (kalória, a vega címke és a hús egyezése, eszközök), minden receptnek van fotóforrása;
-- fotók egy ál-Wikimédiával: a szabad licencű Commons-kép bekerül szerzővel és licenccel, 800 px-re kicsinyítve; a nem szabad helyi képet kihagyja; hálózati hibát nem jegyez fel „nincs fotónak”; a saját fotó elsőbbséget kap;
-- tárolás oda-vissza (profil, értékelés, hét, pipák, árnap, fotó, kézi akció) fájlokkal, és – ha a `PG_TEST_URL` meg van adva – PostgreSQL-lel is, párhuzamos írással és SQL-befecskendezési próbával;
+- receptadatok (kalória, a vega címke és a hús egyezése, eszközök, mi tartható el másnapig);
+- a mennyiségek átszámolása más adagszámra (db, szelet, dl, dkg → kg, „fél”, „másfél”), mind a 170 recept minden sorára;
+- heti terv maradékkal (3 napra főzés, a maradéknapra nincs vásárlás, csak eltartható étel), ugyanaz a hét több boltban, két boltos lista (sosem drágább, kis megtakarításért nem bont);
+- tárolás oda-vissza (profil, értékelés, hét, pipák, árnap, kézi akció) fájlokkal, és – ha a `PG_TEST_URL` meg van adva – PostgreSQL-lel is, párhuzamos írással és SQL-befecskendezési próbával;
 - heti terv: nincs ismétlés, változatos fő alapanyag, nincs desszert, a lista összege egyezik, egy termék egy sor, diéta- és eszközszűrő, csere a többi nap megtartásával, keret, más mag más hetet ad;
 - a letöltés, a gyorsítótár és a visszaesés egy helyi HTTP-szerverrel;
 - a hibás frissítés kezelése (a valós adat nem cserélődik demóra);
-- végponttól végpontig teszt, ami elindítja a webszervert, és végighívja az összes API-t: boltszűrő, akciók felvitele / importja / törlése, fotó-kiszolgálás, háztartás-profil létrehozása, mentett hét, csere, konkrét recept egy napra, kipipálás, értékelés, boltváltás.
+- végponttól végpontig teszt, ami elindítja a webszervert, és végighívja az összes API-t: boltszűrő, akciók felvitele / importja / törlése, háztartás-profil létrehozása, mentett hét, csere, konkrét recept egy napra, kipipálás, értékelés, boltváltás, automatikus bolt (a legolcsóbbat választja), „holnapra is főzök” / „inkább mást főzök”, kétnaponta főzés, a mennyiségek adagszámhoz igazítása.
 
-A GitHub Actions a teszteket egy PostgreSQL 16 szolgáltatással együtt futtatja, utána felépíti a Docker-képet, elindítja a `docker compose`-t, és ellenőrzi, hogy az app válaszol, a profil az adatbázisba kerül, és hány receptfotót talált a Wikimedia Commonson.
+A GitHub Actions a teszteket egy PostgreSQL 16 szolgáltatással együtt futtatja, utána felépíti a Docker-képet, elindítja a `docker compose`-t, és ellenőrzi, hogy az app válaszol, és a profil az adatbázisba kerül.
 
 Ha az `ARFIGYELO_TEST_FILE` környezeti változó egy valódi napi Excelre mutat, a teljes folyamatot azon is lefuttatja: mind a hat láncban legalább 10 árazható recept és életszerű árak kellenek. A 2026-10-28-i fájllal, PostgreSQL 16-tal mind a 30 teszt sikeres, mind a 170 recept árazható, és mind a hat láncban kijön egy 5 vacsorás, 2 fős heti terv 15 000 Ft alatt.
 
@@ -295,6 +288,7 @@ Ha az `ARFIGYELO_TEST_FILE` környezeti változó egy valódi napi Excelre mutat
 
 Ezeket kérdezés nélkül döntöttem el; bármelyik könnyen módosítható.
 
+- **Több napra főzés:** a NomNom minden napra más vacsorát ad; itt a maradék beépített lehetőség (ezt a felhasználó kérte), a terv és a lista ehhez igazodik.
 - **A heti terv a főképernyő**, ahogy a NomNomban; a régi „recept dobáló” a Receptek fül „Ma kifizetődő” sávja lett.
 - **Profil fiók nélkül**, véletlen azonosítóval, a szerveren (fájlban vagy adatbázisban) tárolva – így működik a közös háztartás és a több eszközös kipipálás. A NomNom a terveket a telefonon tartja; böngészős appnál a szerveres tárolás a természetes.
 - **Heti terv alapértékei:** 2 fő, 5 vacsora (hétfő–péntek), 15 000 Ft keret, tűzhely és sütő van. Csak vacsorát tervez; desszert és reggeli nem kerül bele. A kamra-alapanyagok (olaj, liszt, cukor) a végösszegben nincsenek benne, külön sorban szerepelnek.
@@ -312,7 +306,9 @@ Ezeket kérdezés nélkül döntöttem el; bármelyik könnyen módosítható.
 - **Nagy kiszerelés küszöbe:** a receptre vetítve legalább 10% és 15 Ft megtakarítás kell, hogy alternatívaként megjelenjen; ennél kisebb különbségért nem éri meg többet fizetni.
 - **A láncok akcióit nem gyűjti automatikusan** a láncok oldalairól (lásd a 4. pontot). Helyette egy általános akcióréteg fogad kézi, fájlos és feedes akciókat. A kártyás akciók alapból ki vannak kapcsolva, amíg nem jelölöd be, hogy van ilyen kártyád.
 - **Az adagár kétféle:** a hét kártyáin a közös listából a vacsorára eső rész (a megmaradó csomagrésszel együtt, így a kártyák összege a lista végösszege), a receptlapon a ténylegesen felhasznált mennyiség ára.
-- **Fotók csak szabad licenccel**, a szerző és a licenc feltüntetésével; ahol nincs, nincs rajz sem, csak egy egyszerű színes kártya.
+- **Képek egyelőre nincsenek** (kérésre kivettem a fotókat): a recepteket egy emoji jelöli. A fotós változat a git-előzményekben megvan (`PhotoService`, Wikimedia Commons, szabad licenccel), később visszahozható.
+- **Kétnaponta főzés 5 vacsoránál:** hétfő+kedd, szerda+csütörtök, péntek – 3 főzés.
+- **Automatikus bolt** az alapértelmezés; az első indításkor nem kell boltot választani.
 - **Betűtípusok** a Google Fontsról töltődnek; offline a rendszer betűtípusára vált, a működést nem érinti.
 
 ## Ismert korlátok, továbbfejlesztési ötletek
@@ -324,7 +320,6 @@ Ezeket kérdezés nélkül döntöttem el; bármelyik könnyen módosítható.
 - Ha a felületet `HOST=0.0.0.0`-val a helyi hálózatra nyitod, a hálózaton bárki felvihet és törölhet kézi akciót.
 - A tápértékek tipikus, kerekített értékekből számolt becslések; diétás vagy orvosi célra nem elég pontosak.
 - A heti terv mohó algoritmus, nem garantáltan a legolcsóbb kombináció; cserébe gyors (≈ 0,1 s) és jól érthető.
-- A Wikipédia-cikkek vezetőképe nem mindig maga az étel (pl. egy alapanyag vagy egy rokon étel); ilyenkor a `recipes.json` `photo` listáján érdemes jobb cikket megadni, vagy saját fotót tenni a `data/kepek` mappába.
 - A közös háztartás linkje bárkinek hozzáférést ad, aki megkapja; jelszó / fiók nincs.
 - A NomNom Planner ötletét és felépítését vettem át (lásd lent), a szövegeit, fotóit és márkáját nem.
 - Ötletek: lánc-specifikus akció-letöltők külön feedként, saját recept felvétele a felületről, reggeli/ebéd tervezése is.
@@ -335,9 +330,9 @@ A [nomnomplanner.com/hu](https://nomnomplanner.com/hu/), az [adatforrás-oldaluk
 
 - **Árak:** Magyarországon ők is a **GVH Árfigyelő** nyilvános napi adatát töltik le minden nap, és minden hozzávalót egy konkrét, névvel azonosított bolti termékhez kötnek – ugyanazt csinálja ez az app is. A Kifli árait a Kifli saját katalógusából veszik; ahol egy alapanyag a GVH-adatban nincs benne, ott a Kifli-árat használják minden boltra (ezt maguk is jelzik). Más országokban az Open Food Facts **Open Prices** adatbázisából (ODbL), statisztikai hivatalok és az Eurostat átlagáraiból számolnak. Akciók és hűségkártyás árak náluk sincsenek – nálunk felvihetők.
 - **Receptek:** a nyílt adat oldaluk szerint a recepteket a **Wikibooks Cookbookból** adaptálták (CC BY-SA 4.0); több mint 1000 vacsorarecept. Ebben az appban 170 saját, magyar recept van, a magyar boltok Árfigyelő-kategóriáihoz kötve.
-- **Fotók:** a forrásukat nem írják le. Itt a Wikimedia Commons szabad licencű képei jönnek, szerzővel és licenccel.
+- **Fotók:** a forrásukat nem írják le. Itt egyelőre nincs fotó.
 - **Tárolás:** fiók nincs; a tervek, beállítások és pipák a telefonon vannak. A szerveroldalon (Cloudflare) csak a receptértékeléseket, a visszajelzéseket és a várólistát tárolják, analitikára a PostHog EU-s szervereit, előfizetésre a RevenueCatet használják. Itt böngészős app van, ezért a háztartás adatai a szerveren vannak (fájlban vagy PostgreSQL-ben), de ugyanúgy fiók és személyes adat nélkül.
-- **Felület, amit átvettünk:** kétperces beállítás (bolt, keret, létszám, diéta, konyha) → kész hét fotós vacsorakártyákkal, adagárral és a hét végösszegével a keret mellett → egy vacsora vagy az egész hét cseréje → makrók és hangulat-címkék → diéták és konyhai eszközök beépítve → osztályonként rendezett, megosztható lista → „Nom vagy nem” lapozás.
+- **Felület, amit átvettünk:** kétperces beállítás (bolt, keret, létszám, diéta, konyha) → kész hét vacsorakártyákkal, adagárral és a hét végösszegével a keret mellett → egy vacsora vagy az egész hét cseréje → makrók és hangulat-címkék → diéták és konyhai eszközök beépítve → osztályonként rendezett, megosztható lista → „Nom vagy nem” lapozás.
 
 ---
 Az árak forrása: [GVH Árfigyelő](https://arfigyelo.gvh.hu). A boltban kiírt ár az irányadó.
