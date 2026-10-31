@@ -62,6 +62,12 @@ jobs:
           docker compose exec -T db psql -U sporolos -d sporolos -c "select recipe_id from recipe_photo where image is null order by 1"
           docker compose exec -T db psql -U sporolos -d sporolos -c "select recipe_id, title, license, left(author, 40) as author from recipe_photo where image is not null order by 1"
           docker compose logs app | grep -i fot | tail -20 || true
+          ok=$(docker compose exec -T db psql -U sporolos -d sporolos -tAc "select count(*) from recipe_photo where image is not null")
+          miss=$(docker compose exec -T db psql -U sporolos -d sporolos -tAc "select string_agg(recipe_id, ', ' order by recipe_id) from recipe_photo where image is null")
+          found=$(docker compose exec -T db psql -U sporolos -d sporolos -tAc "select string_agg(recipe_id || '=' || coalesce(title,'?') || ' (' || coalesce(license,'?') || ')', '; ' order by recipe_id) from recipe_photo where image is not null")
+          echo "::notice title=Receptfotók::$ok recepthez van szabad licencű fotó"
+          echo "::notice title=Fotó nélkül::$miss"
+          echo "::notice title=Talált fotók::$found"
       - name: Leállítás
         if: always()
         run: docker compose down
