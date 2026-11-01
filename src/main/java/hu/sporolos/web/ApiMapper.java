@@ -17,7 +17,7 @@ final class ApiMapper {
     private ApiMapper() {}
 
     /** A receptek származtatott adataihoz (tápérték, diéták); a WebServer állítja be. */
-    static volatile hu.sporolos.data.Catalog catalog;
+    static volatile java.util.function.Supplier<hu.sporolos.data.Catalog> catalog;
 
     static Map<String, Object> entry(PriceEntry e) {
         if (e == null) return null;
@@ -71,7 +71,7 @@ final class ApiMapper {
         m.put("difficulty", r.difficulty());
         m.put("tags", r.tags());
         m.put("steps", r.steps());
-        hu.sporolos.data.RecipeMeta meta = catalog == null ? null : catalog.meta(r.id());
+        hu.sporolos.data.RecipeMeta meta = catalog == null ? null : catalog.get().meta(r.id());
         if (meta != null) {
             Map<String, Object> n = new LinkedHashMap<>();
             n.put("kcal", Math.round(meta.kcal()));

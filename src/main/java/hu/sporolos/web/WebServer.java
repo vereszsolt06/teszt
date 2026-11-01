@@ -12,6 +12,7 @@ import hu.sporolos.data.PromoStore;
 import hu.sporolos.core.WeeklyPlanner;
 import hu.sporolos.store.Ids;
 import hu.sporolos.store.Storage;
+import hu.sporolos.model.Models.Deal;
 import hu.sporolos.model.Models.PriceEntry;
 import hu.sporolos.model.Models.Store;
 import hu.sporolos.model.Models.Suggestion;
@@ -77,6 +78,7 @@ public final class WebServer {
 
     private final PriceRepository repo;
     private final Storage storage;
+    private final AdminApi admin;
     private HttpServer server;
     private ExecutorService executor;
 
@@ -85,9 +87,18 @@ public final class WebServer {
     }
 
     public WebServer(PriceRepository repo, Storage storage) {
+        this(repo, storage, null, null);
+    }
+
+    /**
+     * @param adminPassword ha nem null, bekapcsol az admin felület (/admin), és az akciók írása,
+     *                      valamint az árfrissítés admin belépéshez kötött
+     */
+    public WebServer(PriceRepository repo, Storage storage, hu.sporolos.data.CatalogSource source, String adminPassword) {
         this.repo = repo;
         this.storage = storage;
-        ApiMapper.catalog = repo.catalog();
+        this.admin = adminPassword == null ? null : new AdminApi(repo, storage, source, adminPassword);
+        ApiMapper.catalog = repo::catalog;
     }
 
     public int start(String host, int port) throws IOException {
@@ -113,16 +124,35 @@ public final class WebServer {
             String path = ex.getRequestURI().getPath();
             String method = ex.getRequestMethod();
             Map<String, String> q = query(ex.getRequestURI().getRawQuery());
+            if (path.startsWith("/api/admin/")) {
+                if (admin == null) throw new NotFound("Az admin felület nincs bekapcsolva");
+                Object res;
+                if (path.equals("/api/admin/login")) {
+                    if (!method.equals("POST")) throw new IllegalArgumentException("POST kell");
+                    res = admin.login(readBody(ex));
+                } else {
+                    admin.require(ex.getRequestHeaders().getFirst("X-Admin-Token"));
+                    res = admin.handle(path, method, q, method.equals("GET") || method.equals("DELETE") ? "" : readBody(ex));
+                }
+                send(ex, 200, "application/json; charset=utf-8", Json.write(res));
+                return;
+            }
             boolean isRefresh = path.equals("/api/refresh");
             boolean isPromos = path.equals("/api/promos");
             boolean writes = path.equals("/api/rate") || path.equals("/api/check");
+            boolean isExtras = path.equals("/api/extras");
             boolean allowed = method.equals("GET") && !isRefresh && !writes
                     || method.equals("POST") && (isRefresh || isPromos || writes || path.equals("/api/profile"))
                     || method.equals("PUT") && path.equals("/api/profile")
-                    || method.equals("DELETE") && (isPromos || path.equals("/api/rate"));
+                    || method.equals("DELETE") && (isPromos || path.equals("/api/rate") || isExtras)
+                    || method.equals("POST") && isExtras;
             if (!allowed) {
                 send(ex, 405, "application/json; charset=utf-8", Json.write(Map.of("error", "Nem támogatott kérés: " + method)));
                 return;
+            }
+            // az árfrissítés és az akciók írása az admin dolga (ha be van kapcsolva)
+            if (admin != null && (isRefresh || isPromos && !method.equals("GET"))) {
+                admin.require(ex.getRequestHeaders().getFirst("X-Admin-Token"));
             }
             Object body = switch (path) {
                 case "/api/status" -> status(repo.get(), prefs(q));
@@ -134,6 +164,8 @@ public final class WebServer {
                 case "/api/ingredients" -> ingredients();
                 case "/api/plan" -> plan(repo.get(), q, prefs(q));
                 case "/api/recipes" -> recipes(repo.get(), q, prefs(q));
+                case "/api/offers" -> offers(repo.get(), q, prefs(q));
+                case "/api/extras" -> extrasEndpoint(method, q, method.equals("POST") ? readBody(ex) : "");
                 case "/api/promos" -> switch (method) {
                     case "POST" -> addPromo(readBody(ex), prefs(q));
                     case "DELETE" -> deletePromo(q, prefs(q));
@@ -151,6 +183,8 @@ public final class WebServer {
                 default -> throw new NotFound("Ismeretlen végpont: " + path);
             };
             send(ex, 200, "application/json; charset=utf-8", Json.write(body));
+        } catch (AdminApi.Unauthorized e) {
+            send(ex, 401, "application/json; charset=utf-8", Json.write(Map.of("error", e.getMessage())));
         } catch (NotFound e) {
             send(ex, 404, "application/json; charset=utf-8", Json.write(Map.of("error", e.getMessage())));
         } catch (IllegalArgumentException e) {
@@ -250,7 +284,7 @@ public final class WebServer {
         return m;
     }
 
-    private static Object item(PriceRepository.State s, Map<String, String> q, Prefs p) {
+    private Object item(PriceRepository.State s, Map<String, String> q, Prefs p) throws IOException {
         String id = q.getOrDefault("id", "");
         var a = s.analysis(p.cards());
         List<PriceEntry> offers = a.byItem().get(id);
@@ -269,7 +303,118 @@ public final class WebServer {
             list.add(o);
         });
         m.put("offers", list);
+        // árelőzmény (az ajanlatok.hu-hoz hasonlóan 8 hétre): lánconként napi árak és összegzés
+        if (storage != null) {
+            LocalDate today = s.snapshot().date();
+            var hist = storage.itemHistory(id, today.minusDays(56), today.plusDays(1));
+            List<Object> h = new ArrayList<>();
+            for (var e : hist.entrySet()) {
+                if (e.getValue().size() < 2) continue;
+                Map<String, Object> hm = new LinkedHashMap<>();
+                hm.put("store", e.getKey());
+                hm.put("storeName", storeName(s, e.getKey()));
+                List<Object> pts = new ArrayList<>();
+                for (var d : e.getValue().entrySet()) pts.add(List.of(d.getKey().toString(), d.getValue()));
+                hm.put("points", pts);
+                List<Double> vals = new ArrayList<>(e.getValue().values());
+                double now = vals.get(vals.size() - 1);
+                hm.put("min", vals.stream().mapToDouble(Double::doubleValue).min().orElse(now));
+                hm.put("max", vals.stream().mapToDouble(Double::doubleValue).max().orElse(now));
+                hm.put("median", hu.sporolos.data.Stats.median(vals));
+                hm.put("daysCheaperOrEqual", vals.stream().filter(v -> v <= now + 0.5).count() - 1);
+                hm.put("days", vals.size());
+                h.add(hm);
+            }
+            m.put("history", h);
+        }
         return m;
+    }
+
+    /**
+     * A boltjaid összes kiemelt ára egy listában (az akciós újság-oldalak mintájára): a legnagyobb
+     * megtakarítás elöl, lánc szerint szűrhetően.
+     */
+    private Object offers(PriceRepository.State s, Map<String, String> q, Prefs p) {
+        var a = s.analysis(p.cards());
+        int limit = intParam(q, "limit", 60, 1, 300);
+        boolean onlyIngredients = !"false".equals(q.get("ingredients"));
+        Set<String> only = csv(q.get("store"));
+        String query = Catalog.normalize(q.getOrDefault("q", ""));
+        List<Deal> all = new ArrayList<>();
+        for (Store st : s.stores()) {
+            if (!p.stores().isEmpty() && !p.stores().contains(st.id())) continue;
+            if (!only.isEmpty() && !only.contains(st.id())) continue;
+            all.addAll(a.deals().dealsForStore(st.id(), 1000));
+        }
+        var rec = a.recommender();
+        List<Object> out = new ArrayList<>();
+        all.sort(Comparator.comparingDouble(Deal::score).reversed());
+        for (Deal d : all) {
+            String ing = rec.ingredientFor(d.entry());
+            if (onlyIngredients && ing == null) continue;
+            if (!query.isEmpty() && !Catalog.normalize(d.entry().productName() + " " + d.entry().categoryName()).contains(query)) continue;
+            Map<String, Object> m = ApiMapper.deal(d, ing);
+            m.put("storeName", storeName(s, d.entry().storeId()));
+            out.add(m);
+            if (out.size() >= limit) break;
+        }
+        return out;
+    }
+
+    // ---------- saját tételek a bevásárlólistán ----------
+
+    private List<Map<String, Object>> extras(String id) throws IOException {
+        String doc = requireStorage().document("extras-" + id);
+        List<Map<String, Object>> out = new ArrayList<>();
+        if (doc != null) for (Object o : Json.arr(Json.parse(doc))) out.add(Json.obj(o));
+        return out;
+    }
+
+    private Object extrasEndpoint(String method, Map<String, String> q, String body) throws IOException {
+        String id = requireId(q);
+        Household.load(requireStorage(), id, storeIds());
+        List<Map<String, Object>> list = extras(id);
+        if (method.equals("POST")) {
+            Map<String, Object> in = Json.obj(Json.parse(body));
+            String name = in.get("name") == null ? null : Json.str(in.get("name")).trim();
+            if (name == null || name.isEmpty() || name.length() > 120) throw new IllegalArgumentException("Adj meg egy tételt");
+            if (list.size() >= 60) throw new IllegalArgumentException("Legfeljebb 60 saját tétel lehet");
+            Map<String, Object> e = new LinkedHashMap<>();
+            e.put("name", name);
+            String itemId = in.get("itemId") == null ? null : Json.str(in.get("itemId"));
+            if (itemId != null && repo.get().byItem().containsKey(itemId)) e.put("itemId", itemId);
+            list.add(e);
+        } else if (method.equals("DELETE")) {
+            int n = intParam(q, "n", -1, -1, 100);
+            if (n < 0 || n >= list.size()) throw new IllegalArgumentException("Nincs ilyen tétel");
+            list.remove(n);
+        }
+        if (!method.equals("GET")) storage.saveDocument("extras-" + id, Json.write(list));
+        return Map.of("extras", list);
+    }
+
+    /**
+     * Egy saját tétel ára egy láncban: ugyanaz a termék, ha ott is kapható; különben a lánc legolcsóbb
+     * hasonló terméke (ugyanabban az Árfigyelő-kategóriában, ugyanabban az egységben, a választott
+     * kiszerelésre átszámolva) – a sajátmárkás termékek ugyanis láncról láncra mások.
+     */
+    private static PriceEntry extraIn(PriceRepository.Analysis a, Map<String, Object> extra, String storeId) {
+        Object itemId = extra.get("itemId");
+        if (itemId == null) return null;
+        List<PriceEntry> same = a.byItem().getOrDefault(String.valueOf(itemId), List.of());
+        PriceEntry best = null;
+        for (PriceEntry e : same) {
+            if (e.storeId().equals(storeId) && (best == null || e.price() < best.price())) best = e;
+        }
+        if (best != null || same.isEmpty()) return best;
+        PriceEntry ref = same.get(0);
+        PriceEntry sim = null;
+        for (PriceEntry e : a.entries()) {
+            if (!e.storeId().equals(storeId) || e.categoryId() != ref.categoryId() || !e.unit().equals(ref.unit())) continue;
+            if (e.quantity() <= 0 || e.quantity() < ref.quantity() * 0.4 || e.quantity() > ref.quantity() * 2.5) continue;
+            if (sim == null || e.unitPrice() < sim.unitPrice()) sim = e;
+        }
+        return sim;
     }
 
     private static Object search(PriceRepository.State s, Map<String, String> q, Prefs p) {
@@ -509,11 +654,24 @@ public final class WebServer {
         List<WeeklyPlanner.StoreTotal> totals = new ArrayList<>();
         List<Suggestion> cooked = WeeklyPlanner.cooked(plan);
         for (String st : allowed) totals.add(planner.priceIn(st, cooked, h.bulk()));
+        // a saját tételek (pl. kávé, tej) is számítanak abban, hol a legolcsóbb a heti bevásárlás
+        List<Map<String, Object>> extras = extras(id);
+        Map<String, Double> extraTotal = new HashMap<>();
+        Map<String, Integer> extraMissing = new HashMap<>();
+        for (String st : allowed) {
+            for (Map<String, Object> x : extras) {
+                if (x.get("itemId") == null) continue;
+                PriceEntry e = extraIn(a, x, st);
+                if (e == null) extraMissing.merge(st, 1, Integer::sum);
+                else extraTotal.merge(st, e.price(), Double::sum);
+            }
+        }
+        java.util.function.ToDoubleFunction<WeeklyPlanner.StoreTotal> rank = t -> t.checkout()
+                + extraTotal.getOrDefault(t.storeId(), 0.0) + 400.0 * (t.estimated() + extraMissing.getOrDefault(t.storeId(), 0));
         String store = planStore;
         if (h.autoStore()) {
             // automatikus: ahol a hét a legolcsóbb (a becsült, ott nem kapható tételek büntetésével)
-            WeeklyPlanner.StoreTotal cheapest = totals.stream()
-                    .min(Comparator.comparingDouble(t -> t.checkout() + 400.0 * t.estimated())).orElse(null);
+            WeeklyPlanner.StoreTotal cheapest = totals.stream().min(Comparator.comparingDouble(rank)).orElse(null);
             if (cheapest != null && !cheapest.storeId().equals(planStore)) {
                 store = cheapest.storeId();
                 List<String> ids = new ArrayList<>();
@@ -543,14 +701,15 @@ public final class WebServer {
         m.put("autoStore", h.autoStore());
         List<Object> compare = new ArrayList<>();
         // ugyanazzal a mércével, mint az automatikus választás (a nem kapható, becsült tételek büntetésével)
-        totals.sort(Comparator.comparingDouble(t -> t.checkout() + 400.0 * t.estimated()));
+        totals.sort(Comparator.comparingDouble(rank));
         for (var t : totals) {
             Map<String, Object> c = new LinkedHashMap<>();
             c.put("store", t.storeId());
             c.put("name", storeName(s, t.storeId()));
             c.put("color", s.stores().stream().filter(x -> x.id().equals(t.storeId())).map(Store::color).findFirst().orElse("#888"));
-            c.put("checkout", t.checkout());
+            c.put("checkout", t.checkout() + extraTotal.getOrDefault(t.storeId(), 0.0));
             c.put("estimated", t.estimated());
+            c.put("extrasMissing", extraMissing.getOrDefault(t.storeId(), 0));
             compare.add(c);
         }
         m.put("compare", compare);
@@ -576,6 +735,34 @@ public final class WebServer {
                 m.put("split", sp);
             }
         }
+        // saját tételek a választott boltban (két boltnál ott, ahol olcsóbb)
+        List<Object> ex = new ArrayList<>();
+        double extrasSum = 0;
+        for (int i = 0; i < extras.size(); i++) {
+            Map<String, Object> x = extras.get(i);
+            Map<String, Object> em = new LinkedHashMap<>();
+            em.put("n", i);
+            em.put("name", x.get("name"));
+            em.put("itemId", x.get("itemId"));
+            String where = store;
+            PriceEntry e = extraIn(a, x, store);
+            if (m.get("split") instanceof Map<?, ?> sp) {
+                for (Object so : Json.arr(sp.get("stores"))) {
+                    String st = String.valueOf(Json.obj(so).get("store"));
+                    PriceEntry o = extraIn(a, x, st);
+                    if (o != null && (e == null || o.price() < e.price())) { e = o; where = st; }
+                }
+            }
+            em.put("store", where);
+            em.put("storeName", storeName(s, where));
+            em.put("price", e == null ? null : e.price());
+            em.put("product", e == null ? null : e.productName());
+            em.put("similar", e != null && x.get("itemId") != null && !e.itemId().equals(x.get("itemId")));
+            if (e != null) extrasSum += e.price();
+            ex.add(em);
+        }
+        m.put("extras", ex);
+        m.put("extrasTotal", extrasSum);
         String listKey = Integer.toHexString((store + String.join(",", newSlots) + h.people()).hashCode());
         m.put("listKey", listKey);
         m.put("checked", storage.checked(id, listKey));
@@ -790,6 +977,7 @@ public final class WebServer {
     private void staticFile(HttpExchange ex) throws IOException {
         String path = ex.getRequestURI().getPath();
         if (path.equals("/") || path.isEmpty()) path = "/index.html";
+        if (path.equals("/admin") || path.equals("/admin/")) path = "/admin.html";
         if (path.contains("..") || path.contains("\\")) {
             send(ex, 400, "text/plain; charset=utf-8", "Hibás útvonal");
             return;

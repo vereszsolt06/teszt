@@ -4,7 +4,7 @@
 
 Heti vacsoratervező a **GVH Árfigyelő** napi boltárai alapján, a [NomNom Planner](https://nomnomplanner.com/hu/) mintájára: egyszer megadod, hányan esztek, milyen gyakran főzöl, mennyi a heti keret, mit nem esztek, mivel főzöl és melyik boltokba jársz – az app összerak egy hetet valódi vacsorákból, adagárral és tápértékkel, abban a boltban, ahol a heted a legolcsóbb, és egyetlen, bolti osztályok szerint rendezett bevásárlólistát ír hozzá. Nem kell minden nap mást főzni: bármelyik vacsorából főzhetsz másnapra is, vagy kérheted, hogy kétnaponta főzz. Bármelyik vacsora vagy az egész hét lecserélhető, a „Nom vagy nem” lapozóval megtaníthatod, mit szeretsz. A háztartás tagjai egy linkkel ugyanazt a hetet és listát látják, a kipipálás közös.
 
-Megmaradt az eredeti ötlet is: a **Receptek** fülön az látszik, mit érdemes ma főzni abból, ami a boltodban épp kiemelkedően jó áron van, a bolti akciók felvihetők, a nem kedvelt láncok kizárhatók, és a kiszerelést (darab / kiló, háztartási vagy nagy csomag) gondosan kezeli.
+Megmaradt az eredeti ötlet is: a **Receptek** fülön az látszik, mit érdemes ma főzni abból, ami a boltodban épp kiemelkedően jó áron van, a nem kedvelt láncok kizárhatók, és a kiszerelést (darab / kiló, háztartási vagy nagy csomag) gondosan kezeli. Az [ajanlatok.hu](https://www.ajanlatok.hu/), a SmartKosár és a Shoppy mintájára (lásd a [végén](#mit-vettünk-át-az-ajanlatokhu-tól-a-smartkosártól-és-a-shoppytól)) az **Akciók** fülön az összes boltod jó árai egy helyen kereshetők, a listára **saját tételek** (kávé, banán…) is felvehetők, és ezek is beleszámítanak abba, melyik bolt a legolcsóbb. A recepteket, az alapanyagokat, a bolti akciókat és az árfrissítést egy jelszóval védett **admin felületen** (`/admin`) lehet kezelni.
 
 Java 21, **külső függőség nélkül** (beépített JDK webszerver, saját JSON-, xlsx- és PostgreSQL-kliens), egyetlen JAR. Adatbázis nélkül fájlokba ment; `docker compose up`-pal PostgreSQL-lel fut.
 
@@ -12,9 +12,15 @@ Java 21, **külső függőség nélkül** (beépített JDK webszerver, saját JS
 
 <img src="docs/het-mobil.png" alt="Heti terv telefonon, maradéknapokkal" width="250"> <img src="docs/recept-mobil.png" alt="Receptlap telefonon" width="250"> <img src="docs/elso-inditas-mobil.png" alt="Első indítás: milyen gyakran főzöl?" width="250">
 
-<img src="docs/lista.png" alt="Bevásárlólista két boltra bontva" width="640"> <img src="docs/nom-mobil.png" alt="Nom vagy nem" width="250">
+<img src="docs/lista.png" alt="Bevásárlólista saját tételekkel, két boltra bontva" width="640"> <img src="docs/nom-mobil.png" alt="Nom vagy nem" width="250">
 
-<img src="docs/recept.png" alt="Receptlap: amit a pénztárnál fizetsz, makrók, hozzávalók a bolti termékkel" width="640"> <img src="docs/receptek.png" alt="Receptek: ma kifizetődő, most jó áron, összes recept" width="640">
+<img src="docs/akciok.png" alt="Akciók: a boltjaid jó árai egy helyen, kereséssel" width="640"> <img src="docs/akcio-mobil.png" alt="Termékablak: ár minden láncban, felvétel a listára" width="250">
+
+<img src="docs/recept.png" alt="Receptlap: amit a pénztárnál fizetsz, makrók, hozzávalók a bolti termékkel" width="640"> <img src="docs/receptek.png" alt="Receptek: ma kifizetődő, összes recept" width="640">
+
+**Admin felület** (`/admin`): áttekintés, receptszerkesztő élő árelőnézettel, alapanyag-szerkesztő az illeszkedő bolti termékekkel.
+
+<img src="docs/admin-attekintes.png" alt="Admin: áttekintés boltonként" width="420"> <img src="docs/admin-recept.png" alt="Admin: receptszerkesztő előnézettel" width="420"> <img src="docs/admin-alapanyag.png" alt="Admin: alapanyag és illeszkedő bolti termékek" width="420">
 
 ## Indítás
 
@@ -42,7 +48,7 @@ docker compose logs -f app  # napló
 docker compose down         # leállítás (az adatok megmaradnak)
 ```
 
-A jelszót a `DB_PASSWORD` környezeti változóval (vagy egy `.env` fájllal) állíthatod. Docker nélkül is használható a PostgreSQL: `DATABASE_URL=postgres://felhasznalo:jelszo@localhost:5432/sporolos ./build.sh run`.
+A jelszót a `DB_PASSWORD` környezeti változóval (vagy egy `.env` fájllal) állíthatod, az admin jelszavát az `ADMIN_PASSWORD`-del (ha nem adod meg, a `docker compose logs app` kiírja a generáltat). Docker nélkül is használható a PostgreSQL: `DATABASE_URL=postgres://felhasznalo:jelszo@localhost:5432/sporolos ./build.sh run`.
 
 Csak fordítás: `./build.sh` → `target/sporolos-konyha.jar`, ami `java -jar target/sporolos-konyha.jar`-ral indítható. A GitHub Actions minden pushnál lefordítja és teszteli a projektet, a kész JAR-t pedig letölthető artifactként csatolja. IntelliJ / Eclipse alatt a `pom.xml`-lel Maven-projektként is megnyitható (`hu.sporolos.App` a főosztály).
 
@@ -62,6 +68,7 @@ Parancssorból (`-Dport=9000`), környezeti változóval (`PORT=9000`) vagy egy 
 | `promo.dir` | `PROMO_DIR` | `data/akciok` | a láncok saját akcióinak mappája (`*.json`, `*.csv`) |
 | `promo.feeds` | `PROMO_FEEDS` | – | akció-feedek URL-jei vesszővel elválasztva (ugyanilyen JSON/CSV) |
 | `database.url` | `DATABASE_URL` | – | `postgres://felh:jelszo@host:5432/db`; ha üres, a `data/` mappába ment |
+| `admin.password` | `ADMIN_PASSWORD` | véletlen | az `/admin` felület jelszava; ha üres, induláskor generál egyet és kiírja a konzolra |
 
 ## Mit tud
 
@@ -71,11 +78,14 @@ Parancssorból (`-Dport=9000`), környezeti változóval (`PORT=9000`) vagy egy 
 - **Receptlap:** elöl az, amit **a pénztárnál fizetsz** (egész csomagokkal) és az adagonkénti ár; alatta, mennyi fogy el belőle a receptben (a többi megmarad). Kalória / fehérje / szénhidrát / zsír, hozzávalók a konkrét bolti termékkel és **a mennyiség az adagszámhoz igazítva** (4 adagos receptnél 2 adagra „1 db paradicsom”, nem „2 db”), nagy kiszerelés alternatívaként, elkészítés, és mennyit fizetnél érte a többi boltban.
 - **Lista:** a hét összes hozzávalója egy listán (két bolt esetén boltonként szétbontva), bolti osztályok szerint (zöldség, pékáru, hús, felvágott és sajt, tejtermék, száraz áru, konzerv, mélyhűtött), egész csomagokkal; soronként, melyik vacsorához kell és mennyi marad. Kipipálható (a háztartás minden eszközén látszik), megosztható / másolható. A „ha nincs otthon” kamraáru és a fűszerek külön.
 - **Nom vagy nem:** kártyás lapozó (húzás, gombok, ← / →). A *Nom* receptek előnyt kapnak a tervben, a *Nem* receptek kimaradnak. Kedvencek listája.
-- **Receptek:** „Ma kifizetődő” (az eredeti ötlet: ami ma a boltodban jó áron összevásárolható), „Most jó áron” termékek kereséssel, és mind a 170 recept a háztartásod létszámára árazva („1 807 Ft · 2 adag”), kalóriával; szűrés fehérjedús / könnyed / laktató / diéta / gyors / airfryer / kedvencek szerint, rendezés ár, „ma a legjobb ár”, idő, fehérje, kalória szerint.
+- **Akciók:** a boltjaid összes kiemelt ára egy rácsban, a legnagyobb megtakarítás elöl, kereséssel („sajt”, „csirke”) és boltszűrővel; alapból csak a receptekhez használható termékek, egy pipával minden élelmiszer. Kártyánként: ár, kiszerelés, egységár, mennyivel olcsóbb a többi láncnál, és miért jó ár.
+- **Termékablak:** bármelyik termékre koppintva látod az árát minden láncban (hány boltjukban kapható, mennyivel drágább), az **elmúlt 8 hét árát** egy kis grafikonon („most a 8 hét legolcsóbb ára” / „szokásos ár” / „drágább a szokásosnál”), és egy gombbal **felteheted a listádra**.
+- **Saját tételek a listán:** amire a vacsorákon kívül szükség van (kávé, banán, mosogatószer). Ha a javaslatok közül választod, az ára beleszámít a lista összegébe *és a boltválasztásba*; más láncban a legolcsóbb hasonló termékkel számol („hasonló: …”), mert a sajátmárkás termékek láncról láncra mások. Szabad szöveggel is felvehető, akkor ár nélkül.
+- **Receptek:** „Ma kifizetődő” (az eredeti ötlet: ami ma a boltodban jó áron összevásárolható), és mind a 170 recept a háztartásod létszámára árazva („1 807 Ft · 2 adag”), kalóriával; szűrés fehérjedús / könnyed / laktató / diéta / gyors / airfryer / kedvencek szerint, rendezés ár, „ma a legjobb ár”, idő, fehérje, kalória szerint.
 - **Bolt** a fejlécben: **automatikus** (ahol a heted a legolcsóbb) vagy egy rögzített lánc. **Két bolt:** ha bekapcsolod, és legalább ~300 Ft-ot (vagy a hét 4%-át) spórolsz vele, a lista két boltra bomlik – minden tétel ott, ahol olcsóbb.
-- **Beállítások:** háztartás, keret, diéta, konyha, **boltjaim** (a nem kedvelt lánc kizárható), **kiszerelés** (háztartási vagy nagy), **hűségkártyák**, **bolti akciók** felvitele (kézzel vagy CSV/JSON), **közös háztartás** link, árfrissítés.
+- **Beállítások:** háztartás, keret, diéta, konyha, **boltjaim** (a nem kedvelt lánc kizárható), **kiszerelés** (háztartási vagy nagy), **hűségkártyák**, **közös háztartás** link. (A bolti akciók felvitele és az árfrissítés az admin felületre költözött.)
+- **Admin felület (`/admin`):** receptek, alapanyagok, bolti akciók, árfrissítés, export – részletesen a [9. pontban](#9-admin-felület-admin).
 - **Közös háztartás:** a Beállításokban kapott linkkel (`…/#profil=…`) a párod vagy a családod ugyanazt a profilt használja: ugyanaz a hét, ugyanaz a lista, közös pipák.
-- **Termékrészletek:** bármelyik termékre koppintva látod az árát minden láncban, hány boltjukban kapható, és mennyi a legdrágább boltjukban.
 
 ## Hogyan működik
 
@@ -139,8 +149,8 @@ Megvizsgáltam, mi van benne az Árfigyelőben, és mi nincs:
 
 **A döntés:** az app egy **akcióréteget** kapott, ami bármilyen forrásból fogad akciókat. A lánc-specifikus letöltők így később külön, cserélhetően hozzáadhatók, a többi kódhoz nem kell nyúlni:
 
-1. **Kézzel** a felületen („Akciók” → Új akció): bolt, alapanyag, terméknév, ár, kiszerelés, rendes ár, érvényesség, kártyás-e.
-2. **Beillesztve** CSV-ből vagy JSON-ból („Több akció beillesztése”), pl. egy akciós újságból kimásolt listát. Minta: [`docs/akciok-minta.csv`](docs/akciok-minta.csv).
+1. **Kézzel** az admin felületen („Bolti akciók” → Új akció): bolt, alapanyag, terméknév, ár, kiszerelés, rendes ár, érvényesség, kártyás-e.
+2. **Beillesztve** CSV-ből vagy JSON-ból (admin → „Bolti akciók” → Beillesztés), pl. egy akciós újságból kimásolt listát. Minta: [`docs/akciok-minta.csv`](docs/akciok-minta.csv).
 3. **Fájlból:** minden `*.csv` és `*.json` a `data/akciok/` mappában (a kézi akciók a `sajat-akciok.json`-ba kerülnek).
 4. **Feedből:** `PROMO_FEEDS=https://…` – bármilyen URL, ami ugyanezt a JSON-t vagy CSV-t adja. Ez lehet egy közösen karbantartott lista, vagy egy saját szkript kimenete, ami egy lánc oldaláról gyűjt. A legutóbbi sikeres letöltést elmenti, így net nélkül is megmarad.
 
@@ -158,6 +168,8 @@ CSV-fejléc: `bolt;termek;ar;egyseg;kiszereles;rendes_ar;tol;ig;alapanyag;vonalk
 - **Mohó válogatás közös kosárral:** minden napra azt a receptet választja, amelynél a legjobb az *ajánlási pontszám (jó árak) + „rendes vacsora” érték + kedvenc-bónusz + kis véletlen − a kosárhoz adott pénztári többletköltség*.
 - **„Rendes vacsora”:** a NomNom valódi hétköznapi vacsorákat ad, nem a legolcsóbb köretet. Ezért előnyt kap a fehérjedús főétel és a népszerű konyha (olasz, mexikói, ázsiai, görög, spanyol, comfort), hátrébb kerül a könnyű leves, a főzelék és a 400 kcal alatti tál. Így 2 főre 5 vacsora jellemzően 5–9 ezer Ft, nem 3 ezer krumplis tészta. A többletköltség azt számolja, mennyivel nő a **közös** lista ára: ha hétfőn már vettél egy 2 kg-os zsák krumplit, a csütörtöki krumplis tészta krumplija ingyen van. Ezért a hét receptjei maguktól is egymásra épülnek.
 - **Keret:** minden napra a hátralévő keret arányos részét nézi, és tartalékot hagy a többi napra. Ha a keret túl szűk, a legolcsóbb lehetőséget veszi, és megjegyzésben jelzi.
+- **Lefedettség:** amelyik receptnek több alapanyaga nincs az Árfigyelőben (becsült ár), az hátrébb kerül (−0,35 × a hiányzó arány), mert annak az ára bizonytalan.
+- **Szigorú szűrők:** ha a diéta, az eszközök és a „Nem”-ek után kevesebb megfelelő recept marad, mint ahány vacsora kell, a hiányzó napokra az előző főzés maradéka jut (aznap többet főzöl), és a hét tetején egy megjegyzés jelzi. Korábban ilyenkor egyszerűen kevesebb nap jelent meg.
 - **Változatosság:** egy fő alapanyag (pl. csirkecomb) egyszer, legfeljebb egy leves, egy tésztaétel és két halétel egy héten.
 - A „Csere” a többi napot megtartja (`keep`), a lecserélt receptet kizárja (`exclude`); az „Új hét” más véletlen magot kap, és az előző hét receptjeit kihagyja. A háztartás hete a tárolóban marad (`/api/week`), amíg a terv szempontjából fontos beállítás (bolt, létszám, keret, diéta, konyha, boltok, kiszerelés, kártyák) nem változik.
 
@@ -178,7 +190,7 @@ A korábbi változat a recept mellett a **felhasznált mennyiség** árát mutat
 - A mennyiségek az adagszámmal együtt változnak (`Amounts`): „2 db” → „1 db”, „1 dl” → „0,5 dl”, „50 dkg” → „75 dkg”, „75 dkg” → „1,5 kg”.
 
 ### 7.1 Melyik boltban? (automatikus bolt, két bolt)
-- **Automatikus:** a hetet a boltjaid közül abban tervezi, ahol ma a legjobb a kínálat, majd ugyanazt a hetet beárazza mind a 6 láncban, és abba vált, ahol a legolcsóbb (ahol egy tétel nincs az Árfigyelőben, azt büntetéssel számolja). A „Ugyanez a hét” sáv mutatja a többi bolt árát.
+- **Automatikus:** a hetet a boltjaid közül abban tervezi, ahol ma a legjobb a kínálat, majd ugyanazt a hetet beárazza mind a 6 láncban, **a saját tételekkel együtt**, és abba vált, ahol a legolcsóbb (ahol egy tétel nincs az Árfigyelőben, azt büntetéssel számolja; a sávban `*` jelzi, ha egy boltban valami hiányzik). A „Ugyanez a hét” sáv mutatja a többi bolt árát.
 - **Két bolt:** minden boltpárra kiszámolja, mennyi lenne, ha minden tételt a kettő közül ott vennél, ahol olcsóbb; a legjobb párt ajánlja, ha legalább 300 Ft-ot vagy a hét 4%-át spórolja. Kettőnél több boltot nem ajánl, mert annyi utat nem ér meg.
 
 ### 8. Tárolás: fájl vagy PostgreSQL (`store/`)
@@ -192,6 +204,7 @@ A tartós adatok egy `Storage` felület mögött vannak, két megvalósítással
 | kipipált listatételek | a profil fájljában | `checked_item` |
 | napi árelőzmény | `data/history/ÉÉÉÉ-HH-NN.tsv` | `price_day`, `price_history` |
 | kézi akciók | `data/akciok/sajat-akciok.json` | `manual_promo` |
+| saját listatételek, adminban szerkesztett katalógus | `data/dokumentumok/*.json` | `app_document` |
 
 A PostgreSQL-kapcsolathoz **nincs JDBC-driver**: a `PgClient` a PostgreSQL 3-as wire protokollját beszéli (SCRAM-SHA-256 / MD5 belépés, paraméterezett lekérdezések a kiterjesztett protokollal, így nincs SQL-befecskendezés), egy kis kapcsolatkészlettel. A séma induláskor magától létrejön / frissül (`schema_version` tábla, zárolással, hogy több példány se ütközzön). TLS nincs, mert a docker-compose belső hálózatára készült; távoli adatbázishoz SSH-alagút vagy helyi hálózat ajánlott.
 
@@ -205,7 +218,9 @@ A PostgreSQL-kapcsolathoz **nincs JDBC-driver**: a `PgClient` a PostgreSQL 3-as 
 | `GET /api/suggestions?store=lidl&tag=vega&limit=12` | rangsorolt receptek egy boltra, hozzávalókkal |
 | `GET /api/recipe?id=lecso&store=lidl&servings=6` | egy recept bevásárlólistával (kiszerelés-alternatívákkal), és ára a választott láncokban |
 | `GET /api/deals?store=lidl&limit=30&ingredients=true` | a bolt kiemelt árai (`ingredients=true`: csak recept-alapanyagok) |
-| `GET /api/item?id=<vonalkód>` | egy termék ára minden láncban |
+| `GET /api/item?id=<vonalkód>` | egy termék ára minden láncban, és az elmúlt 8 hét ára (`history`: pontok, min, max, medián) |
+| `GET /api/offers?q=sajt&store=lidl&ingredients=false&limit=60` | a boltjaid kiemelt árai együtt, megtakarítás szerint (Akciók fül) |
+| `GET` / `POST` / `DELETE /api/extras?id=…[&n=2]` | a háztartás saját listatételei (`{"name", "itemId"}`) |
 | `GET /api/search?q=tej&store=lidl&limit=30` | keresés a termékek között, egységár szerint |
 | `GET /api/ingredients` | a recept-alapanyagok listája (az akció-űrlaphoz) |
 | `GET /api/plan?store=lidl&people=2&dinners=5&budget=15000&diets=vega&equipment=tuzhely,suto&liked=…&disliked=…&keep=a,_,c&exclude=…&seed=3` | heti vacsoraterv közös, osztályonként rendezett bevásárlólistával |
@@ -217,13 +232,40 @@ A PostgreSQL-kapcsolathoz **nincs JDBC-driver**: a `PgClient` a PostgreSQL 3-as 
 | `GET /api/week?id=…[&action=new\|swap\|set\|repeat\|fresh&day=2&recipe=…]` | a háztartás heti terve (mentve marad); új hét, egy nap cseréje, konkrét recept egy napra, „holnapra is főzök”, „inkább mást főzök”; automatikus boltnál a legolcsóbb bolt, `compare`: ugyanez a hét a többi boltban, `split`: két boltos lista |
 | `POST /api/check?id=…` | `{"key", "item", "on"}` – listatétel kipipálása |
 | `GET /api/promos` | a láncok saját akciói és állapotuk (beépítve / már benne / lejárt / kártya kell…) |
-| `POST /api/promos` | új akció (JSON), vagy import: `{"text": "<CSV vagy JSON>"}` |
-| `DELETE /api/promos?id=…` | kézi akció törlése |
-| `POST /api/refresh` | árak újratöltése |
+| `POST /api/promos` 🔒 | új akció (JSON), vagy import: `{"text": "<CSV vagy JSON>"}` |
+| `DELETE /api/promos?id=…` 🔒 | kézi akció törlése |
+| `POST /api/refresh` 🔒 | árak újratöltése |
+| `POST /api/admin/login` | `{"password"}` → `{"token"}` (12 óráig érvényes) |
+| `GET /api/admin/overview` 🔒 | forrás, dátum, előzmény napjai, háztartások, boltonként: tételek, jó árak, teljesen árazható receptek, hiányzó alapanyagok |
+| `GET /api/admin/recipes`, `GET`/`PUT`/`POST`/`DELETE /api/admin/recipe?id=…` 🔒 | receptek listája figyelmeztetésekkel; egy recept lekérése / mentése / felvétele / törlése |
+| `POST /api/admin/recipe/preview` 🔒 | mentés nélküli előnézet: ár minden láncban, soronként a bolti termék, figyelmeztetések |
+| `GET /api/admin/products`, `GET`/`PUT`/`POST`/`DELETE /api/admin/product?key=…` 🔒 | alapanyagok illeszkedési számokkal; egy alapanyag (a használtat nem lehet törölni) |
+| `POST /api/admin/product/matches`, `GET /api/admin/categories` 🔒 | élő illesztés-előnézet; az Árfigyelő kategóriái |
+| `POST /api/admin/refresh`, `POST /api/admin/reset`, `GET /api/admin/export` 🔒 | árfrissítés; vissza a beépített katalógusra; katalógus letöltése JSON-ban |
 
 Minden boltfüggő végpont elfogadja: `stores=aldi,lidl` (a választott boltok), `bulk=1` (nagy kiszerelés mód), `cards=lidl,tesco` (hűségkártyák).
 
+🔒: `X-Admin-Token` fejléc kell (a belépéskor kapott token); nélküle 401.
+
 A válaszok gzip-pel tömörítve mennek, ha a böngésző kéri.
+
+### 9. Admin felület (`/admin`)
+Böngészőben: **http://localhost:8080/admin**. A jelszó az `ADMIN_PASSWORD` környezeti változó (vagy `admin.password`); ha nincs megadva, az app minden indításkor generál egyet, és kiírja a konzolra:
+
+```
+  Admin felület:        http://localhost:8080/admin
+  Admin jelszó:         k3j9…  (minden indításkor új; állandót az ADMIN_PASSWORD adja)
+```
+
+- **Áttekintés:** honnan és melyik napról vannak az árak, hány nap árelőzmény gyűlt össze, hány háztartás van, és boltonként: hány élelmiszer, hány jó ár, hány recept árazható teljesen, és **melyik alapanyag hiányzik** abból a láncból (hány receptet érint). Egy gombbal újratölthetők az árak.
+- **Receptek:** kereshető táblázat (adag, idő, ár a legolcsóbb boltban, lefedettség, figyelmeztetések). A szerkesztőben minden mező állítható: név, emoji, idő, nehézség, adag, címkék, airfryer, hozzávalók (alapanyag a listából vagy „kamra”, a kiírt mennyiség és a számolt szükséglet), lépések. Az **Előnézet** mentés nélkül beárazza a receptet mind a 6 láncban, soronként a konkrét bolti termékkel, és figyelmeztet, ha a kiírt mennyiség („2 db”) és a szükséglet (0,8 kg) nem illik össze, vagy egy alapanyag sehol nincs az Árfigyelőben. Új recept felvehető, a meglévő törölhető.
+- **Alapanyagok:** melyik alapanyag hány terméket talál lánconként (pirossal, ahol egyet sem). A szerkesztőben a kategóriák, kulcsszavak és kizáró szavak mellett **élőben látszik, melyik bolti termékek illeszkednek** – így egy rossz találat egy kizáró szóval kiszűrhető. Darabtömeg, csomótömeg, háztartási max., csak csomagolt, kamraáru, tápérték, hús/hal/glutén/laktóz jelölés. Amit recept használ, azt nem lehet törölni.
+- **Bolti akciók:** a korábbi felhasználói „Akciók” párbeszéd ide költözött (kézi felvitel, CSV/JSON beillesztés, törlés), mert ezek minden háztartásra hatnak.
+- **Adatok:** a szerkesztett katalógus letöltése JSON-ban (`products.json` + `recipes.json`, a repóba visszaírható), és visszaállás a beépítettre.
+
+**Hogyan tárolja?** A szerkesztett katalógus a tárolóba kerül (`data/dokumentumok/` vagy a PostgreSQL `app_document` táblája), így újraindítás után is megmarad, és felülírja a JAR-ba épített `products.json`-t és `recipes.json`-t. Minden mentés előtt az egész katalógust újraépíti és ellenőrzi (ismeretlen alapanyag, üres név, rossz szám → 400, nem kerül be); ha egy mentett katalógus valamiért mégis hibás, induláskor a beépítettre esik vissza, és ezt naplózza. A változás azonnal él: az árak és az elemzés újraszámolódik, letöltés nélkül.
+
+**Biztonság:** a jelszót állandó idejű összehasonlítással ellenőrzi, a token 12 óráig érvényes, csak a memóriában van (újraindításkor kilép). TLS nincs – helyi gépre és belső hálózatra készült; nyilvános elérésnél egy HTTPS-es fordított proxy (Caddy, nginx) kell elé.
 
 ## Projektszerkezet
 
@@ -236,12 +278,13 @@ src/main/java/hu/sporolos/
          RecipeRecommender       receptek beárazása, háztartási és nagy kiszerelés, rangsorolás
          WeeklyPlanner           heti vacsoraterv közös kosárral, kerettel, diétával
          PromoMerger             a láncok akcióinak összefésülése az Árfigyelővel
-         PriceRepository         forrásváltás, háttérfrissítés, elemzés kártyánként
+         PriceRepository         forrásváltás, háttérfrissítés, elemzés kártyánként, katalóguscsere
   data/  ArfigyeloExcelProvider  napi Excel letöltése / beolvasása / gyorsítótár
          XlsxReader              folyamatos xlsx-olvasó (ZIP + StAX, XXE ellen védve)
          PriceHistory            napi árelőzmények (a tárolón át)
          DemoPriceProvider       tartalék demó árak
          Catalog                 alapanyagok, láncok, receptek, illesztés
+         CatalogSource           beépített vagy adminban szerkesztett katalógus, ellenőrzés
          RecipeMeta              tápérték, diéták, eszközök, hangulat receptenként
          Promo, PromoStore       akciók: kézi, fájl, feed; CSV/JSON
   store/ Storage                 a tartós adatok felülete
@@ -250,10 +293,12 @@ src/main/java/hu/sporolos/
          Ids                     profil-azonosítók
   model/ Models                  rekordok (PriceEntry, Deal, Recipe, Suggestion…)
   web/   WebServer, ApiMapper    REST API + statikus fájlok
+         AdminApi                admin végpontok: belépés, áttekintés, recept- és alapanyag-szerkesztés
          Household               a háztartás beállításai, ellenőrzés, alapértékek
 src/main/resources/
   data/products.json, recipes.json
   static/index.html, app.css, app.js, favicon.svg, manifest.webmanifest
+         admin.html, admin.css, admin.js
 src/test/java/hu/sporolos/AllTests.java
 Dockerfile, docker-compose.yml   konténer: app + postgres:16
 ```
@@ -264,7 +309,7 @@ Dockerfile, docker-compose.yml   konténer: app + postgres:16
 ./build.sh test        # Windows: build.cmd test
 ```
 
-30 teszt fut le:
+31 teszt fut le:
 - JSON- és xlsx-olvasás, az Árfigyelő-fejléc felismerése, egységátváltás;
 - mind a négy jó ár jel, valamint az elérhetőség hatása;
 - a kiszerelés-modell: tojásdoboz vagy tálca, mérlegelős áru minimum egy darabbal, „ca. 500g”, csak csomagolt liszt, darab ↔ kg (paprika, zsemle), csomós zöldség, tűrés, a nagy kiszerelés határa;
@@ -278,11 +323,12 @@ Dockerfile, docker-compose.yml   konténer: app + postgres:16
 - heti terv: nincs ismétlés, változatos fő alapanyag, nincs desszert, a lista összege egyezik, egy termék egy sor, diéta- és eszközszűrő, csere a többi nap megtartásával, keret, más mag más hetet ad;
 - a letöltés, a gyorsítótár és a visszaesés egy helyi HTTP-szerverrel;
 - a hibás frissítés kezelése (a valós adat nem cserélődik demóra);
-- végponttól végpontig teszt, ami elindítja a webszervert, és végighívja az összes API-t: boltszűrő, akciók felvitele / importja / törlése, háztartás-profil létrehozása, mentett hét, csere, konkrét recept egy napra, kipipálás, értékelés, boltváltás, automatikus bolt (a legolcsóbbat választja), „holnapra is főzök” / „inkább mást főzök”, kétnaponta főzés, a mennyiségek adagszámhoz igazítása.
+- admin: rossz jelszó 401, jó jelszó token; az akció- és a frissítés-végpont token nélkül 401; receptmódosítás mentése, tárolóba írása és azonnali érvényesülése; hibás recept 400; előnézet figyelmeztetéssel; új / ismételt / törölt recept; alapanyag kizáró szóval kevesebb találat; használt alapanyag nem törölhető; visszaállás a beépítettre; az `/admin` oldal kiszolgálása;
+- végponttól végpontig teszt, ami elindítja a webszervert, és végighívja az összes API-t: boltszűrő, akciók felvitele / importja / törlése, háztartás-profil létrehozása, mentett hét, csere, konkrét recept egy napra, kipipálás, értékelés, boltváltás, automatikus bolt (a legolcsóbbat választja), „holnapra is főzök” / „inkább mást főzök”, kétnaponta főzés, a mennyiségek adagszámhoz igazítása, az Akciók végpont szűrése, saját tételek felvétele / törlése és beszámítása a boltválasztásba.
 
 A GitHub Actions a teszteket egy PostgreSQL 16 szolgáltatással együtt futtatja, utána felépíti a Docker-képet, elindítja a `docker compose`-t, és ellenőrzi, hogy az app válaszol, és a profil az adatbázisba kerül.
 
-Ha az `ARFIGYELO_TEST_FILE` környezeti változó egy valódi napi Excelre mutat, a teljes folyamatot azon is lefuttatja: mind a hat láncban legalább 10 árazható recept és életszerű árak kellenek. A 2026-10-28-i fájllal, PostgreSQL 16-tal mind a 30 teszt sikeres, mind a 170 recept árazható, és mind a hat láncban kijön egy 5 vacsorás, 2 fős heti terv 15 000 Ft alatt.
+Ha az `ARFIGYELO_TEST_FILE` környezeti változó egy valódi napi Excelre mutat, a teljes folyamatot azon is lefuttatja: mind a hat láncban legalább 10 árazható recept és életszerű árak kellenek. A 2026-10-28-i fájllal, PostgreSQL 16-tal mind a 31 teszt sikeres, mind a 170 recept árazható, és mind a hat láncban kijön egy 5 vacsorás, 2 fős heti terv 15 000 Ft alatt.
 
 ## Feltételezések és döntések
 
@@ -310,6 +356,12 @@ Ezeket kérdezés nélkül döntöttem el; bármelyik könnyen módosítható.
 - **Kétnaponta főzés 5 vacsoránál:** hétfő+kedd, szerda+csütörtök, péntek – 3 főzés.
 - **Automatikus bolt** az alapértelmezés; az első indításkor nem kell boltot választani.
 - **Betűtípusok** a Google Fontsról töltődnek; offline a rendszer betűtípusára vált, a működést nem érinti.
+- **Admin egyetlen jelszóval**, felhasználói fiókok nélkül: egy háztartási / kis csapatos apphoz ennyi elég, és nem kell hozzá adatbázisséma vagy jelszó-visszaállítás. Ha nincs megadva, véletlen jelszó, hogy alapból ne legyen nyitva.
+- **Az akciók felvitele és az árfrissítés csak adminnak** megy (korábban bárki megtehette a felületről), mert minden háztartás árait érinti.
+- **A szerkesztett katalógus a tárolóban** él, nem a JAR-ban: így Dockerben is megmarad, és az „Export” gombbal visszaírható a repóba.
+- **A „Most jó áron” sáv a Receptek fülről az új Akciók fülre került**, és ott már az összes boltod együtt látszik – az ajanlatok.hu-hoz hasonlóan ez önálló böngészhető nézet lett.
+- **A saját tételek** szabad szöveggel is felvehetők, de árat csak akkor kapnak, ha a javaslatok közül választod: egy „kávé” szövegből nem lehet biztosan tudni, melyik termék és kiszerelés kell.
+- **Az árelőzmény 8 hetes**, mint az ajanlatok.hu ajánlatértékelésénél; régebbi adatot nem mutat.
 
 ## Ismert korlátok, továbbfejlesztési ötletek
 
@@ -317,12 +369,14 @@ Ezeket kérdezés nélkül döntöttem el; bármelyik könnyen módosítható.
 - Bolt (nem lánc) szintű árakat az Excel nem tartalmaz; egy térképes boltválasztóhoz az Árfigyelő belső API-ja kellene.
 - Néhány zöldséget a láncok következetlenül adnak meg (pl. „csomós petrezselyemgyökér” egyszer darabra, egyszer kilóra); ezeknél az ár közelítő.
 - A kiszerelés-összesítő és a soronkénti csere csak a kiválasztott boltra vonatkozik; a „többi boltodban” összevetés az alapbeállítás szerinti (háztartási vagy nagy) kiszereléssel számol.
-- Ha a felületet `HOST=0.0.0.0`-val a helyi hálózatra nyitod, a hálózaton bárki felvihet és törölhet kézi akciót.
+- Az admin felületnek nincs TLS-e; nyilvános hálózaton csak HTTPS-es proxy mögött használd.
 - A tápértékek tipikus, kerekített értékekből számolt becslések; diétás vagy orvosi célra nem elég pontosak.
 - A heti terv mohó algoritmus, nem garantáltan a legolcsóbb kombináció; cserébe gyors (≈ 0,1 s) és jól érthető.
 - A közös háztartás linkje bárkinek hozzáférést ad, aki megkapja; jelszó / fiók nincs.
 - A NomNom Planner ötletét és felépítését vettem át (lásd lent), a szövegeit, fotóit és márkáját nem.
-- Ötletek: lánc-specifikus akció-letöltők külön feedként, saját recept felvétele a felületről, reggeli/ebéd tervezése is.
+- Az ár „hasonló termék” cseréje a saját tételeknél kategória + egység + kb. kiszerelés alapján megy; nagyon eltérő minőségű termékeket is párba állíthat.
+- Az árelőzmény csak attól a naptól gyűlik, amikor az app először fut; a GVH régebbi napi fájljait nem tölti le.
+- Ötletek: lánc-specifikus akció-letöltők külön feedként, árriasztás (ha egy kedvenc termék olcsó lesz), reggeli/ebéd tervezése is.
 
 ## Mit tanultunk a NomNom Plannerből?
 
@@ -333,6 +387,27 @@ A [nomnomplanner.com/hu](https://nomnomplanner.com/hu/), az [adatforrás-oldaluk
 - **Fotók:** a forrásukat nem írják le. Itt egyelőre nincs fotó.
 - **Tárolás:** fiók nincs; a tervek, beállítások és pipák a telefonon vannak. A szerveroldalon (Cloudflare) csak a receptértékeléseket, a visszajelzéseket és a várólistát tárolják, analitikára a PostHog EU-s szervereit, előfizetésre a RevenueCatet használják. Itt böngészős app van, ezért a háztartás adatai a szerveren vannak (fájlban vagy PostgreSQL-ben), de ugyanúgy fiók és személyes adat nélkül.
 - **Felület, amit átvettünk:** kétperces beállítás (bolt, keret, létszám, diéta, konyha) → kész hét vacsorakártyákkal, adagárral és a hét végösszegével a keret mellett → egy vacsora vagy az egész hét cseréje → makrók és hangulat-címkék → diéták és konyhai eszközök beépítve → osztályonként rendezett, megosztható lista → „Nom vagy nem” lapozás.
+
+## Mit vettünk át az ajanlatok.hu-tól, a SmartKosártól és a Shoppytól?
+
+Mindhárom azt csinálja, mint ez az app: magyar élelmiszerárakat tesz összevethetővé. A nyilvános oldalaik, áruházi leírásaik és a róluk szóló cikkek alapján (2026. november):
+
+| | Mit csinál | Honnan vannak az árak? |
+|---|---|---|
+| **[ajanlatok.hu](https://www.ajanlatok.hu/)** | akciósújság-gyűjtő 2020 óta (egy nemzetközi hálózat magyar oldala); láncok és üzletek szerint, helyhez kötve; minden ajánlatot az **elmúlt 8 hét** árengedményeihez és gyakoriságához mér; bevásárlólista (fiók nélkül 10 tétel), kedvencek, értesítés, mobilapp | a boltok **akciós újságjai és szórólapjai**, amelyeket saját közlésük szerint naponta gyűjtenek; az újságos (és nem a polci) ár |
+| **SmartKosár** ([Trademagazin](https://trademagazin.hu/en/sporolas-a-smartkosarral), [Pénzcentrum](https://www.penzcentrum.hu/vasarlas/20180912/dobbenetes-osszegeket-sporolhatsz-egy-uj-magyar-talalmany-segitsegevel-1070094)) | **egész kosarat** hasonlít össze a nagy online élelmiszer-áruházak között, és megmutatja, hol a legolcsóbb az egész; 2018-ban a Start it @K&H inkubátorban indult | a láncok **webshopjainak** kínálata és árai (a gyűjtés módját nem írják le) – vagyis házhozszállításos online ár, nem bolti |
+| **Shoppy** ([Trademagazin](https://trademagazin.hu/en/mostantol-egyszerubb-a-legkedvezobb-arat-es-a-hazait-is-megtalalni), [App Store](https://apps.apple.com/by/app/shoppy/id6450847442)) | ingyenes ár- és termék-összehasonlító oldal és app: keresés, vonalkód-olvasás, bevásárlólista, kedvencek, akciók; a **Magyar Termék Nonprofit Kft.**-vel együttműködve kiemeli a magyar termékeket | a forrását nem nevezi meg; a „kereskedőktől független” összehasonlítás a láncok nyilvános (webes) árain alapulhat |
+
+**Az árak eredete – a lényeg:** ezek az oldalak vagy az akciós újságot (ajanlatok.hu), vagy a webshopok árait (SmartKosár) használják; egyik sem ad nyilvános API-t, és egyik sem a bolti polcárat. A **bolti, láncszintű polcár egyetlen nyilvános, ingyenes és jogilag tiszta forrása ma a GVH Árfigyelő** napi Excele – ezért ez az app továbbra is erre épül, a láncok újságos akciói pedig a (most már admin által kezelt) akciórétegen jöhetnek be.
+
+**Amit átvettünk:**
+- **Böngészhető „Most jó áron” nézet minden boltra** (ajanlatok.hu, Shoppy): az új **Akciók** fül, kereséssel és boltszűrővel; nem kell előbb receptet választani.
+- **Ajánlat a saját előzményéhez mérve** (ajanlatok.hu, 8 hét): a termékablakban az elmúlt 8 hét ára grafikonnal, mediánnal és ítélettel; a „Olcsóbb a szokásosnál” jel is ebből jön.
+- **Egész kosár összevetése** (SmartKosár): a hét ára már eddig is minden boltban látszott; most a **saját tételek is** beleszámítanak, így a „hol a legolcsóbb” a valódi heti bevásárlásra igaz, nem csak a vacsorákra.
+- **Bevásárlólista szabad tételekkel és termékből** (mindhárom): saját tételek a listán, a termékablakból egy gombbal.
+- **Karbantartható adat** (mindhárom mögött szerkesztőség áll): az admin felület, ahol a receptek, az alapanyag-illesztés és az akciók kódolás nélkül javíthatók, és látszik, mi hiányzik melyik láncból.
+
+Amit **nem** vettünk át: fiókot és helyalapú értesítést (fiók nélküli app maradt), vonalkód-olvasást (az Árfigyelő Excelben van vonalkód, de a böngészős kamera-olvasás külön munka), és a webshopok árait (más ár, mint a boltban, és csak dokumentálatlan végpontokon érhető el).
 
 ---
 Az árak forrása: [GVH Árfigyelő](https://arfigyelo.gvh.hu). A boltban kiírt ár az irányadó.

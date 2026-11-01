@@ -97,7 +97,7 @@ public final class PriceRepository {
     /** A boltok listájából kihagyjuk, ahol alig van élelmiszer (pl. drogériák). */
     static final double MIN_FOOD_SHARE = 0.15;
 
-    private final Catalog catalog;
+    private volatile Catalog catalog;
     private final List<PriceProvider> providers;
     private final PriceHistory history;
     private final PromoStore promoStore;
@@ -183,6 +183,15 @@ public final class PriceRepository {
         return state;
     }
 
+    /** Új recept- és alapanyaglista (az adminból): az elemzés az eddigi árakkal újraépül. */
+    public synchronized State replaceCatalog(Catalog c) {
+        this.catalog = c;
+        State old = state;
+        if (old == null) return reload();
+        state = build(old.snapshot(), old.snapshot().demo() ? null : history, new ArrayList<>(old.warnings()));
+        return state;
+    }
+
     /** Az akciók újraolvasása (pl. új kézi akció után) az árak újratöltése nélkül. */
     public synchronized State reloadPromos() {
         State old = state;
@@ -194,6 +203,7 @@ public final class PriceRepository {
     }
 
     private State build(Snapshot snap, PriceHistory h, List<String> warnings) {
+        Catalog catalog = this.catalog;
         List<String> w = new ArrayList<>(warnings);
         List<Promo> promos = List.of();
         if (promoStore != null) {

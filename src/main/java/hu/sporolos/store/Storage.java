@@ -56,11 +56,26 @@ public interface Storage extends AutoCloseable {
 
     record PriceDays(Map<String, List<Double>> prices, int days) {}
 
+    /** Egy termék napi árai lánconként a [from, to) napokból: lánc → (nap → ár), időrendben. */
+    Map<String, java.util.SortedMap<LocalDate, Double>> itemHistory(String itemId, LocalDate from, LocalDate toExclusive) throws IOException;
+
     // ---------- kézi akciók ----------
 
     List<Map<String, Object>> manualPromos() throws IOException;
 
     void saveManualPromos(List<Map<String, Object>> promos) throws IOException;
+
+    // ---------- dokumentumok (pl. az adminban szerkesztett receptek és alapanyagok) ----------
+
+    /** Egy JSON-dokumentum szövege, vagy null. */
+    String document(String key) throws IOException;
+
+    void saveDocument(String key, String json) throws IOException;
+
+    void deleteDocument(String key) throws IOException;
+
+    /** Hány háztartás-profil van (az admin áttekintéséhez). */
+    int householdCount() throws IOException;
 
     @Override
     void close();

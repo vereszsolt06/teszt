@@ -541,3 +541,59 @@ dialog::backdrop { background: rgb(15 12 5 / 0.5); }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* ---------- akciók ---------- */
+.row-head.top { margin-top: 12px; }
+.offers-tools { display: flex; flex-direction: column; gap: 10px; margin: 16px 0 6px; }
+.offers-tools .search { max-width: 520px; }
+.check-line.inline { margin-top: 0; font-size: 0.9rem; color: var(--muted); }
+.offer-grid { list-style: none; margin: 10px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.offer button {
+  width: 100%; height: 100%; text-align: left; border: 0; background: var(--paper); border-radius: 14px; padding: 12px 14px;
+  box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 4px; border-top: 5px solid var(--tag);
+}
+.offer.promo button { border-top-color: var(--leaf); }
+.offer button:hover { outline: 2px solid var(--ink); outline-offset: -2px; }
+.offer-top { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.offer-store { font-size: 0.78rem; font-weight: 700; padding: 1px 8px 1px 6px; border-left: 4px solid var(--c); background: var(--bg); border-radius: 4px; }
+.offer-kind { font-size: 0.74rem; font-weight: 700; color: var(--leaf); }
+.offer-name { font-weight: 700; line-height: 1.25; }
+.offer-unit { font-size: 0.8rem; color: var(--muted); }
+.offer-prices { display: flex; gap: 8px; align-items: baseline; margin-top: auto; padding-top: 4px; }
+.offer-prices s { color: var(--red); font-size: 0.86rem; }
+.offer-prices b { font-family: var(--display); font-size: 1.3rem; }
+.offer-save { margin-left: auto; background: var(--red); color: #fff; font-weight: 800; font-size: 0.8rem; padding: 1px 7px; border-radius: 4px; }
+.offer-why { font-size: 0.78rem; color: var(--muted); }
+
+/* ---------- saját tételek ---------- */
+.extras { background: var(--paper); border-radius: 16px; padding: 4px 18px 12px; margin: 14px 0 0; box-shadow: var(--shadow); }
+.extras .section-title { margin: 14px 0 0; font-size: 1.05rem; }
+.extras .sub { font-size: 0.86rem; }
+.extra-add { position: relative; display: flex; gap: 8px; margin: 10px 0 4px; }
+.extra-add input { flex: 1; min-width: 0; border: 1.5px solid var(--line); background: var(--paper); border-radius: 999px; padding: 9px 14px; color: var(--ink); }
+.extra-add input:focus { border-color: var(--leaf); outline: none; box-shadow: 0 0 0 3px var(--leaf-soft); }
+.primary.small { padding: 8px 16px; font-size: 0.9rem; }
+.suggest { position: absolute; left: 0; right: 0; top: 100%; z-index: 10; list-style: none; margin: 4px 0 0; padding: 4px; background: var(--paper); border: 1.5px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); max-height: 300px; overflow: auto; }
+.suggest button { width: 100%; display: flex; justify-content: space-between; gap: 10px; border: 0; background: none; text-align: left; padding: 8px 10px; border-radius: 8px; }
+.suggest button:hover, .suggest button:focus { background: var(--bg); }
+#extras li { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+.icon-del { border: 0; background: none; color: var(--muted); padding: 0 4px; font-size: 1rem; }
+.icon-del:hover { color: var(--red); }
+
+/* ---------- termék: előzmény ---------- */
+.hist-title { font-size: 0.95rem; margin: 16px 0 4px; }
+.hist-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: 0.86rem; }
+.hist-txt { display: flex; flex-direction: column; }
+.spark { width: 160px; height: 34px; flex: none; }
+.spark path { fill: none; stroke: var(--leaf); stroke-width: 2; stroke-linejoin: round; }
+.item-actions { display: flex; justify-content: flex-end; margin-top: 14px; }
+
+/* fejléc keskeny kijelzőn: a márkanév rövidül, a gombok mindig elférnek */
+.brand { min-width: 0; flex: 1 1 auto; }
+.brand-name { overflow: hidden; text-overflow: ellipsis; }
+.top-actions { flex: none; }
+@media (max-width: 420px) {
+  .store-pill { padding: 6px 10px 6px 8px; }
+  .store-pill.auto .pill-text::after { display: none; }
+  .brand-name { font-size: 1rem; }
+}

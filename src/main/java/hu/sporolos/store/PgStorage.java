@@ -87,6 +87,14 @@ public final class PgStorage implements Storage {
             """,
             // 2: a receptfotók kikerültek az appból
             "DROP TABLE IF EXISTS recipe_photo",
+            // 3: szerkeszthető dokumentumok (receptek, alapanyagok)
+            """
+            CREATE TABLE IF NOT EXISTS app_document (
+              key        text PRIMARY KEY,
+              body       text NOT NULL,
+              updated_at timestamptz NOT NULL DEFAULT now()
+            )
+            """,
     };
 
     private final String url;
@@ -377,6 +385,47 @@ public final class PgStorage implements Storage {
             }
             return null;
         });
+    }
+
+    @Override
+    public Map<String, java.util.SortedMap<LocalDate, Double>> itemHistory(String itemId, LocalDate from, LocalDate toExclusive) throws IOException {
+        return with(c -> {
+            Map<String, java.util.SortedMap<LocalDate, Double>> out = new java.util.TreeMap<>();
+            for (String[] r : c.query("""
+                    SELECT store_id, day::text, price::float8 FROM price_history
+                    WHERE item_id = $1 AND day >= $2::date AND day < $3::date ORDER BY day""",
+                    itemId, from.toString(), toExclusive.toString()).rows()) {
+                out.computeIfAbsent(r[0], k -> new java.util.TreeMap<>()).put(LocalDate.parse(r[1]), Double.parseDouble(r[2]));
+            }
+            return out;
+        });
+    }
+
+    // ---------- dokumentumok ----------
+
+    @Override
+    public String document(String key) throws IOException {
+        return with(c -> {
+            var rows = c.query("SELECT body FROM app_document WHERE key = $1", key).rows();
+            return rows.isEmpty() ? null : rows.get(0)[0];
+        });
+    }
+
+    @Override
+    public void saveDocument(String key, String json) throws IOException {
+        with(c -> c.query("""
+                INSERT INTO app_document(key, body) VALUES ($1, $2)
+                ON CONFLICT (key) DO UPDATE SET body = excluded.body, updated_at = now()""", key, json));
+    }
+
+    @Override
+    public void deleteDocument(String key) throws IOException {
+        with(c -> c.query("DELETE FROM app_document WHERE key = $1", key));
+    }
+
+    @Override
+    public int householdCount() throws IOException {
+        return with(c -> Integer.parseInt(c.query("SELECT count(*) FROM household").rows().get(0)[0]));
     }
 
     @Override

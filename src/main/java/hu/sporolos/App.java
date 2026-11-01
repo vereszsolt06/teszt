@@ -3,6 +3,7 @@ package hu.sporolos;
 import hu.sporolos.core.PriceRepository;
 import hu.sporolos.data.ArfigyeloExcelProvider;
 import hu.sporolos.data.Catalog;
+import hu.sporolos.data.CatalogSource;
 import hu.sporolos.data.DemoPriceProvider;
 import hu.sporolos.data.PriceHistory;
 import hu.sporolos.data.PriceProvider;
@@ -35,6 +36,7 @@ import java.util.Properties;
  *   refresh.hours   (REFRESH_HOURS)   – ennyi óra után tölti újra az árakat (alap: 6)
  *   promo.dir       (PROMO_DIR)       – a láncok saját akcióinak mappája (*.json, *.csv; alap: data/akciok)
  *   promo.feeds     (PROMO_FEEDS)     – akció-feedek URL-jei vesszővel elválasztva (ugyanilyen JSON/CSV)
+ *   admin.password  (ADMIN_PASSWORD)  – az admin felület (/admin) jelszava; ha üres, induláskor véletlen jelszó
  *   database.url    (DATABASE_URL)    – postgres://felh:jelszo@host:5432/db; ha üres, fájlokban tárol (data/)
  */
 public final class App {
@@ -63,7 +65,9 @@ public final class App {
         }
         System.out.println("[tárolás] " + storage.describe());
 
-        Catalog catalog = Catalog.loadDefault();
+        CatalogSource catalogSource = new CatalogSource(storage);
+        Catalog catalog = catalogSource.load();
+        if (catalogSource.modified()) System.out.println("[katalógus] Az adminban módosított receptek és alapanyagok betöltve");
         List<PriceProvider> providers = new ArrayList<>();
         if (!source.equals("demo")) {
             providers.add(new ArfigyeloExcelProvider(catalog, url,
@@ -79,10 +83,13 @@ public final class App {
         PromoStore promos = new PromoStore(promoDir, feedList, storage);
 
         PriceRepository repo = new PriceRepository(catalog, providers,
-                new PriceHistory(storage, 28), promos, Duration.ofHours(refreshHours));
+                new PriceHistory(storage, 56), promos, Duration.ofHours(refreshHours));
         repo.reload();
 
-        WebServer server = new WebServer(repo, storage);
+        String adminPassword = get(cfg, "admin.password", "ADMIN_PASSWORD", "");
+        boolean generated = adminPassword.isBlank();
+        if (generated) adminPassword = hu.sporolos.store.Ids.newProfileId().substring(0, 12);
+        WebServer server = new WebServer(repo, storage, catalogSource, adminPassword);
         // ha a port foglalt (pl. másik program vagy egy korábban elindított példány), a következő szabadot veszi
         int actual = -1;
         for (int p = port; p < port + 20 && actual < 0; p++) {
@@ -99,6 +106,8 @@ public final class App {
         }
         System.out.println();
         System.out.println("  Spórolós Konyha fut:  http://" + (host.equals("0.0.0.0") ? "localhost" : host) + ":" + actual);
+        System.out.println("  Admin felület:        http://" + (host.equals("0.0.0.0") ? "localhost" : host) + ":" + actual + "/admin");
+        System.out.println("  Admin jelszó:         " + (generated ? adminPassword + "  (minden indításkor új; állandót az ADMIN_PASSWORD adja)" : "az ADMIN_PASSWORD szerint"));
         System.out.println("  Leállítás: Ctrl+C");
         System.out.println();
     }

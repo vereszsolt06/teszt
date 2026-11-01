@@ -227,6 +227,66 @@ public final class FileStorage implements Storage {
     }
 
     @Override
+    public synchronized Map<String, java.util.SortedMap<LocalDate, Double>> itemHistory(String itemId, LocalDate from, LocalDate toExclusive) throws IOException {
+        Map<String, java.util.SortedMap<LocalDate, Double>> out = new java.util.TreeMap<>();
+        if (!Files.isDirectory(historyDir())) return out;
+        String prefix = itemId + "\t";
+        try (Stream<Path> s = Files.list(historyDir())) {
+            for (Path f : s.filter(p -> p.getFileName().toString().endsWith(".tsv")).toList()) {
+                LocalDate d;
+                try {
+                    d = LocalDate.parse(f.getFileName().toString().replace(".tsv", ""));
+                } catch (RuntimeException ex) {
+                    continue;
+                }
+                if (d.isBefore(from) || !d.isBefore(toExclusive)) continue;
+                for (String line : Files.readAllLines(f, StandardCharsets.UTF_8)) {
+                    if (!line.startsWith(prefix)) continue;
+                    String[] c = line.split("\t");
+                    if (c.length < 3) continue;
+                    try {
+                        out.computeIfAbsent(c[1], k -> new java.util.TreeMap<>()).put(d, Double.parseDouble(c[2]));
+                    } catch (NumberFormatException ignored) {
+                        // sérült sor
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    // ---------- dokumentumok ----------
+
+    private Path docFile(String key) {
+        return root.resolve("dokumentumok").resolve(Ids.check(key.replace('.', '-')) + ".json");
+    }
+
+    @Override
+    public synchronized String document(String key) throws IOException {
+        Path f = docFile(key);
+        return Files.exists(f) ? Files.readString(f, StandardCharsets.UTF_8) : null;
+    }
+
+    @Override
+    public synchronized void saveDocument(String key, String json) throws IOException {
+        write(docFile(key), json);
+    }
+
+    @Override
+    public synchronized void deleteDocument(String key) throws IOException {
+        Files.deleteIfExists(docFile(key));
+    }
+
+    @Override
+    public synchronized int householdCount() throws IOException {
+        Path d = root.resolve("profilok");
+        if (!Files.isDirectory(d)) return 0;
+        try (Stream<Path> s = Files.list(d)) {
+            return (int) s.filter(p -> p.toString().endsWith(".json")).count();
+        }
+    }
+
+    @Override
     public void close() {
         // nincs nyitott erőforrás
     }

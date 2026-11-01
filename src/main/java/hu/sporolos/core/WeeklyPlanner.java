@@ -159,6 +159,8 @@ public final class WeeklyPlanner {
                     if (curCheckout + marginal + remainingAfter * reservePerDinner > budget) continue;
                     double value = s.score()
                             + appeal(s.recipe(), m)
+                            // ahol becsült (az Árfigyelőben nem szereplő) alapanyag van, ott az ár is bizonytalan
+                            - 0.35 * (1 - s.coverage())
                             + (q.liked().contains(s.recipe().id()) ? 0.35 : 0)
                             + rnd.nextDouble() * 0.18
                             - 0.55 * marginal / Math.max(1, perDinnerBudget);
@@ -182,6 +184,26 @@ public final class WeeklyPlanner {
                     : rec.suggestion(best.recipe().id(), storeId, people * mult[i], q.allowedStores(), q.bulk());
         }
 
+        // ha a szűrőknek kevés recept felel meg, a hiányzó napokra az előző főzés maradéka jut (többet főzünk)
+        boolean filledWithLeftovers = false;
+        for (int i = 0; i < dinners; i++) {
+            if (lo[i] >= 0 || slots[i] != null) continue;
+            int k = -1;
+            for (int j = i - 1; j >= 0 && k < 0; j--) {
+                int root = lo[j] >= 0 ? lo[j] : j;
+                if (slots[root] != null) k = root;
+            }
+            if (k < 0) continue;
+            lo[i] = k;
+            mult[k]++;
+            mult[i] = 0;
+            slots[k] = rec.suggestion(slots[k].recipe().id(), storeId, people * mult[k], q.allowedStores(), q.bulk());
+            filledWithLeftovers = true;
+        }
+        if (filledWithLeftovers) {
+            notes.add("A beállításaidnak most kevés recept felel meg, ezért néhány napra a korábbi főzés maradéka jut (aznap többet főzöl).");
+        }
+
         List<Suggestion> chosen = filled(slots);
         Basket b = basket(storeId, chosen, q.bulk());
         List<Day> days = new ArrayList<>();
@@ -197,7 +219,7 @@ public final class WeeklyPlanner {
                 sumProtein += m.protein();
             }
         }
-        if (chosen.size() < cookingDays) notes.add("A szűrőknek csak " + chosen.size() + " recept felelt meg ebben a boltban.");
+        if (days.size() < dinners) notes.add("A szűrőknek csak " + chosen.size() + " recept felelt meg ebben a boltban.");
         boolean over = q.budget() > 0 && b.checkout > q.budget();
         if (over) notes.add("A terv " + Packaging.Money.ft(b.checkout - q.budget()) + "-tal túllépi a keretet.");
         return new Plan(days, b.items, b.checkout, b.staples, q.budget(), over, b.pantry,

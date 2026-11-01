@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spórolós Konyha – admin</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin">
+  <div class="login" id="login" hidden>
+    <form class="login-box" id="login-form">
+      <h1>Admin</h1>
+      <p class="hint">A jelszót az app indításkor kiírja a konzolra (vagy az <code>ADMIN_PASSWORD</code> környezeti változó adja).</p>
+      <label class="field"><span class="field-label">Jelszó</span><input type="password" id="login-pw" autocomplete="current-password" required></label>
+      <button class="primary" type="submit">Belépés</button>
+      <p class="error-text" id="login-err" hidden></p>
+    </form>
+  </div>
+
+  <div class="shell" id="shell" hidden>
+    <aside class="side">
+      <a class="side-brand" href="/">Spórolós Konyha <span>admin</span></a>
+      <nav class="side-nav">
+        <a href="#attekintes" data-sec="attekintes">Áttekintés</a>
+        <a href="#receptek" data-sec="receptek">Receptek</a>
+        <a href="#alapanyagok" data-sec="alapanyagok">Alapanyagok</a>
+        <a href="#akciok" data-sec="akciok">Bolti akciók</a>
+        <a href="#adatok" data-sec="adatok">Adatok</a>
+      </nav>
+      <button class="ghost small" id="logout" type="button">Kilépés</button>
+    </aside>
+    <main class="main" id="main"></main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <script src="admin.js"></script>
+</body>
+</html>

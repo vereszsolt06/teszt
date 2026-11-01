@@ -585,7 +585,7 @@ public final class AllTests {
             check(!Json.arr(item.get("offers")).isEmpty(), "a termék ajánlatai");
             get(c, base + "/api/item?id=nincsilyen", 404);
 
-            List<Object> hits = Json.arr(Json.parse(get(c, base + "/api/search?q=tojas&store=lidl", 200)));
+            List<Object> hits = Json.arr(Json.parse(get(c, base + "/api/search?q=tojas", 200)));
             check(!hits.isEmpty(), "a keresés talál tojást");
             get(c, base + "/api/search?q=x", 400);
             get(c, base + "/api/refresh", 405);
@@ -697,6 +697,22 @@ public final class AllTests {
             var tomato = Json.arr(bk.get("ingredients")).stream().map(Json::obj).filter(i -> "Paradicsom".equals(i.get("label"))).findFirst().orElseThrow();
             eq("1 db", tomato.get("amount"), "4 adagra 2 db → 2 adagra 1 db");
             get(c, base + "/img/recipe/lecso", 404);
+            // akciók a boltjaidban, saját tételek a listán
+            List<Object> offers = Json.arr(Json.parse(get(c, base + "/api/offers?limit=20", 200)));
+            check(!offers.isEmpty(), "van kiemelt ár");
+            var hit = Json.obj(Json.arr(Json.parse(get(c, base + "/api/search?q=tojas&limit=1", 200))).get(0));
+            post(c, base + "/api/extras?id=" + pid, "{\"name\":\"Tojás\",\"itemId\":\"" + hit.get("id") + "\"}", 200);
+            post(c, base + "/api/extras?id=" + pid, "{\"name\":\"Mosogatószer\"}", 200);
+            post(c, base + "/api/extras?id=" + pid, "{\"name\":\"\"}", 400);
+            Map<String, Object> wx = Json.obj(Json.parse(get(c, base + "/api/week?id=" + pid, 200)));
+            List<Object> ex = Json.arr(wx.get("extras"));
+            eq(2, ex.size(), "két saját tétel");
+            check(Json.obj(ex.get(0)).get("price") != null, "a tojásnak van ára (ugyanaz vagy hasonló termék)");
+            eq(null, Json.obj(ex.get(1)).get("price"), "a szabad szöveges tételnek nincs ára");
+            check(Json.num(wx.get("extrasTotal"), 0) > 0, "a saját tételek összege");
+            get(c, base + "/api/extras?id=" + pid, 200);
+            send(c, "DELETE", base + "/api/extras?id=" + pid + "&n=1", "", 200);
+            eq(1, Json.arr(Json.obj(Json.parse(get(c, base + "/api/extras?id=" + pid, 200))).get("extras")).size(), "törölve");
             get(c, base + "/../pom.xml", 400);
         } finally {
             server.stop();
@@ -841,6 +857,82 @@ public final class AllTests {
         eq("Csirke", st.manualPromos().get(0).get("name"), "kézi akció");
         st.saveManualPromos(List.of());
         check(st.manualPromos().isEmpty(), "kézi akciók törölve");
+    }
+
+    static void testAdminApi() throws Exception {
+        Path dir = Files.createTempDirectory("admin");
+        FileStorage storage = new FileStorage(dir);
+        hu.sporolos.data.CatalogSource src = new hu.sporolos.data.CatalogSource(storage);
+        Catalog cat = src.load();
+        PriceRepository repo = new PriceRepository(cat, List.of(new DemoPriceProvider(cat, LocalDate.now())),
+                new PriceHistory(storage, 56), new PromoStore(dir.resolve("akciok"), List.of(), storage), Duration.ofHours(1));
+        WebServer server = new WebServer(repo, storage, src, "titkos-jelszo");
+        int port = server.start("127.0.0.1", 0);
+        try {
+            HttpClient c = HttpClient.newHttpClient();
+            String base = "http://127.0.0.1:" + port;
+            get(c, base + "/api/admin/overview", 401);
+            post(c, base + "/api/admin/login", "{\"password\":\"rossz\"}", 401);
+            String tok = String.valueOf(Json.obj(Json.parse(post(c, base + "/api/admin/login", "{\"password\":\"titkos-jelszo\"}", 200))).get("token"));
+            java.util.function.BiFunction<String, String, HttpRequest.Builder> req = (m, path) ->
+                    HttpRequest.newBuilder(URI.create(base + path)).header("X-Admin-Token", tok).header("Content-Type", "application/json");
+            java.util.function.Function<HttpRequest, HttpResponse<String>> run = r -> {
+                try { return c.send(r, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)); } catch (Exception e) { throw new RuntimeException(e); }
+            };
+            var ov = run.apply(req.apply("GET", "/api/admin/overview").GET().build());
+            eq(200, ov.statusCode(), "áttekintés belépve");
+            eq(Boolean.FALSE, Json.obj(Json.parse(ov.body())).get("catalogModified"), "beépített katalógus");
+            // akciót és árfrissítést csak admin vihet fel
+            post(c, base + "/api/promos", "{\"store\":\"lidl\",\"ingredient\":\"vaj\",\"name\":\"Vaj\",\"price\":399,\"quantity\":0.25,\"unit\":\"kg\"}", 401);
+            post(c, base + "/api/refresh", "", 401);
+            eq(200, run.apply(req.apply("POST", "/api/promos").POST(HttpRequest.BodyPublishers.ofString(
+                    "{\"store\":\"lidl\",\"ingredient\":\"vaj\",\"name\":\"Vaj\",\"price\":399,\"quantity\":0.25,\"unit\":\"kg\"}")).build()).statusCode(), "akció adminnal");
+
+            // recept módosítása: a nyilvános API azonnal az új nevet adja, és a módosítás megmarad
+            var lecso = run.apply(req.apply("GET", "/api/admin/recipe?id=lecso").GET().build());
+            Map<String, Object> r = Json.obj(Json.parse(lecso.body()));
+            r.put("name", "Lecsó (szerkesztve)");
+            var saved = run.apply(req.apply("PUT", "/api/admin/recipe").PUT(HttpRequest.BodyPublishers.ofString(Json.write(r))).build());
+            eq(200, saved.statusCode(), "recept mentve: " + saved.body());
+            eq("Lecsó (szerkesztve)", Json.obj(Json.obj(Json.parse(get(c, base + "/api/recipe?id=lecso&store=lidl", 200))).get("recipe")).get("name"), "élőben frissült");
+            check(storage.document(hu.sporolos.data.CatalogSource.RECIPES).contains("Lecsó (szerkesztve)"), "elmentve a tárolóba");
+            eq("Lecsó (szerkesztve)", new hu.sporolos.data.CatalogSource(storage).load().recipe("lecso").name(), "újraindítás után is");
+            // hibás recept: nem menti
+            Map<String, Object> bad = new java.util.LinkedHashMap<>(r);
+            bad.put("ingredients", List.of(Map.of("key", "nincsilyen", "amount", "1 db", "need", 1)));
+            eq(400, run.apply(req.apply("PUT", "/api/admin/recipe").PUT(HttpRequest.BodyPublishers.ofString(Json.write(bad))).build()).statusCode(), "ismeretlen alapanyag");
+            bad.put("ingredients", List.of(Map.of("key", "paradicsom", "amount", "1 db")));
+            eq(400, run.apply(req.apply("PUT", "/api/admin/recipe").PUT(HttpRequest.BodyPublishers.ofString(Json.write(bad))).build()).statusCode(), "hiányzó mennyiség");
+            // előnézet: a kiírt és a számolt mennyiség eltérése figyelmeztetés
+            Map<String, Object> pv = new java.util.LinkedHashMap<>(r);
+            pv.put("ingredients", List.of(Map.of("key", "paradicsom", "amount", "2 db", "need", 2.0)));
+            var prev = Json.obj(Json.parse(run.apply(req.apply("POST", "/api/admin/recipe/preview").POST(HttpRequest.BodyPublishers.ofString(Json.write(pv))).build()).body()));
+            check(!Json.arr(prev.get("issues")).isEmpty(), "2 db paradicsom ≠ 2 kg: figyelmeztet");
+            check(Json.arr(prev.get("stores")).size() >= 5, "ár minden boltban");
+            // új recept + törlés
+            String nr = "{\"id\":\"admin-teszt\",\"name\":\"Admin teszt\",\"ingredients\":[{\"key\":\"tojas\",\"amount\":\"2 db\",\"need\":2}],\"steps\":[\"Megfőzöd.\"]}";
+            eq(200, run.apply(req.apply("POST", "/api/admin/recipe").POST(HttpRequest.BodyPublishers.ofString(nr)).build()).statusCode(), "új recept");
+            eq(400, run.apply(req.apply("POST", "/api/admin/recipe").POST(HttpRequest.BodyPublishers.ofString(nr)).build()).statusCode(), "duplikált azonosító");
+            check(repo.catalog().recipe("admin-teszt") != null, "katalógusban");
+            eq(200, run.apply(req.apply("DELETE", "/api/admin/recipe?id=admin-teszt").DELETE().build()).statusCode(), "törlés");
+            check(repo.catalog().recipe("admin-teszt") == null, "törölve");
+            // alapanyag: kizáró szó szűkíti a találatokat; használt alapanyag nem törölhető
+            Map<String, Object> vaj = Json.obj(Json.obj(Json.parse(run.apply(req.apply("GET", "/api/admin/product?key=vaj").GET().build()).body())).get("product"));
+            vaj.put("exclude", List.of("vaj"));
+            var mm = Json.obj(Json.parse(run.apply(req.apply("POST", "/api/admin/product/matches").POST(HttpRequest.BodyPublishers.ofString(Json.write(vaj))).build()).body()));
+            for (Object o : Json.arr(mm.get("matches"))) eq(0.0, Json.num(Json.obj(o).get("count"), -1), "a 'vaj' kizárva");
+            eq(400, run.apply(req.apply("DELETE", "/api/admin/product?key=tojas").DELETE().build()).statusCode(), "használt alapanyag");
+            check(Json.arr(Json.parse(run.apply(req.apply("GET", "/api/admin/products").GET().build()).body())).size() > 100, "alapanyaglista");
+            check(!Json.arr(Json.parse(run.apply(req.apply("GET", "/api/admin/categories").GET().build()).body())).isEmpty(), "kategóriák");
+            // visszaállítás
+            eq(200, run.apply(req.apply("POST", "/api/admin/reset").POST(HttpRequest.BodyPublishers.noBody()).build()).statusCode(), "reset");
+            eq("Lecsó kolbásszal", repo.catalog().recipe("lecso").name(), "visszaállt");
+            check(storage.document(hu.sporolos.data.CatalogSource.RECIPES) == null, "a mentett változat törölve");
+            check(get(c, base + "/admin", 200).contains("admin.js"), "admin oldal");
+        } finally {
+            server.stop();
+            deleteTree(dir);
+        }
     }
 
     static void testWeeklyPlanner() {

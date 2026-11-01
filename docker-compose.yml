@@ -27,8 +27,10 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://sporolos:${DB_PASSWORD:-sporolos-helyi-jelszo}@db:5432/sporolos
-      PHOTOS: "on"
       REFRESH_HOURS: "6"
+      # az /admin felület jelszava; ha üres, az app indításkor generál egyet és kiírja a naplóba
+      # (docker compose logs app | grep admin)
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     volumes:
       - app-adatok:/app/data
     ports:
