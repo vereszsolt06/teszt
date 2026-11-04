@@ -627,6 +627,50 @@ public final class AllTests {
         eq("Vöröshagyma", in.get("label"), "az eredeti objektum nem változik");
     }
 
+    static void testPlannerImprovementIsCheaperAndKeepsRules() {
+        PriceRepository repo = new PriceRepository(CATALOG, List.of(new DemoPriceProvider(CATALOG, LocalDate.of(2026, 11, 4))), null, Duration.ofDays(1));
+        var st = repo.get();
+        WeeklyPlanner planner = new WeeklyPlanner(CATALOG, st.recommender());
+        double greedy = 0, improved = 0;
+        int overGreedy = 0, overImproved = 0, n = 0;
+        try {
+            for (var store : st.stores()) {
+                for (int people : new int[]{1, 3}) {
+                    for (long seed = 1; seed <= 3; seed++) {
+                        for (double budget : new double[]{0, 2400.0 * people}) {
+                            var q = new WeeklyPlanner.Request(people, 5, budget, Set.of(), Set.of(), Set.of(), Set.of(),
+                                    List.of(), Set.of(), seed, List.of(), false);
+                            WeeklyPlanner.setImproveEnabled(false);
+                            var g = planner.plan(store.id(), q);
+                            WeeklyPlanner.setImproveEnabled(true);
+                            var p = planner.plan(store.id(), q);
+                            greedy += g.checkoutTotal();
+                            improved += p.checkoutTotal();
+                            if (g.overBudget()) overGreedy++;
+                            if (p.overBudget()) overImproved++;
+                            n++;
+                            Set<String> ids = new java.util.HashSet<>();
+                            for (var d : p.days()) check(ids.add(d.suggestion().recipe().id()), "nincs ismétlés a javítás után");
+                            check(p.days().stream().noneMatch(d -> d.suggestion().recipe().tags().contains("édes")), "nincs desszert vacsorának");
+                        }
+                    }
+                }
+            }
+            check(improved < greedy, "a javító kör átlagosan olcsóbb: " + Math.round(improved / n) + " < " + Math.round(greedy / n));
+            check(overImproved <= overGreedy, "nem lépi túl gyakrabban a keretet: " + overImproved + " ≤ " + overGreedy);
+            // a megtartott napokhoz nem nyúl
+            String store = st.stores().get(0).id();
+            var base = planner.plan(store, new WeeklyPlanner.Request(2, 5, 0, Set.of(), Set.of(), Set.of(), Set.of(), List.of(), Set.of(), 7, List.of(), false));
+            List<String> keep = new ArrayList<>();
+            for (var d : base.days()) keep.add(d.suggestion().recipe().id());
+            keep.set(2, null);
+            var re = planner.plan(store, new WeeklyPlanner.Request(2, 5, 0, Set.of(), Set.of(), Set.of(), Set.of(), keep, Set.of(), 8, List.of(), false));
+            for (int i = 0; i < 5; i++) if (i != 2) eq(keep.get(i), re.days().get(i).suggestion().recipe().id(), "megtartott nap: " + i);
+        } finally {
+            WeeklyPlanner.setImproveEnabled(true);
+        }
+    }
+
     static void testJsonRejectsHostileInput() {
         String deep = "[".repeat(100_000) + "]".repeat(100_000);
         try {

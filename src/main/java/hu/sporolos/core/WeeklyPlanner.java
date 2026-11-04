@@ -14,7 +14,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 
 /**
@@ -88,7 +87,6 @@ public final class WeeklyPlanner {
     public Plan plan(String storeId, Request q) {
         int dinners = Math.max(1, Math.min(7, q.dinners()));
         int people = Math.max(1, Math.min(12, q.people()));
-        Random rnd = new Random(q.seed());
 
         // maradéknapok: lo[i] = melyik nap főztjét esszük az i. napon (-1 = aznap főzünk)
         int[] lo = new int[dinners];
@@ -162,7 +160,7 @@ public final class WeeklyPlanner {
                             // ahol becsült (az Árfigyelőben nem szereplő) alapanyag van, ott az ár is bizonytalan
                             - 0.35 * (1 - s.coverage())
                             + (q.liked().contains(s.recipe().id()) ? 0.35 : 0)
-                            + rnd.nextDouble() * 0.18
+                            + jitter(q.seed(), s.recipe().id())
                             - 0.55 * marginal / Math.max(1, perDinnerBudget);
                     if (value > bestValue) {
                         bestValue = value;
@@ -183,6 +181,8 @@ public final class WeeklyPlanner {
             slots[i] = mult[i] == 1 ? best
                     : rec.suggestion(best.recipe().id(), storeId, people * mult[i], q.allowedStores(), q.bulk());
         }
+
+        improve(storeId, q, people, slots, kept, mult, cand, budget, payCache);
 
         // ha a szűrőknek kevés recept felel meg, a hiányzó napokra az előző főzés maradéka jut (többet főzünk)
         boolean filledWithLeftovers = false;
@@ -225,6 +225,106 @@ public final class WeeklyPlanner {
         return new Plan(days, b.items, b.checkout, b.staples, q.budget(), over, b.pantry,
                 days.isEmpty() ? 0 : sumKcal / days.size(), days.isEmpty() ? 0 : sumProtein / days.size(),
                 cand.size() + chosen.size(), notes);
+    }
+
+    /**
+     * A recept „értéke” egy vacsoraként – ugyanaz a mérce, mint a mohó választásnál, a költség nélkül: jó árak
+     * (pontszám), „rendes vacsora” (vonzerő), bizonytalan (becsült) árak levonása, kedvencek, és egy receptenként
+     * állandó kis véletlen, hogy más mag más hetet adjon.
+     */
+    private double worth(Suggestion s, Request q) {
+        RecipeMeta m = catalog.meta(s.recipe().id());
+        return s.score() + appeal(s.recipe(), m) - 0.35 * (1 - s.coverage())
+                + (q.liked().contains(s.recipe().id()) ? 0.35 : 0) + jitter(q.seed(), s.recipe().id());
+    }
+
+    /** Receptenként állandó véletlen 0–0,18 (a mag és a receptazonosító függvénye). */
+    static double jitter(long seed, String recipeId) {
+        long h = seed * 0x9E3779B97F4A7C15L ^ recipeId.hashCode() * 0xC2B2AE3D27D4EB4FL;
+        h ^= h >>> 33;
+        h *= 0xFF51AFD7ED558CCDL;
+        h ^= h >>> 33;
+        return (h >>> 11) * 0x1.0p-53 * 0.18;
+    }
+
+    /**
+     * Javító kör a mohó kitöltés után. A mohó választás nem látja előre, hogy egy később választott recept
+     * ugyanazt a csomagot (tojástálca, zacskó borsó) használná fel; itt napról napra kipróbáljuk minden jelölt
+     * cseréjét a többi nap mellett, és megtartjuk, ami javít a hét egészén:
+     * <pre>  Σ (napok × recept értéke) − 0,55 × pénztári összeg / egy vacsora kerete</pre>
+     * (ugyanaz a mérce, mint a mohó lépéseknél). Minden szabály marad: változatosság, diéta, eszközök, a
+     * megtartott napok, a többnapos főzésre csak eltartható étel, és a keret (fölé nem megyünk; ha már fölötte
+     * vagyunk, csak olcsóbbra cserélünk). Legfeljebb néhány kör; egy terv így is pár ezredmásodperc.
+     */
+    /** A javító kör kikapcsolható (méréshez és teszthez: a mohó terv önmagában). */
+    private static volatile boolean improveEnabled = true;
+
+    public static void setImproveEnabled(boolean on) { improveEnabled = on; }
+
+    private void improve(String storeId, Request q, int people, Suggestion[] slots, boolean[] kept, int[] mult,
+                         Map<String, Suggestion> cand, double budget, Map<String, Double> payCache) {
+        if (!improveEnabled) return;
+        double perDinner = Math.max(1, q.budget() > 0 ? q.budget() / slots.length : 1250.0 * people);
+        Map<String, Suggestion> repriced = new HashMap<>();
+        for (int round = 0; round < 4; round++) {
+            boolean improved = false;
+            for (int i = 0; i < slots.length; i++) {
+                if (slots[i] == null || kept[i]) continue;
+                Suggestion cur = slots[i];
+                List<Suggestion> others = new ArrayList<>();
+                for (int j = 0; j < slots.length; j++) if (j != i && slots[j] != null) others.add(slots[j]);
+                Map<String, Double> baseNeed = needs(others);
+                double baseCheckout = 0;
+                for (Map.Entry<String, Double> e : baseNeed.entrySet()) baseCheckout += pay(storeId, e.getKey(), e.getValue(), q.bulk(), payCache);
+                double curCheckout = baseCheckout + marginal(storeId, baseNeed, cur, q.bulk(), payCache);
+                RecipeMeta curMeta = catalog.meta(cur.recipe().id());
+                boolean needKeeps = mult[i] > 1 && curMeta != null && curMeta.keepsWell();
+                double curWorth = worth(cur, q);
+                Suggestion best = null;
+                double bestGain = 1e-6, bestCheckout = curCheckout;
+                for (Suggestion c : cand.values()) {
+                    RecipeMeta m = catalog.meta(c.recipe().id());
+                    if (needKeeps && (m == null || !m.keepsWell())) continue;
+                    Suggestion s = c;
+                    if (mult[i] > 1) {
+                        int servings = people * mult[i];
+                        s = repriced.computeIfAbsent(c.recipe().id() + "×" + servings,
+                                k -> rec.suggestion(c.recipe().id(), storeId, servings, q.allowedStores(), q.bulk()));
+                        if (s == null) continue;
+                    }
+                    if (!varietyOk(s, others)) continue;
+                    double checkout = baseCheckout + marginal(storeId, baseNeed, s, q.bulk(), payCache);
+                    if (checkout > budget && !(curCheckout > budget && checkout < curCheckout)) continue;
+                    // a keret fölött a megtakarítás számít (minden forint közelebb visz a kerethez),
+                    // alatta a hét egészének mércéje
+                    double gain = curCheckout > budget ? (curCheckout - checkout) / perDinner
+                            : mult[i] * (worth(c, q) - curWorth) - 0.55 * (checkout - curCheckout) / perDinner;
+                    if (gain > bestGain) {
+                        bestGain = gain;
+                        best = s;
+                        bestCheckout = checkout;
+                    }
+                }
+                if (best != null) {
+                    cand.remove(best.recipe().id());
+                    Suggestion back = mult[i] == 1 ? cur : rec.suggestion(cur.recipe().id(), storeId, people, q.allowedStores(), q.bulk());
+                    if (back != null) cand.put(cur.recipe().id(), back);
+                    slots[i] = best;
+                    improved = true;
+                }
+            }
+            if (!improved) break;
+        }
+    }
+
+    /** Ennyivel nő a pénztári összeg, ha a recept a meglévő szükséglethez kerül. */
+    private double marginal(String storeId, Map<String, Double> baseNeed, Suggestion s, boolean bulk, Map<String, Double> payCache) {
+        double m = 0;
+        for (Map.Entry<String, Double> e : needs(List.of(s)).entrySet()) {
+            double cur = baseNeed.getOrDefault(e.getKey(), 0.0);
+            m += pay(storeId, e.getKey(), cur + e.getValue(), bulk, payCache) - (cur > 0 ? pay(storeId, e.getKey(), cur, bulk, payCache) : 0);
+        }
+        return m;
     }
 
     /**

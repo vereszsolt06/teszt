@@ -232,6 +232,7 @@ CSV-fejléc: `bolt;termek;ar;egyseg;kiszereles;rendes_ar;tol;ig;alapanyag;vonalk
 ### 5. Heti terv (`WeeklyPlanner`)
 - **Jelöltek:** a bolt beárazott receptjei, desszertek és reggelik nélkül, a diétára és az eszközökre szűrve, a „Nem” és a lecserélt receptek nélkül.
 - **Mohó válogatás közös kosárral:** minden napra azt a receptet választja, amelynél a legjobb az *ajánlási pontszám (jó árak) + „rendes vacsora” érték + kedvenc-bónusz + kis véletlen − a kosárhoz adott pénztári többletköltség*.
+- **Javító kör:** a mohó választás nem látja előre, hogy egy később választott recept ugyanazt a csomagot (tojástálca, zacskó borsó) használná fel. Ezért utána napról napra kipróbálja minden jelölt cseréjét a többi nap mellett, és megtartja, ami a hét egészén javít (ugyanaz a mérce: Σ napok × recept értéke − 0,55 × pénztári összeg / egy vacsora kerete); a keret fölött a megtakarítás számít. Minden szabály marad (változatosság, diéta, eszközök, megtartott napok, többnapos főzésre csak eltartható étel). Mérés 1728 háztartás-beállításon (6 bolt × 1/2/4 fő × 3/5/7 vacsora × 4 diéta × keret nélkül / szűk kerettel × 4 mag): **adagár −2,3%** (640,8 → 626,0 Ft), **a keretet 6,5%-kal ritkábban lépi túl**, a jó-ár pontszám és a „rendes vacsora” érték változatlan, a különböző hetek száma szinte ugyanannyi; egy terv 9 helyett 13 ms. A véletlen receptenként állandó (a mag és a recept függvénye), így a mohó és a javító kör ugyanazt a célt követi.
 - **„Rendes vacsora”:** a NomNom valódi hétköznapi vacsorákat ad, nem a legolcsóbb köretet. Ezért előnyt kap a fehérjedús főétel és a népszerű konyha (olasz, mexikói, ázsiai, görög, spanyol, comfort), hátrébb kerül a könnyű leves, a főzelék és a 400 kcal alatti tál. Így 2 főre 5 vacsora jellemzően 5–9 ezer Ft, nem 3 ezer krumplis tészta. A többletköltség azt számolja, mennyivel nő a **közös** lista ára: ha hétfőn már vettél egy 2 kg-os zsák krumplit, a csütörtöki krumplis tészta krumplija ingyen van. Ezért a hét receptjei maguktól is egymásra épülnek.
 - **Keret:** minden napra a hátralévő keret arányos részét nézi, és tartalékot hagy a többi napra. Ha a keret túl szűk, a legolcsóbb lehetőséget veszi, és megjegyzésben jelzi.
 - **Lefedettség:** amelyik receptnek több alapanyaga nincs az Árfigyelőben (becsült ár), az hátrébb kerül (−0,35 × a hiányzó arány), mert annak az ára bizonytalan.
@@ -394,7 +395,7 @@ Dockerfile, docker-compose.yml   konténer: app + postgres:16
 ./build.sh test        # Windows: build.cmd test
 ```
 
-48 teszt fut le:
+49 teszt fut le:
 - JSON- és xlsx-olvasás, az Árfigyelő-fejléc felismerése, egységátváltás;
 - mind a négy jó ár jel, valamint az elérhetőség hatása;
 - a kiszerelés-modell: tojásdoboz vagy tálca, mérlegelős áru minimum egy darabbal, „ca. 500g”, csak csomagolt liszt, darab ↔ kg (paprika, zsemle), csomós zöldség, tűrés, a nagy kiszerelés határa;
@@ -405,6 +406,7 @@ Dockerfile, docker-compose.yml   konténer: app + postgres:16
 - a mennyiségek átszámolása más adagszámra (db, szelet, dl, dkg → kg, „fél”, „másfél”), mind a 170 recept minden sorára;
 - heti terv maradékkal (3 napra főzés, a maradéknapra nincs vásárlás, csak eltartható étel), ugyanaz a hét több boltban, két boltos lista (sosem drágább, kis megtakarításért nem bont);
 - tárolás oda-vissza (profil, értékelés, hét, pipák, árnap, kézi akció) fájlokkal, és – ha a `PG_TEST_URL` meg van adva – PostgreSQL-lel is, párhuzamos írással és SQL-befecskendezési próbával;
+- heti terv javító köre: 6 boltban × 2 létszám × 3 mag × keret nélkül / kerettel átlagosan olcsóbb a mohó tervnél, nem lépi túl gyakrabban a keretet, nincs ismétlés vagy desszert, a megtartott napokhoz nem nyúl;
 - heti terv: nincs ismétlés, változatos fő alapanyag, nincs desszert, a lista összege egyezik, egy termék egy sor, diéta- és eszközszűrő, csere a többi nap megtartásával, keret, más mag más hetet ad;
 - a letöltés, a gyorsítótár és a visszaesés egy helyi HTTP-szerverrel;
 - a hibás frissítés kezelése (a valós adat nem cserélődik demóra);
@@ -472,7 +474,7 @@ Ezeket kérdezés nélkül döntöttem el; bármelyik könnyen módosítható.
 - **Horvátország béta:** a névalapú illesztés valódi neveken hangolt, de a teljes, napi archívumon itt nem tudtam lefuttatni (a fejlesztői környezetből a cijene.dev nem érhető el); a formátumot a nyílt forráskódjukból és egy valódi árlistából vettem, a tesztek ilyen archívummal futnak. Az admin felület egyelőre a magyar adatokat kezeli.
 - A horvát első betöltés egy-két perc (letöltés), utána naponta egyszer; egy szerényebb gépen a feldolgozás kb. 300–500 MB memóriát kér.
 - A tápértékek tipikus, kerekített értékekből számolt becslések; diétás vagy orvosi célra nem elég pontosak.
-- A heti terv mohó algoritmus, nem garantáltan a legolcsóbb kombináció; cserébe gyors (≈ 0,1 s) és jól érthető.
+- A heti terv mohó választás + egycserés javító kör (lásd 5. pont): nem garantáltan a legjobb kombináció (két nap egyidejű cseréjét nem próbálja), cserébe gyors (≈ 13 ms) és jól érthető.
 - A közös háztartás linkje bárkinek hozzáférést ad, aki megkapja; jelszó / fiók nincs.
 - A NomNom Planner ötletét és felépítését vettem át (lásd lent), a szövegeit, fotóit és márkáját nem.
 - Az ár „hasonló termék” cseréje a saját tételeknél kategória + egység + kb. kiszerelés alapján megy; nagyon eltérő minőségű termékeket is párba állíthat.
