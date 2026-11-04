@@ -1,6 +1,9 @@
 // Spórolós Konyha – kliensoldal. Nincs keretrendszer: fetch + DOM, minden szöveg textContent-tel kerül ki.
 "use strict";
 
+// a statikus HTML a felület nyelvén (a szótár az i18n.js-ből jön)
+translateDom(document.body);
+
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 

@@ -689,6 +689,7 @@ public final class AllTests {
             Map<String, Object> hrRec = Json.obj(Json.parse(get(c, base + "/api/recipe?id=paprikas-csirke&store=lidl&lang=hr", 200)));
             eq("Piletina u paprika umaku s noklicama", Json.obj(hrRec.get("recipe")).get("name"), "?lang=hr → horvát");
             get(c, base + "/i18n.js", 200);
+            for (String l : List.of("en", "hr", "de")) get(c, base + "/lang/" + l + ".js", 200);
         } finally {
             server.stop();
         }

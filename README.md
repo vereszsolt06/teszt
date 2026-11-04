@@ -332,9 +332,10 @@ src/main/java/hu/sporolos/
 src/main/resources/
   data/products.json, recipes.json
   markets/hr.json                Horvátország: láncok, illesztési szabályok, magyar → horvát keresőszavak
-  i18n/en.json                   angol: receptek, alapanyagok, kifejezések, mértékegységek, mondatminták
+  i18n/en.json, hr.json, de.json  receptek, alapanyagok, kifejezések, mértékegységek, mondatminták, keresés
   static/index.html, app.css, app.js, favicon.svg, manifest.webmanifest
-         i18n.js                 a felület nyelve: felismerés, t(), szótár, nyelvválasztó
+         i18n.js                 a felület nyelve: felismerés, t(), többes szám, nyelvválasztó
+         lang/en.js, hr.js, de.js  a felület szótárai (csak a választott töltődik le)
          sw.js                   service worker: offline hét, lista és receptek
          admin.html, admin.css, admin.js
          fonts/                  Bricolage Grotesque, Atkinson Hyperlegible (SIL OFL, latin + latin-ext részhalmaz)
@@ -444,7 +445,7 @@ Az app eddig két országban tervezett, de csak magyarul beszélt – ez volt a 
 - **A terméknevek maradnak**, ahogy a bolt hívja őket (a polcon is így látod).
 - **Közös lista, külön nyelv:** a pipák kulcsa a tétel eredeti neve (`labelKey`), így a párod magyarul, te angolul ugyanazt a listát pipáljátok.
 - **Nyelvfelismerés:** a választott nyelv (eszközönként), különben a böngésző első támogatott nyelve, különben angol. Az API `?lang=` nélkül az `Accept-Language` fejlécet nézi.
-- **Új nyelv** (pl. horvát vagy német): egy `resources/i18n/{nyelv}.json` (a szerkezete az `en.json`-é), egy szótár az `i18n.js`-ben, és a nyelv kódja a `Lang.SUPPORTED`-ban és a `LANGS`-ban. Ami hiányzik, magyarul jelenik meg – fokozatosan is fordítható. A teszt (`testEnglishCoversEveryRecipeAndIngredient`) jelzi, ha egy új recept fordítása hiányzik.
+- **Új nyelv:** egy `resources/i18n/{nyelv}.json` (a szerkezete az `en.json`-é), egy `static/lang/{nyelv}.js` szótár (`I18N.xx = {…}`, a kulcs a magyar szöveg), a nyelv kódja a `Lang.SUPPORTED`-ban és az `i18n.js` `LANGS`-ában, és a fájl a `sw.js` listájában. A felület csak a választott nyelv szótárát tölti le (az `i18n.js` mag 4,6 KB), így az újabb nyelvek nem növelik a letöltést. Ami hiányzik, magyarul jelenik meg – fokozatosan is fordítható. A teszt (`testEnglishCoversEveryRecipeAndIngredient`) jelzi, ha egy új recept fordítása hiányzik.
 
 **2. Offline, a boltban is.** A sorok között gyakran nincs térerő – épp akkor, amikor a listát nézed. A service worker (`sw.js`) minden GET-et előbb a hálózatról kér (online mindig friss), a választ eltárolja, és ha nincs hálózat, a legutóbbit adja: a hét, a lista, a receptek offline is megnyílnak. A pipák offline azonnal látszanak, sorba állnak, és amint újra van hálózat, felmennek (egy tétel utolsó állapota számít); a fejléc alatt egy sáv jelzi az offline állapotot. A profil egy másolata az eszközön is megvan, hogy az app offline is elinduljon.
 

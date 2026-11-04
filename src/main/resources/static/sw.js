@@ -4,10 +4,10 @@
 // a bevásárlólista és a receptek offline is megnyílnak. Az admin felület és az írások (POST/PUT/DELETE) kimaradnak.
 "use strict";
 
-const CACHE = "sporolos-v2";
+const CACHE = "sporolos-v3";
 const SHELL = ["/", "/index.html", "/app.css", "/i18n.js", "/app.js", "/favicon.svg", "/manifest.webmanifest",
   "/fonts/bricolage-grotesque.woff", "/fonts/atkinson-hyperlegible-400.woff", "/fonts/atkinson-hyperlegible-700.woff",
-  "/icons/icon-192.png", "/icons/apple-touch-icon.png"];
+  "/icons/icon-192.png", "/icons/apple-touch-icon.png", "/lang/en.js", "/lang/hr.js", "/lang/de.js"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
