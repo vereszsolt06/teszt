@@ -4,14 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Spórolós Konyha</title>
-  <meta name="description" content="Heti vacsoraterv a kereted szerint, a GVH Árfigyelő napi boltárai alapján, egy közös bevásárlólistával.">
+  <meta name="description" content="Heti vacsoraterv a kereted szerint, a boltok napi árai alapján (GVH Árfigyelő, horvát árlisták), egy közös bevásárlólistával.">
   <meta name="theme-color" content="#f3f0e8" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#14130f" media="(prefers-color-scheme: dark)">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="preload" href="fonts/bricolage-grotesque.woff" as="font" type="font/woff" crossorigin>
+  <link rel="preload" href="fonts/atkinson-hyperlegible-400.woff" as="font" type="font/woff" crossorigin>
   <link rel="stylesheet" href="app.css">
 </head>
 <body>
@@ -43,15 +42,16 @@
     <section class="view" data-view="het" aria-labelledby="week-title">
       <div class="week-head">
         <div class="week-sum" id="week-sum">
-          <p class="eyebrow" id="week-title">Ez a hét</p>
-          <p class="week-total" id="week-total">…</p>
+          <p class="eyebrow" id="week-title">Ez a heted</p>
+          <p class="week-total" id="week-total"><span class="skel-line wide"></span></p>
           <p class="week-meta" id="week-meta"></p>
           <div class="meter" id="week-meter" hidden><span></span></div>
           <p class="meter-text" id="week-meter-text"></p>
+          <div class="week-facts" id="week-facts"></div>
         </div>
         <div class="week-actions">
-          <button class="primary" id="week-new" type="button">Új hetet kérek</button>
-          <a class="ghost" href="#lista" id="week-to-list">Bevásárlólista</a>
+          <button class="primary" id="week-new" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16m0 4v-4h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Új hetet kérek</button>
+          <a class="ghost" href="#lista" id="week-to-list">Bevásárlólista →</a>
         </div>
       </div>
       <div class="week-compare" id="week-compare" aria-label="Ugyanez a hét a többi boltban"></div>
@@ -77,7 +77,7 @@
       </div>
       <section class="extras" aria-labelledby="extras-title">
         <h2 class="section-title" id="extras-title">Saját tételek</h2>
-        <p class="sub">Ami a vacsorákon kívül kell (kávé, tej, alma…). Ha az Árfigyelőből választod, az ára is beszámít, és abban is segít, melyik bolt a legolcsóbb.</p>
+        <p class="sub">Ami a vacsorákon kívül kell (kávé, tej, alma…). Ha a javaslatok közül választod, az ára is beszámít, és abban is segít, melyik bolt a legolcsóbb.</p>
         <form class="extra-add" id="extra-form" autocomplete="off">
           <input type="search" id="extra-q" placeholder="Pl. kávé, banán, tej…" aria-label="Saját tétel" enterkeyhint="done">
           <button class="primary small" type="submit">Hozzáadom</button>
@@ -116,7 +116,7 @@
     <!-- AKCIÓK -->
     <section class="view" data-view="akciok" aria-labelledby="offers-title" hidden>
       <h1 class="view-title" id="offers-title">Most jó áron</h1>
-      <p class="sub">A boltjaid kiemelt árai a GVH Árfigyelő mai adataiból és a felvitt bolti akciókból: a legnagyobb megtakarítás elöl. Egy termékre koppintva látod az árát minden láncban, és felteheted a listádra.</p>
+      <p class="sub" id="offers-sub">A boltjaid kiemelt árai a GVH Árfigyelő mai adataiból és a felvitt bolti akciókból: a legnagyobb megtakarítás elöl. Egy termékre koppintva látod az árát minden láncban, és felteheted a listádra.</p>
       <div class="offers-tools">
         <label class="search"><span class="visually-hidden">Keresés az akciók között</span>
           <input type="search" id="offer-q" placeholder="Keresés: csirke, sajt, kávé…" autocomplete="off" enterkeyhint="search"></label>
@@ -128,7 +128,7 @@
 
     <!-- RECEPTEK -->
     <section class="view" data-view="receptek" aria-labelledby="browse-title" hidden>
-      <div class="row-head top">
+      <div class="row-head first">
         <h1 class="view-title" id="browse-title">Receptek</h1>
         <a class="ghost" href="#nom">♥ Nom vagy nem – lapozós ízlés-tanító</a>
       </div>
@@ -169,7 +169,8 @@
   </main>
 
   <footer class="foot">
-    <p>Árak: <a href="https://arfigyelo.gvh.hu" target="_blank" rel="noopener">GVH Árfigyelő</a> napi adatai lánconként (a lánc legolcsóbb boltjának ára; a te boltodban lehet drágább) és a felvitt bolti akciók. <span id="foot-source"></span></p>
+    <p id="foot-text">Árak: <a href="https://arfigyelo.gvh.hu" target="_blank" rel="noopener">GVH Árfigyelő</a> napi adatai lánconként (a lánc legolcsóbb boltjának ára; a te boltodban lehet drágább) és a felvitt bolti akciók.</p>
+    <p id="foot-source"></p>
   </footer>
 
   <nav class="bottom-tabs" aria-label="Fő nézetek">
@@ -183,6 +184,53 @@
   <dialog class="recipe-sheet" id="recipe-sheet" aria-labelledby="rs-title">
     <div class="rs-scroll" id="rs-body"></div>
   </dialog>
+
+  <!-- főzés mód: lépésenként, nagy betűkkel, a képernyő nem alszik el -->
+  <dialog class="cook" id="cook" aria-labelledby="cook-title">
+    <div class="cook-inner">
+      <div class="cook-head">
+        <div>
+          <p class="cook-kicker" id="cook-kicker">Főzés mód</p>
+          <h2 id="cook-title"></h2>
+        </div>
+        <button class="rs-close" id="cook-close" type="button" aria-label="Kilépés a főzés módból">✕</button>
+      </div>
+      <div class="cook-dots" id="cook-dots" aria-hidden="true"></div>
+      <div class="cook-stage" id="cook-stage" aria-live="polite"></div>
+      <details class="cook-ings"><summary>Hozzávalók</summary><ul id="cook-ings"></ul></details>
+      <div class="cook-nav">
+        <button class="ghost" id="cook-prev" type="button">← Előző</button>
+        <button class="primary" id="cook-next" type="button">Következő →</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- csere: mi legyen helyette -->
+  <dialog class="sheet swap-sheet" id="swap-sheet" aria-labelledby="swap-title">
+    <form method="dialog" class="dialog-close"><button type="submit" class="ghost small">Mégse</button></form>
+    <h2 id="swap-title">Mi legyen helyette?</h2>
+    <p class="hint" id="swap-hint">A többi nap marad. Mellettük látod, mennyivel változik a hét ára.</p>
+    <ul class="swap-list" id="swap-list"></ul>
+    <div class="swap-foot">
+      <button class="ghost" id="swap-random" type="button">🎲 Lepj meg</button>
+      <a class="ghost" href="#receptek" id="swap-browse">Inkább böngészek</a>
+    </div>
+  </dialog>
+
+  <!-- egy ország árainak betöltése -->
+  <div class="loader" id="loader" hidden role="status" aria-live="polite">
+    <div class="loader-card">
+      <span class="loader-flag" id="loader-flag" aria-hidden="true">🛒</span>
+      <h2 id="loader-title">Árak betöltése…</h2>
+      <p class="hint" id="loader-text"></p>
+      <div class="meter loader-meter"><span id="loader-bar"></span></div>
+      <p class="fineprint" id="loader-phase"></p>
+      <div class="loader-actions" id="loader-actions" hidden>
+        <button class="primary" id="loader-retry" type="button">Újrapróbálom</button>
+        <button class="ghost" id="loader-home" type="button">Vissza a magyar árakhoz</button>
+      </div>
+    </div>
+  </div>
 
   <!-- bolt választása -->
   <dialog class="sheet" id="store-sheet" aria-labelledby="store-sheet-title">
@@ -222,7 +270,8 @@
     <div class="item-actions"><button class="primary" id="item-add" type="button">Felteszem a listámra</button></div>
   </dialog>
 
-  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden><span id="toast-text"></span><button type="button" id="toast-action" hidden></button></div>
+  <div class="confetti" id="confetti" aria-hidden="true"></div>
 
   <script src="app.js"></script>
 </body>

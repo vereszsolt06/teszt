@@ -31,6 +31,8 @@ services:
       # az /admin felület jelszava; ha üres, az app indításkor generál egyet és kiírja a naplóba
       # (docker compose logs app | grep admin)
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      # országok: hu,hr (a horvát árak az első horvát kéréskor töltődnek le az app-adatok kötetbe)
+      MARKETS: ${MARKETS:-hu,hr}
     volumes:
       - app-adatok:/app/data
     ports:

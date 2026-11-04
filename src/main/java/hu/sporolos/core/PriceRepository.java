@@ -40,7 +40,8 @@ public final class PriceRepository {
 
     /** Egy elemzés adott hűségkártya-készlettel. */
     public record Analysis(List<PriceEntry> entries, DealAnalyzer deals, RecipeRecommender recommender,
-                           Map<String, List<PriceEntry>> byItem, List<PromoMerger.PromoStatus> promoStatuses) {}
+                           Map<String, List<PriceEntry>> byItem, List<PromoMerger.PromoStatus> promoStatuses,
+                           Map<String, List<PriceEntry>> byStore) {}
 
     /** Egy betöltés eredménye – a webes réteg csak ezt olvassa. */
     public static final class State {
@@ -109,6 +110,8 @@ public final class PriceRepository {
         return t;
     });
     private volatile State state;
+    private final hu.sporolos.market.Market market;
+    private volatile String lastError;
 
     public PriceRepository(Catalog catalog, List<PriceProvider> providers, PriceHistory history, Duration maxAge) {
         this(catalog, providers, history, null, maxAge);
@@ -116,11 +119,59 @@ public final class PriceRepository {
 
     public PriceRepository(Catalog catalog, List<PriceProvider> providers, PriceHistory history,
                            PromoStore promoStore, Duration maxAge) {
+        this(hu.sporolos.market.Market.HU, catalog, providers, history, promoStore, maxAge);
+    }
+
+    /**
+     * @param market a piac (pénznem): az elemzések szövegei (pl. „máshol akár 2,49 €”) ennek a pénznemével készülnek
+     */
+    public PriceRepository(hu.sporolos.market.Market market, Catalog catalog, List<PriceProvider> providers,
+                           PriceHistory history, PromoStore promoStore, Duration maxAge) {
+        this.market = market;
         this.catalog = catalog;
         this.providers = providers;
         this.history = history;
         this.promoStore = promoStore;
         this.maxAge = maxAge;
+    }
+
+    public hu.sporolos.market.Market market() {
+        return market;
+    }
+
+    public List<PriceProvider> providers() {
+        return providers;
+    }
+
+    /** Az állapot, ha már betöltődött (különben null, és nem indít betöltést). */
+    public State peek() {
+        return state;
+    }
+
+    /** Fut-e épp betöltés a háttérben. */
+    public boolean loading() {
+        return refreshing.get();
+    }
+
+    /** Az utolsó sikertelen (háttér)betöltés hibája, ha még nincs állapot. */
+    public String lastError() {
+        return lastError;
+    }
+
+    /** Betöltés a háttérben (ha még nem fut); a {@link #peek()} a végén adja az állapotot. */
+    public void loadAsync() {
+        if (!refreshing.compareAndSet(false, true)) return;
+        lastError = null;
+        background.submit(() -> {
+            try {
+                reload();
+            } catch (RuntimeException e) {
+                lastError = e.getMessage();
+                System.err.println("[árforrás] " + market.name() + ": " + e.getMessage());
+            } finally {
+                refreshing.set(false);
+            }
+        });
     }
 
     public PromoStore promoStore() {
@@ -187,7 +238,7 @@ public final class PriceRepository {
     public synchronized State replaceCatalog(Catalog c) {
         this.catalog = c;
         State old = state;
-        if (old == null) return reload();
+        if (old == null) return null; // még nincs betöltve: a következő betöltés már az újat használja
         state = build(old.snapshot(), old.snapshot().demo() ? null : history, new ArrayList<>(old.warnings()));
         return state;
     }
@@ -224,14 +275,23 @@ public final class PriceRepository {
         List<Promo> promoList = promos;
         LocalDate today = LocalDate.now();
 
-        java.util.function.Function<Set<String>, Analysis> builder = cards -> {
+        hu.sporolos.market.Market mk = market;
+        java.util.function.Function<Set<String>, Analysis> builder = cards -> hu.sporolos.market.Market.with(mk, () -> {
             PromoMerger.Result merged = PromoMerger.merge(catalog, snap.entries(), promoList, today, cards);
-            DealAnalyzer deals = new DealAnalyzer(merged.entries(), h, merged.promoInfo());
+            Map<String, PromoMerger.PromoInfo> promoInfo = merged.promoInfo();
+            if (!snap.nativePromos().isEmpty()) {
+                promoInfo = new HashMap<>(snap.nativePromos());
+                promoInfo.putAll(merged.promoInfo());
+            }
+            DealAnalyzer deals = new DealAnalyzer(merged.entries(), h, promoInfo);
             RecipeRecommender rec = new RecipeRecommender(catalog, merged.entries(), deals, ids, merged.forcedIngredient());
             Map<String, List<PriceEntry>> byItem = new HashMap<>();
             for (PriceEntry e : merged.entries()) byItem.computeIfAbsent(e.itemId(), k -> new ArrayList<>()).add(e);
-            return new Analysis(merged.entries(), deals, rec, Collections.unmodifiableMap(byItem), merged.statuses());
-        };
+            Map<String, List<PriceEntry>> byStore = new HashMap<>();
+            for (PriceEntry e : merged.entries()) byStore.computeIfAbsent(e.storeId(), k -> new ArrayList<>()).add(e);
+            return new Analysis(merged.entries(), deals, rec, Collections.unmodifiableMap(byItem), merged.statuses(),
+                    Collections.unmodifiableMap(byStore));
+        });
         State s = new State(snap, List.copyOf(stores), Collections.unmodifiableMap(counts), days, Instant.now(),
                 List.copyOf(w), promoList, builder);
         s.analysis(null); // az alapelemzés azonnal elkészül, hogy az első kérés ne várjon

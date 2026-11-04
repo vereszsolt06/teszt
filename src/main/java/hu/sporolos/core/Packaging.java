@@ -79,7 +79,7 @@ public final class Packaging {
         double qty = e.quantity() > 0 ? e.quantity() : 1;
 
         // 1. csomós zöldség: az ár egy csomóra szól
-        if (p.bunchWeight() > 0 && n.contains("csomo")) {
+        if (p.bunchWeight() > 0 && (n.contains("csomo") || n.contains("vezic"))) {
             double content = kgTo(p, p.bunchWeight());
             if (Double.isNaN(content)) return null;
             return new Pack(Kind.BUNCH, content, e.price(), 0, "csomó",
@@ -88,6 +88,14 @@ public final class Packaging {
 
         boolean perKgRow = unit.equals("kg") && Math.abs(qty - 1) < 1e-9;
         double nameWeight = packageWeightFromName(e.productName());
+
+        // a forrás szerint mérlegelős (pl. a horvát árlisták „kg” egysége): a névben álló tömeg csak tájékoztató
+        if (e.byWeight() && perKgRow && !p.packaged()) {
+            double content = kgTo(p, 1.0);
+            if (Double.isNaN(content)) return null;
+            double minBuy = p.pieceWeight() > 0 ? kgTo(p, p.pieceWeight()) : 0;
+            return new Pack(Kind.WEIGHED, content, e.price(), minBuy, "mérlegelős", Money.ft(e.price()) + "/kg");
+        }
 
         // 2. mérlegelős: kilós sor, a névben "lédig / Ft/kg / pult", vagy nincs benne csomagtömeg
         if (perKgRow && !p.packaged() && (BY_WEIGHT.matcher(n).find() || Double.isNaN(nameWeight))) {
@@ -189,19 +197,12 @@ public final class Packaging {
         return found;
     }
 
-    /** Pénzformázás ("1 299 Ft"). */
+    /** Pénzformázás a kérés piacának pénznemében ("1 299 Ft", "3,49 €"). */
     public static final class Money {
         private Money() {}
 
         public static String ft(double v) {
-            long r = Math.round(v);
-            String s = String.valueOf(Math.abs(r));
-            StringBuilder sb = new StringBuilder(r < 0 ? "-" : "");
-            for (int i = 0; i < s.length(); i++) {
-                if (i > 0 && (s.length() - i) % 3 == 0) sb.append(' ');
-                sb.append(s.charAt(i));
-            }
-            return sb + " Ft";
+            return hu.sporolos.market.Market.current().money(v);
         }
     }
 

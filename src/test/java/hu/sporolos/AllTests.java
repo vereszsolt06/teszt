@@ -25,6 +25,11 @@ import hu.sporolos.store.FileStorage;
 import hu.sporolos.store.PgStorage;
 import hu.sporolos.store.Storage;
 import hu.sporolos.web.WebServer;
+import hu.sporolos.market.Market;
+import hu.sporolos.market.MarketDef;
+import hu.sporolos.market.Markets;
+import hu.sporolos.market.NameRules;
+import hu.sporolos.data.CijeneArchiveProvider;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -700,14 +705,21 @@ public final class AllTests {
             // akciók a boltjaidban, saját tételek a listán
             List<Object> offers = Json.arr(Json.parse(get(c, base + "/api/offers?limit=20", 200)));
             check(!offers.isEmpty(), "van kiemelt ár");
-            var hit = Json.obj(Json.arr(Json.parse(get(c, base + "/api/search?q=tojas&limit=1", 200))).get(0));
+            // a demó árak naponta mások (nem minden lánc tart mindent): a hét boltjában keresünk
+            String weekStore = Json.str(Json.obj(Json.parse(get(c, base + "/api/week?id=" + pid, 200))).get("store"));
+            Map<String, Object> hit = null;
+            for (String q : List.of("tojas", "tej", "liszt", "rizs", "vaj")) {
+                List<Object> found = Json.arr(Json.parse(get(c, base + "/api/search?q=" + q + "&limit=1&store=" + weekStore, 200)));
+                if (!found.isEmpty()) { hit = Json.obj(found.get(0)); break; }
+            }
+            check(hit != null, "van keresési találat a hét boltjában");
             post(c, base + "/api/extras?id=" + pid, "{\"name\":\"Tojás\",\"itemId\":\"" + hit.get("id") + "\"}", 200);
             post(c, base + "/api/extras?id=" + pid, "{\"name\":\"Mosogatószer\"}", 200);
             post(c, base + "/api/extras?id=" + pid, "{\"name\":\"\"}", 400);
             Map<String, Object> wx = Json.obj(Json.parse(get(c, base + "/api/week?id=" + pid, 200)));
             List<Object> ex = Json.arr(wx.get("extras"));
             eq(2, ex.size(), "két saját tétel");
-            check(Json.obj(ex.get(0)).get("price") != null, "a tojásnak van ára (ugyanaz vagy hasonló termék)");
+            check(Json.obj(ex.get(0)).get("price") != null, "a választott terméknek van ára (ugyanaz vagy hasonló termék)");
             eq(null, Json.obj(ex.get(1)).get("price"), "a szabad szöveges tételnek nincs ára");
             check(Json.num(wx.get("extrasTotal"), 0) > 0, "a saját tételek összege");
             get(c, base + "/api/extras?id=" + pid, 200);
@@ -1026,6 +1038,278 @@ public final class AllTests {
 
     static PriceEntry entry(String id, String name, int cat, String store, double price, String unit, double qty) {
         return new PriceEntry(id, name, cat, "kat", store, price, price, unit, qty, price / qty, 1, 10, 10);
+    }
+
+
+    // ---------- országok: pénznem, horvát árlisták ----------
+
+    static void testMarketMoney() {
+        String nb = " ";
+        eq("5" + nb + "484" + nb + "Ft", Market.HU.money(5484), "forint: ezres tagolás");
+        eq("-1" + nb + "200" + nb + "Ft", Market.HU.money(-1200), "negatív");
+        MarketDef hr = MarketDef.resource("hr");
+        Market m = hr.market();
+        eq("EUR", m.currency(), "Horvátország: euró");
+        eq("12,49" + nb + "€", m.money(m.toInternal(12.49)), "euró két tizedessel");
+        eq("1" + nb + "234,50" + nb + "€", m.money(m.toInternal(1234.5)), "euró ezres tagolással");
+        eq("0,39" + nb + "€", m.money(m.toInternal(0.39)), "centes ár");
+        // a szövegek (pl. egységár) a kérés piacának pénznemével készülnek
+        eq("2,50" + nb + "€", Market.with(m, () -> Packaging.Money.ft(m.toInternal(2.5))), "a szál piaca szerint");
+        eq("1" + nb + "000" + nb + "Ft", Packaging.Money.ft(1000), "alapból forint");
+    }
+
+    static void testCroatianNameRules() {
+        NameRules r = MarketDef.resource("hr").rules();
+        Object[][] cases = {
+                {"JAJA SVJ L 10/1 SL UZGOJ AGRO-KLASTER", "db", 10.0, "tojas"},
+                {"MLIJEKO SVJ 1.5% M.M. 1 L  ABC", "l", 1.0, "tej"},
+                {"MLIJEKO TR 2.8%MM 2L ČEP VINDIJA", "l", 2.0, "tej"},
+                {"KOKOS MLIJEKO MANJ MAS 500 ml GO-TAN", "l", 0.5, "kokusztej"},
+                {"VRHNJE ZA KUH 20% BRZO&FINO 3X200g", "kg", 0.6, "tejszin"},
+                {"KISELO VRHNJE MILERAM 22% 400g DUKAT", "kg", 0.4, "tejfol"},
+                {"PILEĆA PRSA BEZ KOŽE CCA 500G/2.5kg SP SV", "kg", 1.0, "csirkemell"},
+                {"ZABATAK PILEĆI K PLUS", "kg", 1.0, "csirkecomb"},
+                {"RAJČICA PASIRANA GARDEN GOOD 500g", "kg", 0.5, "passata"},
+                {"RAJČICA", "kg", 1.0, "paradicsom"},
+                {"KRUH BIJELI REZANI PAK 580 g  K PLUS", "kg", 0.58, "kenyer"},
+                {"KUKURUZ ŠEĆERAC 285G", "kg", 0.285, "kukorica"},
+                {"RIŽA DUGO ZRNO EXTRA 1  kg SCOTTI", "kg", 1.0, "rizs"},
+                {"TJESTENINA SPAGHETTI MARODI 400g", "kg", 0.4, "spagetti"},
+                {"BRAŠNO GLATKO T-550 1 kg PODRAVKA", "kg", 1.0, "liszt"},
+                {"BANANA BIO", "kg", 1.0, "banan"},
+                {"JABUKA GRANNY SMITH", "kg", 1.0, "alma"},
+                {"Svježe mlijeko 3,2% m.m.", "l", 1.0, "tej"},
+                {"Junetina mljevena", "kg", 0.5, "daralt_marha"},
+                {"Miješano mljeveno meso", "kg", 0.5, "daralthus"},
+                {"Ulje maslinovo extra djevičansko", "l", 0.5, "olivaolaj"},
+                {"Luk crveni", "kg", 1.0, "voroshagyma"},
+                // nem alapanyag: kész étel, felvágott, édesség, állateledel, kozmetikum
+                {"PILEĆI FILETINO CLASSIC VINDIJA", "kg", 1.0, null},
+                {"UMAK RAJČICA DATTER 330 g AGROMONTE", "kg", 0.33, null},
+                {"ČOKOLADA FINESSE MLIJ RIŽA 200g", "kg", 0.2, null},
+                {"JUHA OKUSA PILETINA 5/1 INDOMIE 350g", "kg", 0.35, null},
+                {"WHISKAS PILETINA 100 g", "kg", 0.1, null},
+                {"Pjena za kupanje kokos i mlijeko", "l", 0.5, null},
+                {"Savijača jabuka, vanilija i karamela", "kg", 0.45, null},
+                {"Krekeri sa sirom i češnjakom", "kg", 0.13, null},
+                {"Goveđi gulaš", "kg", 0.3, null},
+        };
+        for (Object[] c : cases) {
+            NameRules.Rule rule = r.classify((String) c[0], (String) c[1], (double) c[2]);
+            eq(c[3], rule == null ? null : rule.key(), "illesztés: " + c[0]);
+        }
+        // a szabályok csak létező alapanyagra mutatnak
+        for (NameRules.Rule rule : r.rules()) check(CATALOG.products().containsKey(rule.key()), "ismert alapanyag: " + rule.key());
+    }
+
+    /** Egy kis, valósághű horvát napi archívum (cijene.dev formátum). */
+    static Path croatianArchive(Path dir) throws IOException {
+        Path zip = dir.resolve("cijene-2026-11-03.zip");
+        Object[][] products = {
+                // név, egység, kiszerelés, vonalkód, ár (€)
+                {"JAJA SVJ L 10/1 SL UZGOJ", "ko", "10.00 ko", "3857500091710", 3.69},
+                {"MLIJEKO SVJ 1.5% M.M. 1 L  ABC", "ko", "1.00 l", "3850257062361", 1.45},
+                {"PILEĆA PRSA BEZ KOŽE CCA 500G/2.5kg", "kg", "1.00 kg", "3850220115810", 8.09},
+                {"KRUMPIR BIJELI", "kg", "1.00 kg", "", 0.99},
+                {"LUK CRVENI", "kg", "1.00 kg", "", 1.29},
+                {"RIŽA DUGO ZRNO 1 kg", "ko", "1.00 kg", "8001860259401", 1.99},
+                {"KRUH BIJELI \"DOMAĆI\", REZANI 500 g", "ko", "", "3850334420800", 1.65},
+                {"KAVA MLJEVENA 250 g", "ko", "0.25 kg", "3850000000149", 4.99},
+                {"WHISKAS PILETINA 100 g", "ko", "0.10 kg", "3850000000170", 0.79},
+        };
+        try (ZipOutputStream z = new ZipOutputStream(Files.newOutputStream(zip))) {
+            for (String chain : List.of("konzum", "lidl", "dm")) {
+                int stores = chain.equals("konzum") ? 4 : 2;
+                StringBuilder st = new StringBuilder("store_id,type,address,city,zipcode\n");
+                for (int i = 0; i < stores; i++) st.append(chain).append(i).append(",supermarket,Ulica ").append(i).append(",Zagreb,10000\n");
+                StringBuilder pr = new StringBuilder("product_id,barcode,name,brand,category,unit,quantity\n");
+                StringBuilder pc = new StringBuilder("store_id,product_id,price,unit_price,best_price_30,anchor_price,special_price,available,special_sale_type,anchor_price_date\n");
+                for (int k = 0; k < products.length; k++) {
+                    Object[] p = products[k];
+                    String pid = chain.substring(0, 2) + k;
+                    String name = ((String) p[0]).contains(",") || ((String) p[0]).contains("\"")
+                            ? "\"" + ((String) p[0]).replace("\"", "\"\"") + "\"" : (String) p[0];
+                    pr.append(pid).append(',').append(p[3]).append(',').append(name).append(",,HRANA,").append(p[1]).append(',').append(p[2]).append('\n');
+                    double base = (double) p[4] * (chain.equals("lidl") ? 0.95 : 1.0);
+                    for (int i = 0; i < stores; i++) {
+                        double price = Math.round(base * (1 + i * 0.02) * 100) / 100.0;
+                        // a Konzum csirkemellje akciós a boltok felében (az ár mezője ilyenkor üres)
+                        boolean promo = chain.equals("konzum") && k == 2 && i % 2 == 0;
+                        double sp = Math.round(price * 0.75 * 100) / 100.0;
+                        String unitPrice = k == 6 ? String.valueOf(Math.round(price / 0.5 * 100) / 100.0) : "";
+                        pc.append(chain).append(i).append(',').append(pid).append(',').append(promo ? "" : String.valueOf(price)).append(',')
+                                .append(unitPrice).append(',').append(promo ? sp : price).append(',').append(p[4]).append(',')
+                                .append(promo ? String.valueOf(sp) : "").append(",1,").append(promo ? "akcija" : "").append(",\n");
+                    }
+                }
+                z.putNextEntry(new ZipEntry(chain + "/stores.csv"));
+                z.write(st.toString().getBytes(StandardCharsets.UTF_8));
+                z.putNextEntry(new ZipEntry(chain + "/products.csv"));
+                z.write(pr.toString().getBytes(StandardCharsets.UTF_8));
+                z.putNextEntry(new ZipEntry(chain + "/prices.csv"));
+                z.write(pc.toString().getBytes(StandardCharsets.UTF_8));
+            }
+            z.putNextEntry(new ZipEntry("archive-info.txt"));
+            z.write("teszt".getBytes(StandardCharsets.UTF_8));
+        }
+        return zip;
+    }
+
+    static void testCroatianArchive() throws Exception {
+        Path dir = Files.createTempDirectory("sporolos-hr");
+        try {
+            MarketDef hr = MarketDef.resource("hr");
+            Market m = hr.market();
+            var provider = new CijeneArchiveProvider(hr, null, dir.resolve("hr"), croatianArchive(dir));
+            PriceProvider.Snapshot snap = provider.load();
+            eq(LocalDate.parse("2026-11-03"), snap.date(), "a dátum a fájlnévből");
+            check(snap.entries().stream().noneMatch(e -> e.storeId().equals("dm")), "a drogéria (dm) kimarad");
+            PriceEntry eggs = snap.entries().stream().filter(e -> e.storeId().equals("konzum") && e.productName().startsWith("Jaja")).findFirst().orElseThrow();
+            eq("db", eggs.unit(), "tojás darabra");
+            eq(10.0, eggs.quantity(), "10 tojás");
+            eq(m.toInternal(3.69), eggs.price(), "a lánc legolcsóbb boltjának ára, belső egységben");
+            eq(4, eggs.totalShops(), "a Konzum 4 boltja");
+            eq(2, eggs.chainCount(), "két láncban kapható (ugyanaz a vonalkód)");
+            check(eggs.categoryId() >= MarketDef.CATEGORY_BASE, "a tojás alapanyagként illeszkedik");
+            PriceEntry chicken = snap.entries().stream().filter(e -> e.storeId().equals("konzum") && e.productName().startsWith("Pileća")).findFirst().orElseThrow();
+            check(chicken.byWeight(), "a csirkemell mérlegelős (kg egység)");
+            check(chicken.price() < chicken.maxPrice(), "akciós és rendes ár a boltok között");
+            check(snap.nativePromos().containsKey(chicken.itemId() + "|konzum"), "a Konzum akciója a lánc saját akciója");
+            PriceEntry bread = snap.entries().stream().filter(e -> e.productName().startsWith("Kruh")).findFirst().orElseThrow();
+            eq("kg", bread.unit(), "a kenyér kiszerelése a névből (500 g)");
+            eq(0.5, bread.quantity(), "500 g");
+            check(bread.productName().contains("\"domaći\", rezani"), "idézőjeles, vesszős név is jól olvasódik: " + bread.productName());
+            check(snap.entries().stream().filter(e -> e.productName().startsWith("Whiskas")).allMatch(e -> e.categoryId() == 0), "állateledel nem alapanyag");
+            check(snap.entries().stream().filter(e -> e.productName().startsWith("Krumpir")).allMatch(e -> e.byWeight()), "lédig krumpli mérlegelős");
+
+            // az app egésze horvát árakkal: ország a profilban, euró, horvát boltok
+            Catalog hrCatalog = hr.deriveCatalog(resource("/data/products.json"), resource("/data/recipes.json"));
+            PriceRepository huRepo = new PriceRepository(CATALOG, List.of(new DemoPriceProvider(CATALOG, LocalDate.now())), null, Duration.ofHours(1));
+            Markets markets = new Markets(huRepo);
+            markets.add(hr, new PriceRepository(m, hrCatalog, List.of(provider), null, null, Duration.ofHours(12)));
+            FileStorage storage = new FileStorage(dir);
+            WebServer server = new WebServer(markets, storage, null, null);
+            int port = server.start("127.0.0.1", 0);
+            try {
+                HttpClient c = HttpClient.newHttpClient();
+                String base = "http://127.0.0.1:" + port;
+                // első kérés: a horvát árak a háttérben töltődnek → 503 „töltődik”
+                HttpResponse<String> r = c.send(HttpRequest.newBuilder(URI.create(base + "/api/status?market=hr")).build(),
+                        HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+                if (r.statusCode() == 503) {
+                    check(Boolean.TRUE.equals(Json.obj(Json.parse(r.body())).get("loading")), "töltődik jelzés");
+                    for (int i = 0; i < 100 && r.statusCode() == 503; i++) {
+                        Thread.sleep(100);
+                        r = c.send(HttpRequest.newBuilder(URI.create(base + "/api/status?market=hr")).build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+                    }
+                }
+                eq(200, r.statusCode(), "a horvát árak betöltődtek");
+                Map<String, Object> st = Json.obj(Json.parse(r.body()));
+                eq("EUR", Json.obj(st.get("market")).get("currency"), "euró");
+                List<String> ids = Json.arr(st.get("stores")).stream().map(x -> Json.str(Json.obj(x).get("id"))).toList();
+                check(ids.contains("konzum") && ids.contains("lidl") && !ids.contains("dm"), "horvát láncok: " + ids);
+                eq(2, Json.arr(st.get("markets")).size(), "két ország");
+                // magyar kérés közben is magyar marad
+                Map<String, Object> huSt = Json.obj(Json.parse(get(c, base + "/api/status", 200)));
+                eq("HUF", Json.obj(huSt.get("market")).get("currency"), "a magyar állapot forint");
+                // profil horvát országgal
+                Map<String, Object> prof = Json.obj(Json.parse(post(c, base + "/api/profile",
+                        "{\"country\":\"hr\",\"people\":2,\"dinners\":3,\"budget\":20000,\"onboarded\":true,\"stores\":[\"konzum\",\"aldi\"]}", 200)));
+                Map<String, Object> settings = Json.obj(prof.get("settings"));
+                eq("hr", settings.get("country"), "ország mentve");
+                eq(List.of("konzum"), Json.arr(settings.get("stores")), "csak horvát bolt maradhat");
+                String pid = Json.str(prof.get("id"));
+                Map<String, Object> w = Json.obj(Json.parse(get(c, base + "/api/week?id=" + pid, 200)));
+                check(List.of("konzum", "lidl").contains(Json.str(w.get("store"))), "a hét horvát boltban: " + w.get("store"));
+                eq(3, Json.arr(w.get("days")).size(), "3 vacsora");
+                String text = w.toString();
+                check(text.contains("€"), "euróban írt egységárak");
+                // keresés magyarul a horvát árlistában
+                List<Object> hits = Json.arr(Json.parse(get(c, base + "/api/search?q=k%C3%A1v%C3%A9&market=hr", 200)));
+                check(!hits.isEmpty() && Json.str(Json.obj(hits.get(0)).get("name")).startsWith("Kava"), "kávé → kava");
+                // az akciók között ott a Konzum csirkemellje, euróban
+                List<Object> offers = Json.arr(Json.parse(get(c, base + "/api/offers?market=hr&ingredients=false", 200)));
+                check(offers.stream().anyMatch(o -> "PROMO".equals(Json.obj(o).get("type")) && Json.str(Json.obj(o).get("reason")).contains("€")), "horvát bolti akció euróban");
+                // vissza Magyarországra: a hét magyar boltban
+                send(c, "PUT", base + "/api/profile?id=" + pid, "{\"country\":\"hu\",\"people\":2,\"dinners\":3,\"onboarded\":true}", 200);
+                Map<String, Object> w2 = Json.obj(Json.parse(get(c, base + "/api/week?id=" + pid, 200)));
+                check(List.of("aldi", "lidl", "penny", "auchan", "tesco", "spar").contains(Json.str(w2.get("store"))), "magyar bolt");
+                check(!w2.toString().contains("€"), "forintban");
+            } finally {
+                server.stop();
+            }
+        } finally {
+            deleteTree(dir);
+        }
+    }
+
+    static void testWeekOptionsDatesAndVariety() throws Exception {
+        Path dir = Files.createTempDirectory("sporolos-opt");
+        PriceRepository repo = new PriceRepository(CATALOG, List.of(new DemoPriceProvider(CATALOG, LocalDate.now())), null, Duration.ofHours(1));
+        WebServer server = new WebServer(repo, new FileStorage(dir));
+        int port = server.start("127.0.0.1", 0);
+        try {
+            HttpClient c = HttpClient.newHttpClient();
+            String base = "http://127.0.0.1:" + port;
+            String pid = Json.str(Json.obj(Json.parse(post(c, base + "/api/profile", "{\"people\":2,\"dinners\":5,\"onboarded\":true}", 200))).get("id"));
+            Map<String, Object> w = Json.obj(Json.parse(get(c, base + "/api/week?id=" + pid, 200)));
+            List<Object> days = Json.arr(w.get("days"));
+            eq(5, days.size(), "5 nap");
+            // a hét a mai naptól (vasárnap a holnapi hétfőtől) indul, a napok neve a dátumhoz illik
+            LocalDate start = LocalDate.parse(Json.str(w.get("start")));
+            LocalDate today = LocalDate.now();
+            eq(today.getDayOfWeek() == java.time.DayOfWeek.SUNDAY ? today.plusDays(1) : today, start, "a hét kezdete");
+            for (int i = 0; i < days.size(); i++) {
+                Map<String, Object> d = Json.obj(days.get(i));
+                LocalDate date = LocalDate.parse(Json.str(d.get("date")));
+                eq(start.plusDays(i), date, "egymást követő napok");
+                eq(WeeklyPlanner.DAYS[date.getDayOfWeek().getValue() - 1], d.get("label"), "a nap neve a dátumból");
+            }
+            // változatosság: két vacsora nem épül ugyanarra a jellegzetes alapanyagra, és a krumpli legfeljebb kétszer
+            List<String> ids = recipeIds(w);
+            Set<String> hero = Set.of("karfiol", "brokkoli", "cukkini", "lencse", "csirkemell", "csirkecomb", "daralthus", "spenot", "gomba");
+            Map<String, Integer> seen = new HashMap<>();
+            int potato = 0;
+            for (String id : ids) {
+                var r = CATALOG.recipe(id);
+                Set<String> keys = new java.util.HashSet<>();
+                for (var ing : r.ingredients()) if (!ing.pantry()) keys.add(ing.productKey());
+                for (String k : keys) if (hero.contains(k)) seen.merge(k, 1, Integer::sum);
+                if (keys.contains("burgonya") || keys.contains("hasabburgonya")) potato++;
+            }
+            check(seen.values().stream().allMatch(n -> n <= 1), "jellegzetes alapanyag legfeljebb egyszer: " + seen);
+            check(potato <= 2, "krumpli legfeljebb kétszer: " + potato);
+            // csere-javaslatok: a többi nap marad, a jelöltek mások, mindegyiknél a hét új ára
+            Map<String, Object> opts = Json.obj(Json.parse(get(c, base + "/api/week?id=" + pid + "&action=options&day=1", 200)));
+            List<Object> list = Json.arr(opts.get("options"));
+            check(!list.isEmpty() && list.size() <= 6, "1–6 javaslat");
+            for (Object o : list) {
+                String rid = Json.str(Json.obj(Json.obj(o).get("recipe")).get("id"));
+                check(!ids.contains(rid), "a javaslat nincs már a héten: " + rid);
+                check(Json.num(Json.obj(o).get("weekTotal"), 0) > 0, "a hét új ára");
+            }
+            String pick = Json.str(Json.obj(Json.obj(list.get(0)).get("recipe")).get("id"));
+            Map<String, Object> w2 = Json.obj(Json.parse(get(c, base + "/api/week?id=" + pid + "&action=set&day=1&recipe=" + pick, 200)));
+            List<String> ids2 = recipeIds(w2);
+            eq(pick, ids2.get(1), "a választott recept került a keddre");
+            eq(ids.get(0), ids2.get(0), "a többi nap marad");
+            eq(Json.str(w.get("start")), Json.str(w2.get("start")), "a hét kezdete marad");
+            check(Math.abs(Json.num(Json.obj(list.get(0)).get("weekTotal"), 0) - Json.num(w2.get("checkoutTotal"), 0)) < 400,
+                    "a javaslat ára közel van a tényleges heti árhoz");
+            // maradéknapra nincs csere-javaslat (ott az „inkább mást főzök” a művelet)
+            get(c, base + "/api/week?id=" + pid + "&action=repeat&day=2", 200);
+            Map<String, Object> lo = Json.obj(Json.parse(get(c, base + "/api/week?id=" + pid + "&action=options&day=3", 200)));
+            eq(2.0, Json.num(lo.get("day"), -1), "maradéknapnál a főzős nap (szerda) javaslatai jönnek");
+        } finally {
+            server.stop();
+            deleteTree(dir);
+        }
+    }
+
+    static String resource(String path) throws IOException {
+        try (var in = AllTests.class.getResourceAsStream(path)) {
+            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        }
     }
 
     static String post(HttpClient c, String url, String body, int expected) throws IOException, InterruptedException {

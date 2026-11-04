@@ -221,10 +221,77 @@ public final class WeeklyPlanner {
         }
         if (days.size() < dinners) notes.add("A szűrőknek csak " + chosen.size() + " recept felelt meg ebben a boltban.");
         boolean over = q.budget() > 0 && b.checkout > q.budget();
-        if (over) notes.add("A terv " + Packaging.Money.ft(b.checkout - q.budget()) + "-tal túllépi a keretet.");
+        if (over) notes.add("A terv túllépi a keretet (+" + Packaging.Money.ft(b.checkout - q.budget()) + ").");
         return new Plan(days, b.items, b.checkout, b.staples, q.budget(), over, b.pantry,
                 days.isEmpty() ? 0 : sumKcal / days.size(), days.isEmpty() ? 0 : sumProtein / days.size(),
                 cand.size() + chosen.size(), notes);
+    }
+
+    /**
+     * Csere-javaslat egy napra.
+     *
+     * @param suggestion a recept a nap adagszámára árazva
+     * @param weekTotal  a hét pénztári összege, ha ez kerül arra a napra (a többi nap marad)
+     */
+    public record Option(Suggestion suggestion, double weekTotal, double value) {}
+
+    /**
+     * Mi kerülhetne egy nap helyére: a többi napot (a {@code q.keep()} szerint) megtartva a legjobb jelöltek
+     * – ugyanazzal a mércével, mint a tervezés (jó árak, „rendes vacsora”, kedvencek, a közös kosár többletköltsége),
+     * csak véletlen nélkül. A lecserélendő recept a {@code q.exclude()}-ban legyen.
+     */
+    public List<Option> options(String storeId, Request q, int day, int limit) {
+        int dinners = Math.max(1, Math.min(7, q.dinners()));
+        int people = Math.max(1, Math.min(12, q.people()));
+        if (day < 0 || day >= dinners) return List.of();
+        int[] lo = new int[dinners];
+        java.util.Arrays.fill(lo, -1);
+        for (int i = 1; i < dinners && q.leftoverOf() != null && i < q.leftoverOf().size(); i++) {
+            Integer k = q.leftoverOf().get(i);
+            if (k == null || k < 0 || k >= i) continue;
+            lo[i] = lo[k] >= 0 ? lo[k] : k;
+        }
+        int[] mult = new int[dinners];
+        for (int i = 0; i < dinners; i++) if (lo[i] < 0) mult[i]++; else mult[lo[i]]++;
+        if (lo[day] >= 0) return List.of();
+        List<Suggestion> chosen = new ArrayList<>();
+        Set<String> kept = new java.util.HashSet<>();
+        for (int i = 0; i < dinners && q.keep() != null && i < q.keep().size(); i++) {
+            String id = q.keep().get(i);
+            if (i == day || id == null || lo[i] >= 0) continue;
+            Suggestion s = rec.suggestion(id, storeId, people * mult[i], q.allowedStores(), q.bulk());
+            if (s != null) {
+                chosen.add(s);
+                kept.add(id);
+            }
+        }
+        Map<String, Double> payCache = new HashMap<>();
+        Map<String, Double> curNeed = needs(chosen);
+        double base = 0;
+        for (Map.Entry<String, Double> e : curNeed.entrySet()) base += pay(storeId, e.getKey(), e.getValue(), q.bulk(), payCache);
+        double perDinnerBudget = (q.budget() > 0 ? q.budget() / dinners : 1250.0 * people) * mult[day];
+        List<Option> out = new ArrayList<>();
+        for (Suggestion base0 : rec.suggestionsFor(storeId, q.allowedStores(), q.bulk())) {
+            Recipe r = base0.recipe();
+            RecipeMeta m = catalog.meta(r.id());
+            if (r.tags().stream().anyMatch(NOT_DINNER::contains)) continue;
+            if (kept.contains(r.id()) || q.disliked().contains(r.id()) || q.exclude().contains(r.id())) continue;
+            if (m == null || !m.fits(q.diets()) || !m.cookableWith(q.equipment())) continue;
+            if (mult[day] > 1 && !m.keepsWell()) continue;
+            Suggestion s = rec.suggestion(r.id(), storeId, people * mult[day], q.allowedStores(), q.bulk());
+            if (s == null || !varietyOk(s, chosen)) continue;
+            double marginal = 0;
+            for (Map.Entry<String, Double> e : needs(List.of(s)).entrySet()) {
+                double cur = curNeed.getOrDefault(e.getKey(), 0.0);
+                marginal += pay(storeId, e.getKey(), cur + e.getValue(), q.bulk(), payCache)
+                        - (cur > 0 ? pay(storeId, e.getKey(), cur, q.bulk(), payCache) : 0);
+            }
+            double value = s.score() + appeal(r, m) - 0.35 * (1 - s.coverage())
+                    + (q.liked().contains(r.id()) ? 0.35 : 0) - 0.55 * marginal / Math.max(1, perDinnerBudget);
+            out.add(new Option(s, base + marginal, value));
+        }
+        out.sort(java.util.Comparator.comparingDouble(Option::value).reversed());
+        return out.size() > limit ? List.copyOf(out.subList(0, limit)) : out;
     }
 
     /** A terv főzős napjainak receptjei (a maradéknapok nélkül), a bevásárláshoz. */
@@ -337,20 +404,78 @@ public final class WeeklyPlanner {
         return l;
     }
 
-    /** Változatosság: fő alapanyag egyszer, leves/tészta egyszer, hal legfeljebb kétszer, ugyanaz a recept egyszer. */
+    /**
+     * A recept „főszereplő” alapanyagai: a fő alapanyag, és azok a jellegzetes zöldségek, hüvelyesek, húsok,
+     * amelyekről az étel szól (két karfiolos vagy két lencsés vacsora egy héten már egyhangú, akkor is, ha
+     * közösen olcsóbb).
+     */
+    private static final Set<String> HERO = Set.of("karfiol", "brokkoli", "cukkini", "padlizsan", "sutotok", "kaposzta",
+            "kelkaposzta", "spenot", "gomba", "lencse", "voros_bab", "feher_bab", "csicseri", "zoldbab", "borso", "cekla",
+            "edesburgonya", "tofu", "lazac", "halfile", "tonhal", "harcsa", "ponty", "csirkemell", "csirkecomb",
+            "csirkeszarny", "egesz_csirke", "pulykamell", "daralthus", "daralt_marha", "marhalabszar", "sertes_karaj",
+            "sertes_comb", "sertes_tarja", "sertes_oldalas", "virsli", "kolbasz", "parizsi", "tyuk");
+
+    private Set<String> featured(Recipe r) {
+        Set<String> out = new java.util.HashSet<>();
+        RecipeMeta m = catalog.meta(r.id());
+        if (m != null && m.mainKey() != null) out.add(m.mainKey());
+        for (Ingredient i : r.ingredients()) if (!i.pantry() && HERO.contains(i.productKey())) out.add(i.productKey());
+        return out;
+    }
+
+    /**
+     * Változatosság: fő alapanyag és jellegzetes zöldség/hüvelyes/hús egyszer, leves/tészta egyszer, hal legfeljebb
+     * kétszer, ugyanaz a recept egyszer.
+     */
     private boolean varietyOk(Suggestion s, List<Suggestion> chosen) {
         RecipeMeta m = catalog.meta(s.recipe().id());
+        Set<String> feat = featured(s.recipe());
         int soups = 0, pastas = 0, fish = 0;
         for (Suggestion c : chosen) {
             if (c.recipe().id().equals(s.recipe().id())) return false;
             RecipeMeta cm = catalog.meta(c.recipe().id());
             if (m != null && cm != null && m.mainKey() != null && m.mainKey().equals(cm.mainKey())) return false;
+            for (String f : featured(c.recipe())) if (feat.contains(f)) return false;
             if (c.recipe().tags().contains("leves")) soups++;
             if (c.recipe().tags().contains("tészta")) pastas++;
             if (c.recipe().tags().contains("hal")) fish++;
         }
         List<String> t = s.recipe().tags();
-        return !(t.contains("leves") && soups >= 1) && !(t.contains("tészta") && pastas >= 1) && !(t.contains("hal") && fish >= 2);
+        if (t.contains("leves") && soups >= 1 || t.contains("tészta") && pastas >= 1 || t.contains("hal") && fish >= 2) return false;
+        // ugyanaz az ételtípus se legyen kétszer (fasírt és karfiolfasírt, két pörkölt, két rakott étel…)
+        Set<String> dish = dishWords(s.recipe());
+        if (!dish.isEmpty()) {
+            for (Suggestion c : chosen) for (String w : dishWords(c.recipe())) if (dish.contains(w)) return false;
+        }
+        // a köret se legyen minden nap ugyanaz: krumpli, rizs legfeljebb kétszer (6–7 vacsoránál háromszor)
+        int maxSide = chosen.size() >= 5 ? 3 : 2;
+        for (Set<String> side : SIDES) {
+            if (!usesAny(s.recipe(), side)) continue;
+            long n = chosen.stream().filter(c -> usesAny(c.recipe(), side)).count();
+            if (n >= maxSide) return false;
+        }
+        return true;
+    }
+
+    /** Ételtípusok, amelyekből egy héten egy elég (a receptnévben, ékezet nélkül keresve). */
+    private static final List<String> DISH_WORDS = List.of("fasirt", "porkolt", "paprikas", "rakott", "fozelek", "gulyas",
+            "lecso", "rantott", "toltott", "pizza", "salata", "burger", "curry", "chili", "rizotto", "wok", "taco", "tortilla",
+            "quesadilla", "lasagne", "palacsinta", "pure", "nokedli", "gyros", "ragu");
+
+    private static Set<String> dishWords(Recipe r) {
+        String n = Catalog.normalize(r.name());
+        Set<String> out = new java.util.HashSet<>();
+        for (String w : DISH_WORDS) if (n.contains(w)) out.add(w);
+        return out;
+    }
+
+    /** Köret-csoportok a változatossághoz. */
+    private static final List<Set<String>> SIDES = List.of(
+            Set.of("burgonya", "hasabburgonya"), Set.of("rizs"));
+
+    private static boolean usesAny(Recipe r, Set<String> keys) {
+        for (Ingredient i : r.ingredients()) if (!i.pantry() && keys.contains(i.productKey())) return true;
+        return false;
     }
 
     /** A közös bevásárlólista a kiválasztott receptekhez. */

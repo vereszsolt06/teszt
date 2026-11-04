@@ -82,6 +82,8 @@ public final class RecipeRecommender {
         Map<String, List<Double>> householdUnitPrices = new HashMap<>();
         for (PriceEntry e : entries) {
             String forced = forcedIngredient.get(e.itemId());
+            // ismeretlen kategóriájú tétel (pl. a horvát árlisták nem illeszkedő termékei) egyik alapanyag sem
+            if (forced == null && e.categoryId() == 0) continue;
             for (Catalog.Product p : catalog.products().values()) {
                 boolean match = forced != null ? forced.equals(p.key()) : p.tracked() && catalog.matches(p, e);
                 if (!match) continue;

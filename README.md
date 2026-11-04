@@ -2,15 +2,19 @@
 
 [![Build és tesztek](https://github.com/vereszsolt06/teszt/actions/workflows/build.yml/badge.svg)](https://github.com/vereszsolt06/teszt/actions/workflows/build.yml)
 
-Heti vacsoratervező a **GVH Árfigyelő** napi boltárai alapján, a [NomNom Planner](https://nomnomplanner.com/hu/) mintájára: egyszer megadod, hányan esztek, milyen gyakran főzöl, mennyi a heti keret, mit nem esztek, mivel főzöl és melyik boltokba jársz – az app összerak egy hetet valódi vacsorákból, adagárral és tápértékkel, abban a boltban, ahol a heted a legolcsóbb, és egyetlen, bolti osztályok szerint rendezett bevásárlólistát ír hozzá. Nem kell minden nap mást főzni: bármelyik vacsorából főzhetsz másnapra is, vagy kérheted, hogy kétnaponta főzz. Bármelyik vacsora vagy az egész hét lecserélhető, a „Nom vagy nem” lapozóval megtaníthatod, mit szeretsz. A háztartás tagjai egy linkkel ugyanazt a hetet és listát látják, a kipipálás közös.
+Heti vacsoratervező a boltok napi árai alapján – Magyarországon a **GVH Árfigyelő**, Horvátországban (béta) a **láncok kötelező napi árlistái** szerint –, a [NomNom Planner](https://nomnomplanner.com/hu/) mintájára: egyszer megadod, hányan esztek, milyen gyakran főzöl, mennyi a heti keret, mit nem esztek, mivel főzöl és melyik boltokba jársz – az app összerak egy hetet valódi vacsorákból, adagárral és tápértékkel, abban a boltban, ahol a heted a legolcsóbb, és egyetlen, bolti osztályok szerint rendezett bevásárlólistát ír hozzá. Nem kell minden nap mást főzni: bármelyik vacsorából főzhetsz másnapra is, vagy kérheted, hogy kétnaponta főzz. Bármelyik vacsora vagy az egész hét lecserélhető, a „Nom vagy nem” lapozóval megtaníthatod, mit szeretsz. A háztartás tagjai egy linkkel ugyanazt a hetet és listát látják, a kipipálás közös.
 
 Megmaradt az eredeti ötlet is: a **Receptek** fülön az látszik, mit érdemes ma főzni abból, ami a boltodban épp kiemelkedően jó áron van, a nem kedvelt láncok kizárhatók, és a kiszerelést (darab / kiló, háztartási vagy nagy csomag) gondosan kezeli. Az [ajanlatok.hu](https://www.ajanlatok.hu/), a SmartKosár és a Shoppy mintájára (lásd a [végén](#mit-vettünk-át-az-ajanlatokhu-tól-a-smartkosártól-és-a-shoppytól)) az **Akciók** fülön az összes boltod jó árai egy helyen kereshetők, a listára **saját tételek** (kávé, banán…) is felvehetők, és ezek is beleszámítanak abba, melyik bolt a legolcsóbb. A recepteket, az alapanyagokat, a bolti akciókat és az árfrissítést egy jelszóval védett **admin felületen** (`/admin`) lehet kezelni.
 
-Java 21, **külső függőség nélkül** (beépített JDK webszerver, saját JSON-, xlsx- és PostgreSQL-kliens), egyetlen JAR. Adatbázis nélkül fájlokba ment; `docker compose up`-pal PostgreSQL-lel fut.
+**Ebben a körben** (lásd [Más országok](#más-országok-van-máshol-is-nyilvános-bolti-áradat) és [Ami élvezhetőbb lett](#ami-élvezhetőbb-lett)): megnéztem, mely országokban van a GVH Árfigyelőhöz hasonló nyilvános bolti áradat (kevesebb, mint amennyinek a NomNom országlistája alapján tűnik), és az app **országfüggetlen** lett: Horvátország a második ország, euróval, a horvát láncokkal. A felület is átalakult: csere-választó a hét ára szerint visszavonással, **főzés mód** lépésenként, a napok dátummal (a hét mától indul), változatosabb hetek, saját betűk, kártyák, animációk.
+
+Java 21, **külső függőség nélkül** (beépített JDK webszerver, saját JSON-, xlsx-, CSV- és PostgreSQL-kliens), egyetlen JAR. Adatbázis nélkül fájlokba ment; `docker compose up`-pal PostgreSQL-lel fut.
 
 ![Heti terv](docs/het.png)
 
-<img src="docs/het-mobil.png" alt="Heti terv telefonon, maradéknapokkal" width="250"> <img src="docs/recept-mobil.png" alt="Receptlap telefonon" width="250"> <img src="docs/elso-inditas-mobil.png" alt="Első indítás: milyen gyakran főzöl?" width="250">
+<img src="docs/het-mobil.png" alt="Heti terv telefonon, maradéknapokkal" width="250"> <img src="docs/recept-mobil.png" alt="Receptlap telefonon" width="250"> <img src="docs/fozes-mod-mobil.png" alt="Főzés mód: lépésenként, nagy betűkkel" width="250">
+
+<img src="docs/csere.png" alt="Csere: mi legyen helyette, a hét árának változásával" width="640"> <img src="docs/orszag-mobil.png" alt="Első indítás: melyik ország" width="250"> <img src="docs/elso-inditas-mobil.png" alt="Első indítás: milyen gyakran főzöl?" width="250">
 
 <img src="docs/lista.png" alt="Bevásárlólista saját tételekkel, két boltra bontva" width="640"> <img src="docs/nom-mobil.png" alt="Nom vagy nem" width="250">
 
@@ -35,6 +39,8 @@ build.cmd run
 ```
 
 Ezután nyisd meg: **http://localhost:8080**
+
+**Horvát árak:** az első alkalommal, amikor valaki Horvátországot választja, az app letölti a [cijene.dev](https://cijene.dev) aznapi archívumát (kb. 140 MB, egy-két perc – a felület közben töltőképernyőt mutat), feldolgozza (kb. 10–20 s), és a `data/hr/` mappában tartja; naponta legfeljebb egyszer frissít. Ha a horvát országra nincs szükség: `MARKETS=hu`.
 
 Induláskor az app letölti a napi Excelt (`https://cdnarfigyeloprodweu.azureedge.net/excel/arfigyelo_napi_termekadatok.xlsx`), és elmenti a `data/` mappába. 6 óránként a háttérben újratölti. Ha nincs internet, a legutóbb letöltött példányt használja; ha az sincs, demó árakra vált (ezt a fejléc és egy sárga sáv is jelzi). Egy már betöltött valós árállapotot egy sikertelen frissítés sosem cserél demóra.
 
@@ -69,14 +75,20 @@ Parancssorból (`-Dport=9000`), környezeti változóval (`PORT=9000`) vagy egy 
 | `promo.feeds` | `PROMO_FEEDS` | – | akció-feedek URL-jei vesszővel elválasztva (ugyanilyen JSON/CSV) |
 | `database.url` | `DATABASE_URL` | – | `postgres://felh:jelszo@host:5432/db`; ha üres, a `data/` mappába ment |
 | `admin.password` | `ADMIN_PASSWORD` | véletlen | az `/admin` felület jelszava; ha üres, induláskor generál egyet és kiírja a konzolra |
+| `markets` | `MARKETS` | `hu,hr` | országok; `hu` esetén nincs horvát árforrás (és nincs országválasztó) |
+| `cijene.url` | `CIJENE_URL` | `https://api.cijene.dev/v0/list` | a horvát napi archívumok listája |
+| `cijene.file` | `CIJENE_FILE` | – | kézzel letöltött horvát napi archívum (ZIP); ha meg van adva, nem tölt le |
 
 ## Mit tud
 
-- **Első indítás (kb. egy perc):** hányan esztek, hány vacsora → milyen gyakran főzöl (minden nap / kétnaponta) → heti keret → diéta (húsmentes, gluténmentes, laktózmentes) → konyha (tűzhely, sütő, airfryer) → melyik boltokba jársz (és hogy két boltba is elmennél-e). Boltot nem kell választani: a hét abban lesz, ahol a legolcsóbb. Minden később módosítható.
-- **Hét:** „Ez a hét ≈ 5 030 Ft”, alatta a keret-sáv („keret 15 000 Ft · 9 970 Ft marad”), és hogy **ugyanez a hét mennyi lenne a többi boltban** („Penny 5 030 · Tesco 5 308 · Auchan 5 395…”) – egy koppintással átválthatsz. A vacsorák kártyákon: nap, név, adagár, adagszám, idő, kalória, fehérje, címkék. Minden kártyán **Csere** (a többi nap marad), felül **Új hetet kérek**.
+- **Ország:** Magyarország (GVH Árfigyelő, forint) vagy Horvátország (béta: a láncok napi árlistái, euró – nyaraláshoz, vagy aki ott él). A receptek és a felület magyarul maradnak; az árak, a boltok, a keret és minden összeg az ország pénznemében. Horvát árlistában magyarul is lehet keresni („kávé” → *kava*). A Beállításokban bármikor váltható.
+- **Első indítás (kb. egy perc):** melyik ország → hányan esztek, hány vacsora → milyen gyakran főzöl (minden nap / kétnaponta) → heti keret → diéta (húsmentes, gluténmentes, laktózmentes) → konyha (tűzhely, sütő, airfryer) → melyik boltokba jársz (és hogy két boltba is elmennél-e). Boltot nem kell választani: a hét abban lesz, ahol a legolcsóbb. Minden később módosítható.
+- **Hét:** „Ez a heted ≈ 5 030 Ft”, alatta a keret-sáv, átlagos kalória, fehérje és adagár, és hogy **ugyanez a hét mennyi lenne a többi boltban** („Penny 5 030 · Lidl 5 308 +278 Ft…”) – egy koppintással átválthatsz. A hét **mától** indul (vasárnap a következő hétfőtől), a kártyákon nap és dátum, a mai kiemelve („ma · nov. 4.”). A vacsorák kártyákon: nagy étel-jel, név, adagár, adagszám, idő, kalória, fehérje, címkék.
+- **Csere választóval:** a **Csere** nem vakon cserél, hanem 6 javaslatot mutat a napra (a többi nap marad), mindegyiknél, **mennyivel lesz drágább vagy olcsóbb a hét** („+120 Ft a héten”, „−80 Ft a héten”); van „Lepj meg” (véletlen csere) is. Csere után **Visszavonás**. Felül **Új hetet kérek**.
 - **Maradék, több napra főzés:** bármelyik vacsoránál **„Holnapra is főzök”** – aznap dupla adag készül, másnap a maradékot eszed (nem kell főzni, nem kell vásárolni). A maradéknapon „Holnap is ez” (3 napra) vagy „Inkább mást főzök”. A **kétnaponta főzök** beállításnál a terv eleve így áll össze. Több napra csak olyat tesz, ami másnap is jó (egytálétel, leves, főzelék, pörkölt, rakott étel), rántott, ropogós ételt, salátát, halat nem.
+- **Főzés mód:** a receptlapról lépésenként, nagy betűkkel, lapozva (gomb, nyíl, húzás); a képernyő közben nem alszik el (ahol a böngésző engedi), a hozzávalók egy koppintásra.
 - **Receptlap:** elöl az, amit **a pénztárnál fizetsz** (egész csomagokkal) és az adagonkénti ár; alatta, mennyi fogy el belőle a receptben (a többi megmarad). Kalória / fehérje / szénhidrát / zsír, hozzávalók a konkrét bolti termékkel és **a mennyiség az adagszámhoz igazítva** (4 adagos receptnél 2 adagra „1 db paradicsom”, nem „2 db”), nagy kiszerelés alternatívaként, elkészítés, és mennyit fizetnél érte a többi boltban.
-- **Lista:** a hét összes hozzávalója egy listán (két bolt esetén boltonként szétbontva), bolti osztályok szerint (zöldség, pékáru, hús, felvágott és sajt, tejtermék, száraz áru, konzerv, mélyhűtött), egész csomagokkal; soronként, melyik vacsorához kell és mennyi marad. Kipipálható (a háztartás minden eszközén látszik), megosztható / másolható. A „ha nincs otthon” kamraáru és a fűszerek külön.
+- **Lista:** haladásjelző („3 / 16 a kosárban”), és ha minden a kosárban, egy kis ünneplés. A hét összes hozzávalója egy listán (két bolt esetén boltonként szétbontva), bolti osztályok szerint (zöldség, pékáru, hús, felvágott és sajt, tejtermék, száraz áru, konzerv, mélyhűtött), egész csomagokkal; soronként, melyik vacsorához kell és mennyi marad. Kipipálható (a háztartás minden eszközén látszik), megosztható / másolható. A „ha nincs otthon” kamraáru és a fűszerek külön.
 - **Nom vagy nem:** kártyás lapozó (húzás, gombok, ← / →). A *Nom* receptek előnyt kapnak a tervben, a *Nem* receptek kimaradnak. Kedvencek listája.
 - **Akciók:** a boltjaid összes kiemelt ára egy rácsban, a legnagyobb megtakarítás elöl, kereséssel („sajt”, „csirke”) és boltszűrővel; alapból csak a receptekhez használható termékek, egy pipával minden élelmiszer. Kártyánként: ár, kiszerelés, egységár, mennyivel olcsóbb a többi láncnál, és miért jó ár.
 - **Termékablak:** bármelyik termékre koppintva látod az árát minden láncban (hány boltjukban kapható, mennyivel drágább), az **elmúlt 8 hét árát** egy kis grafikonon („most a 8 hét legolcsóbb ára” / „szokásos ár” / „drágább a szokásosnál”), és egy gombbal **felteheted a listádra**.
@@ -170,7 +182,9 @@ CSV-fejléc: `bolt;termek;ar;egyseg;kiszereles;rendes_ar;tol;ig;alapanyag;vonalk
 - **Keret:** minden napra a hátralévő keret arányos részét nézi, és tartalékot hagy a többi napra. Ha a keret túl szűk, a legolcsóbb lehetőséget veszi, és megjegyzésben jelzi.
 - **Lefedettség:** amelyik receptnek több alapanyaga nincs az Árfigyelőben (becsült ár), az hátrébb kerül (−0,35 × a hiányzó arány), mert annak az ára bizonytalan.
 - **Szigorú szűrők:** ha a diéta, az eszközök és a „Nem”-ek után kevesebb megfelelő recept marad, mint ahány vacsora kell, a hiányzó napokra az előző főzés maradéka jut (aznap többet főzöl), és a hét tetején egy megjegyzés jelzi. Korábban ilyenkor egyszerűen kevesebb nap jelent meg.
-- **Változatosság:** egy fő alapanyag (pl. csirkecomb) egyszer, legfeljebb egy leves, egy tésztaétel és két halétel egy héten.
+- **Változatosság:** egy jellegzetes alapanyag (csirkemell, karfiol, lencse, gomba…) egy héten csak egyszer, ugyanaz az ételtípus (fasírt, pörkölt, rakott, főzelék, pizza…) is csak egyszer, krumpli és rizs köretként legfeljebb kétszer – akkor is, ha a közös kosár miatt olcsóbb lenne még egy karfiolos vacsora (a korábbi változat két egymás utáni napra is karfiolt tett). Ezen felül: egy fő alapanyag (pl. csirkecomb) egyszer, legfeljebb egy leves, egy tésztaétel és két halétel egy héten.
+- **Csere-javaslatok** (`action=options`): a többi napot megtartva ugyanazzal a mércével rangsorolja a jelölteket, mint a tervezés (véletlen nélkül), és mindegyikhez kiszámolja a hét új pénztári összegét.
+- **A bolt nem ugrál:** automatikus boltnál egy csere után a mostani bolt marad, ha legfeljebb ~3%-kal (150 Ft-tal) drágább a legolcsóbbnál – korábban egy csere miatt az egész hét átköltözhetett egy másik boltba, és minden ár megváltozott.
 - A „Csere” a többi napot megtartja (`keep`), a lecserélt receptet kizárja (`exclude`); az „Új hét” más véletlen magot kap, és az előző hét receptjeit kihagyja. A háztartás hete a tárolóban marad (`/api/week`), amíg a terv szempontjából fontos beállítás (bolt, létszám, keret, diéta, konyha, boltok, kiszerelés, kártyák) nem változik.
 
 ### 6. Tápérték, diéták, eszközök (`RecipeMeta`)
@@ -205,6 +219,7 @@ A tartós adatok egy `Storage` felület mögött vannak, két megvalósítással
 | napi árelőzmény | `data/history/ÉÉÉÉ-HH-NN.tsv` | `price_day`, `price_history` |
 | kézi akciók | `data/akciok/sajat-akciok.json` | `manual_promo` |
 | saját listatételek, adminban szerkesztett katalógus | `data/dokumentumok/*.json` | `app_document` |
+| horvát napi archívum (gyorsítótár) | `data/hr/cijene-ÉÉÉÉ-HH-NN.zip` | – (mindig fájl) |
 
 A PostgreSQL-kapcsolathoz **nincs JDBC-driver**: a `PgClient` a PostgreSQL 3-as wire protokollját beszéli (SCRAM-SHA-256 / MD5 belépés, paraméterezett lekérdezések a kiterjesztett protokollal, így nincs SQL-befecskendezés), egy kis kapcsolatkészlettel. A séma induláskor magától létrejön / frissül (`schema_version` tábla, zárolással, hogy több példány se ütközzön). TLS nincs, mert a docker-compose belső hálózatára készült; távoli adatbázishoz SSH-alagút vagy helyi hálózat ajánlott.
 
@@ -214,7 +229,8 @@ A PostgreSQL-kapcsolathoz **nincs JDBC-driver**: a `PgClient` a PostgreSQL 3-as 
 
 | Végpont | Leírás |
 |---|---|
-| `GET /api/status` | adatforrás, dátum, demó/elavult jelzés, élelmiszerláncok |
+| `GET /api/status` | adatforrás, dátum, demó/elavult jelzés, élelmiszerláncok, az ország (`market`: pénznem, árfolyam, forrás) és az országok listája (`markets`) |
+| `GET /api/markets` | az országok és betöltöttségük (nem indít betöltést) |
 | `GET /api/suggestions?store=lidl&tag=vega&limit=12` | rangsorolt receptek egy boltra, hozzávalókkal |
 | `GET /api/recipe?id=lecso&store=lidl&servings=6` | egy recept bevásárlólistával (kiszerelés-alternatívákkal), és ára a választott láncokban |
 | `GET /api/deals?store=lidl&limit=30&ingredients=true` | a bolt kiemelt árai (`ingredients=true`: csak recept-alapanyagok) |
@@ -229,7 +245,7 @@ A PostgreSQL-kapcsolathoz **nincs JDBC-driver**: a `PgClient` a PostgreSQL 3-as 
 | `GET` / `PUT /api/profile?id=…` | a profil lekérése / beállítások mentése |
 | `POST /api/rate?id=…` | `{"recipe": "lecso", "liked": true \| false \| null}` – Nom vagy nem |
 | `DELETE /api/rate?id=…` | minden értékelés törlése |
-| `GET /api/week?id=…[&action=new\|swap\|set\|repeat\|fresh&day=2&recipe=…]` | a háztartás heti terve (mentve marad); új hét, egy nap cseréje, konkrét recept egy napra, „holnapra is főzök”, „inkább mást főzök”; automatikus boltnál a legolcsóbb bolt, `compare`: ugyanez a hét a többi boltban, `split`: két boltos lista |
+| `GET /api/week?id=…[&action=new\|swap\|set\|repeat\|fresh\|options&day=2&recipe=…]` | a háztartás heti terve (mentve marad, a háztartás országában); új hét, egy nap cseréje, konkrét recept egy napra, „holnapra is főzök”, „inkább mást főzök”, `options`: csere-javaslatok a hét új árával; a napoknál `date` és `index`, a hétnél `start`; automatikus boltnál a legolcsóbb bolt, `compare`: ugyanez a hét a többi boltban, `split`: két boltos lista |
 | `POST /api/check?id=…` | `{"key", "item", "on"}` – listatétel kipipálása |
 | `GET /api/promos` | a láncok saját akciói és állapotuk (beépítve / már benne / lejárt / kártya kell…) |
 | `POST /api/promos` 🔒 | új akció (JSON), vagy import: `{"text": "<CSV vagy JSON>"}` |
@@ -243,7 +259,9 @@ A PostgreSQL-kapcsolathoz **nincs JDBC-driver**: a `PgClient` a PostgreSQL 3-as 
 | `POST /api/admin/product/matches`, `GET /api/admin/categories` 🔒 | élő illesztés-előnézet; az Árfigyelő kategóriái |
 | `POST /api/admin/refresh`, `POST /api/admin/reset`, `GET /api/admin/export` 🔒 | árfrissítés; vissza a beépített katalógusra; katalógus letöltése JSON-ban |
 
-Minden boltfüggő végpont elfogadja: `stores=aldi,lidl` (a választott boltok), `bulk=1` (nagy kiszerelés mód), `cards=lidl,tesco` (hűségkártyák).
+Minden boltfüggő végpont elfogadja: `stores=aldi,lidl` (a választott boltok), `bulk=1` (nagy kiszerelés mód), `cards=lidl,tesco` (hűségkártyák), `market=hr` (ország; alap: `hu`). A háztartáshoz kötött végpontok (`week`, `extras`, `check`, `rate`, `profile`) a profil országát használják. Ha egy ország árai még töltődnek, a válasz **503** `{"loading": true, "progress": 0.4, "phase": "…", "market": {…}}` – a felület ilyenkor töltőképernyőt mutat és újrapróbál.
+
+Az összegek a JSON-ban **belső, forint-egyenértékű egységben** jönnek (Horvátországban 1 € = 400 egység); a felület a `market.rate` szerint váltja vissza. Így a forintra hangolt küszöbök (pl. „legalább 300 Ft-ot spórolj két bolttal”) minden országban ugyanúgy működnek; a valós bolti árak oda-vissza pontosan váltódnak, az árfolyam csak a küszöböket és a becsült (a forrásban nem szereplő) alapanyagokat érinti.
 
 🔒: `X-Admin-Token` fejléc kell (a belépéskor kapott token); nélküle 401.
 
@@ -271,7 +289,10 @@ Böngészőben: **http://localhost:8080/admin**. A jelszó az `ADMIN_PASSWORD` k
 
 ```
 src/main/java/hu/sporolos/
-  App.java                       belépési pont, beállítások
+  App.java                       belépési pont, beállítások, országok
+  market/ Market                 ország: pénznem, belső árfolyam, pénzformázás (a kérés szálán)
+          Markets                az országok árállapota; a nem magyar csak az első kéréskor töltődik
+          MarketDef, NameRules   ország-leírás (resources/markets/hr.json), névalapú alapanyag-illesztés
   core/  Json                    függőség nélküli JSON olvasó/író
          DealAnalyzer            „jó ár” felismerés (5 jel + elérhetőség)
          Packaging               mérlegelős / csomagolt / csomós, darab ↔ kg, nagy kiszerelés
@@ -287,6 +308,7 @@ src/main/java/hu/sporolos/
          CatalogSource           beépített vagy adminban szerkesztett katalógus, ellenőrzés
          RecipeMeta              tápérték, diéták, eszközök, hangulat receptenként
          Promo, PromoStore       akciók: kézi, fájl, feed; CSV/JSON
+         CijeneArchiveProvider   horvát árak: a cijene.dev napi ZIP-je, letöltés, CSV, lánconkénti összesítés
   store/ Storage                 a tartós adatok felülete
          FileStorage             fájlos tárolás (alap)
          PgStorage, PgClient     PostgreSQL: séma, kapcsolatkészlet, saját wire-protokoll kliens
@@ -297,8 +319,10 @@ src/main/java/hu/sporolos/
          Household               a háztartás beállításai, ellenőrzés, alapértékek
 src/main/resources/
   data/products.json, recipes.json
+  markets/hr.json                Horvátország: láncok, illesztési szabályok, magyar → horvát keresőszavak
   static/index.html, app.css, app.js, favicon.svg, manifest.webmanifest
          admin.html, admin.css, admin.js
+         fonts/                  Bricolage Grotesque, Atkinson Hyperlegible (SIL OFL, latin + latin-ext részhalmaz)
 src/test/java/hu/sporolos/AllTests.java
 Dockerfile, docker-compose.yml   konténer: app + postgres:16
 ```
@@ -309,7 +333,7 @@ Dockerfile, docker-compose.yml   konténer: app + postgres:16
 ./build.sh test        # Windows: build.cmd test
 ```
 
-31 teszt fut le:
+35 teszt fut le:
 - JSON- és xlsx-olvasás, az Árfigyelő-fejléc felismerése, egységátváltás;
 - mind a négy jó ár jel, valamint az elérhetőség hatása;
 - a kiszerelés-modell: tojásdoboz vagy tálca, mérlegelős áru minimum egy darabbal, „ca. 500g”, csak csomagolt liszt, darab ↔ kg (paprika, zsemle), csomós zöldség, tűrés, a nagy kiszerelés határa;
@@ -323,12 +347,14 @@ Dockerfile, docker-compose.yml   konténer: app + postgres:16
 - heti terv: nincs ismétlés, változatos fő alapanyag, nincs desszert, a lista összege egyezik, egy termék egy sor, diéta- és eszközszűrő, csere a többi nap megtartásával, keret, más mag más hetet ad;
 - a letöltés, a gyorsítótár és a visszaesés egy helyi HTTP-szerverrel;
 - a hibás frissítés kezelése (a valós adat nem cserélődik demóra);
+- országok: forint- és eurós pénzformázás (a kérés szála szerint); a horvát névillesztés 31 valódi (a láncok listáiból vett) terméknéven, köztük olyanokon, amelyek *nem* alapanyagok (felvágott, kész étel, csokoládé, állateledel, habfürdő); egy valósághű horvát napi archívum feldolgozása (darabos tojás, mérlegelős csirkemell, akciós ár üres árral, idézőjeles-vesszős név, a drogéria kihagyása, két láncban ugyanaz a vonalkód), majd a teljes app horvát árakkal: 503 „töltődik”, euró, horvát boltok, magyar keresőszó, horvát bolti akció, vissza magyarra;
+- heti terv: a napok dátuma és neve, a hét kezdete, változatosság (jellegzetes alapanyag egyszer, krumpli legfeljebb kétszer), csere-javaslatok (nincsenek már a héten, a hét új ára közel a tényleges árhoz), választás után a többi nap és a kezdőnap marad, maradéknapnál a főzős nap javaslatai;
 - admin: rossz jelszó 401, jó jelszó token; az akció- és a frissítés-végpont token nélkül 401; receptmódosítás mentése, tárolóba írása és azonnali érvényesülése; hibás recept 400; előnézet figyelmeztetéssel; új / ismételt / törölt recept; alapanyag kizáró szóval kevesebb találat; használt alapanyag nem törölhető; visszaállás a beépítettre; az `/admin` oldal kiszolgálása;
 - végponttól végpontig teszt, ami elindítja a webszervert, és végighívja az összes API-t: boltszűrő, akciók felvitele / importja / törlése, háztartás-profil létrehozása, mentett hét, csere, konkrét recept egy napra, kipipálás, értékelés, boltváltás, automatikus bolt (a legolcsóbbat választja), „holnapra is főzök” / „inkább mást főzök”, kétnaponta főzés, a mennyiségek adagszámhoz igazítása, az Akciók végpont szűrése, saját tételek felvétele / törlése és beszámítása a boltválasztásba.
 
 A GitHub Actions a teszteket egy PostgreSQL 16 szolgáltatással együtt futtatja, utána felépíti a Docker-képet, elindítja a `docker compose`-t, és ellenőrzi, hogy az app válaszol, és a profil az adatbázisba kerül.
 
-Ha az `ARFIGYELO_TEST_FILE` környezeti változó egy valódi napi Excelre mutat, a teljes folyamatot azon is lefuttatja: mind a hat láncban legalább 10 árazható recept és életszerű árak kellenek. A 2026-10-28-i fájllal, PostgreSQL 16-tal mind a 31 teszt sikeres, mind a 170 recept árazható, és mind a hat láncban kijön egy 5 vacsorás, 2 fős heti terv 15 000 Ft alatt.
+Ha az `ARFIGYELO_TEST_FILE` környezeti változó egy valódi napi Excelre mutat, a teljes folyamatot azon is lefuttatja: mind a hat láncban legalább 10 árazható recept és életszerű árak kellenek. A 2026-10-28-i fájllal, PostgreSQL 16-tal mind a 35 teszt sikeres, mind a 170 recept árazható, és mind a hat láncban kijön egy 5 vacsorás, 2 fős heti terv 15 000 Ft alatt.
 
 ## Feltételezések és döntések
 
@@ -362,6 +388,14 @@ Ezeket kérdezés nélkül döntöttem el; bármelyik könnyen módosítható.
 - **A „Most jó áron” sáv a Receptek fülről az új Akciók fülre került**, és ott már az összes boltod együtt látszik – az ajanlatok.hu-hoz hasonlóan ez önálló böngészhető nézet lett.
 - **A saját tételek** szabad szöveggel is felvehetők, de árat csak akkor kapnak, ha a javaslatok közül választod: egy „kávé” szövegből nem lehet biztosan tudni, melyik termék és kiszerelés kell.
 - **Az árelőzmény 8 hetes**, mint az ajanlatok.hu ajánlatértékelésénél; régebbi adatot nem mutat.
+- **Második ország: Horvátország**, mert ott a legjobb a nyilvános adat (minden lánc minden boltja, naponta, géppel olvasható, ingyen, regisztráció nélkül), és mert a magyar felhasználóknak is életszerű (nyaralás, apartman, önellátás). Szerbia a következő jelölt (lásd lent).
+- **A cijene.dev archívumát** használom, nem a 29 lánc saját oldalait: egy jól karbantartott, nyílt forráskódú gyűjtő, egységes CSV-kkel; a láncok honlapjainak egyenkénti letöltése törékeny lenne. Az archívum nagy (~140 MB), ezért naponta legfeljebb egyszer és csak akkor töltődik, ha valaki Horvátországot használja.
+- **Horvátországban a terméknév alapján illesztek** (`markets/hr.json`), mert a láncoknak nincs közös kategóriarendszerük. A szabályokat valódi terméknevekkel hangoltam: a cijene.dev nyílt termékadatbázisának 29 685 nevével és egy Konzum-bolt aznapi árlistájának soraival. A zöldség-gyümölcs és a pultos hús nevei lánconként eltérhetnek; ezért **béta**. Ami nem illeszkedik, becsült árral szerepel (mint itthon a tonhal).
+- **A belső pénzegység forint-egyenérték** (1 € = 400 belső egység), a felület visszavált. Az árfolyam csak a küszöböket és a becsült árakat befolyásolja, a valós árakat nem.
+- **Horvátországban a lánc legolcsóbb boltjának ára** számít (mint az Árfigyelőnél), az akciós ár (`special_price`), ha a lánc boltjainak legalább harmadában érvényes, a lánc saját akciójaként jelenik meg („Bolti akció, 27%-kal olcsóbb (rendesen 2,19 €)”). Árelőzmény ott nincs (a listák a 30 napos legalacsonyabb árat közlik, ezt nem mutatom külön).
+- **A hét mától indul** (vasárnap a következő hétfőtől): így a lista arra szól, amit tényleg meg fogsz főzni. Egy hétnél régebbi mentett hét helyett új kezdődik.
+- **A csere választóval megy**, nem vakon: a véletlen csere drágább hetet is adhatott (a régi változatban egy 268 Ft-os adag helyére 546 Ft-os került, és közben a bolt is átváltott).
+- **A betűket az app maga szolgálja ki** (a Google Fonts helyett): offline is ugyanígy néz ki, és a böngésző nem szól át harmadik félhez.
 
 ## Ismert korlátok, továbbfejlesztési ötletek
 
@@ -370,6 +404,8 @@ Ezeket kérdezés nélkül döntöttem el; bármelyik könnyen módosítható.
 - Néhány zöldséget a láncok következetlenül adnak meg (pl. „csomós petrezselyemgyökér” egyszer darabra, egyszer kilóra); ezeknél az ár közelítő.
 - A kiszerelés-összesítő és a soronkénti csere csak a kiválasztott boltra vonatkozik; a „többi boltodban” összevetés az alapbeállítás szerinti (háztartási vagy nagy) kiszereléssel számol.
 - Az admin felületnek nincs TLS-e; nyilvános hálózaton csak HTTPS-es proxy mögött használd.
+- **Horvátország béta:** a névalapú illesztés valódi neveken hangolt, de a teljes, napi archívumon itt nem tudtam lefuttatni (a fejlesztői környezetből a cijene.dev nem érhető el); a formátumot a nyílt forráskódjukból és egy valódi árlistából vettem, a tesztek ilyen archívummal futnak. Az admin felület egyelőre a magyar adatokat kezeli.
+- A horvát első betöltés egy-két perc (letöltés), utána naponta egyszer; egy szerényebb gépen a feldolgozás kb. 300–500 MB memóriát kér.
 - A tápértékek tipikus, kerekített értékekből számolt becslések; diétás vagy orvosi célra nem elég pontosak.
 - A heti terv mohó algoritmus, nem garantáltan a legolcsóbb kombináció; cserébe gyors (≈ 0,1 s) és jól érthető.
 - A közös háztartás linkje bárkinek hozzáférést ad, aki megkapja; jelszó / fiók nincs.
@@ -387,6 +423,51 @@ A [nomnomplanner.com/hu](https://nomnomplanner.com/hu/), az [adatforrás-oldaluk
 - **Fotók:** a forrásukat nem írják le. Itt egyelőre nincs fotó.
 - **Tárolás:** fiók nincs; a tervek, beállítások és pipák a telefonon vannak. A szerveroldalon (Cloudflare) csak a receptértékeléseket, a visszajelzéseket és a várólistát tárolják, analitikára a PostHog EU-s szervereit, előfizetésre a RevenueCatet használják. Itt böngészős app van, ezért a háztartás adatai a szerveren vannak (fájlban vagy PostgreSQL-ben), de ugyanúgy fiók és személyes adat nélkül.
 - **Felület, amit átvettünk:** kétperces beállítás (bolt, keret, létszám, diéta, konyha) → kész hét vacsorakártyákkal, adagárral és a hét végösszegével a keret mellett → egy vacsora vagy az egész hét cseréje → makrók és hangulat-címkék → diéták és konyhai eszközök beépítve → osztályonként rendezett, megosztható lista → „Nom vagy nem” lapozás.
+
+## Más országok: van máshol is nyilvános bolti áradat?
+
+A NomNom országválasztójában 32 piac van (EU, Egyesült Királyság, USA, Kanada, Ausztrália), ezért úgy tűnhet, hogy sok országnak van a GVH Árfigyelőhöz hasonló nyilvános adata. **Nincs így:** a [NomNom](https://nomnomplanner.com/) saját GYIK-je szerint valódi bolti polcárat csak Magyarországon használnak; az USA-ban, Németországban, Franciaországban, Svédországban és Dániában országos átlagárakat (statisztikai adatokból), máshol becslést, „amíg helyi árak nem lesznek”. Az [Open Prices](https://prices.openfoodfacts.org) közösségi adatbázisából országonként csak néhány tucat sort vesznek át ([open-data oldaluk](https://nomnomplanner.com/open-data/): Németország 39, Franciaország 67, Svédország 33, USA 41, Dánia 0 sor).
+
+A valódi, lánconkénti árak hivatalos forrásait 2026. novemberében így találtam:
+
+| Ország | Mi van | Géppel olvasható, nyilvános? | Itt |
+|---|---|---|---|
+| 🇭🇺 Magyarország | GVH Árfigyelő – napi Excel, láncszintű legolcsóbb / legdrágább bolti ár | igen, ingyen | **használjuk** |
+| 🇭🇷 Horvátország | 2025. május 2. óta ([NN 75/2025](https://narodne-novine.nn.hr/clanci/sluzbeni/2025_05_75_979.html)) a láncok **minden boltjuk** napi árlistáját géppel olvasható formában teszik közzé, akciós árral, 30 napos legalacsonyabb árral és a május 2-i „sidrena” árral; 2026. november 17-től minden kereskedőre (CSV vagy XML, munkanapokon reggel 8-ig – [mojafirma.hr](https://mojafirma.hr/clanci/strojno-citljiv-cjenik-csv-xml-2026)). Központi portál nincs, de a nyílt forráskódú [cijene.dev](https://cijene.dev) ([forrás](https://github.com/senko/cijene-api)) 29 lánc listáit gyűjti, és napi ZIP-archívumot ad regisztráció nélkül (`/v0/list`, 2025. június óta minden nap) | igen | **használjuk (béta)** |
+| 🇷🇸 Szerbia | 2025. december 9. óta nemzeti platform 27 lánc árlistáival ([N1](https://n1info.rs/biznis/cene-trgovinski-lanci-onlajn/)); 2026. szeptember 1-től a nagy kereskedők boltonkénti, gépi feldolgozásra alkalmas árlistát tesznek közzé a honlapjukon **és CSV-ben a nyílt adat portálon** ([biznis.rs](https://biznis.rs/vesti/srbija/nova-pravila-za-objavljivanje-cena-trgovaca-od-1-septembra/)) | igen (új) | a következő jelölt |
+| 🇸🇰 Szlovákia | [cenyslovensko.sk](https://spectator.sme.sk/business/c/slovakia-rolls-out-food-price-tracker) (Pénzügyminisztérium, 2025 nyara, az Árfigyelő mintájára – [economx](https://www.economx.hu/gazdasag/2025/07/07/arfigyelo-honlap-szlovakia-elelmiszerar-inflacio-812251/)): Billa, Fresh, Kaufland, Lidl, Terno, Tesco, naponta reggel 6-ig | letöltést / API-t nem találtam | nem |
+| 🇷🇴 Románia | Monitorul Prețurilor (Versenyhivatal): ~30 000 termék, 1700+ bolt, a láncok naponta töltik fel ([financialintelligence.ro](https://financialintelligence.ro/consiliul-concurentei-aplicatia-monitorul-preturilor-a-fost-imbunatatita/)) | nyílt letöltés nem dokumentált | nem |
+| 🇧🇬 Bulgária | kolkostruva.bg (Fogyasztóvédelmi Bizottság, 2025 – [BTA](https://www.bta.bg/en/news/977611-new-retail-price-platform-kolkostruva-bg-fully-operational)) | nem tudtam ellenőrizni | nem |
+| 🇬🇷 Görögország | [e-katanalotis](https://www.gov.gr/en/ipiresies/polites-kai-kathemerinoteta/enemerose-katanaloton/e-katanalotes) (minisztériumi app a szupermarketek áraival) | nyílt letöltés nem dokumentált | nem |
+| 🇦🇹 Ausztria | Statistik Austria [Preisradar](https://bmf.gv.at/presse/pressemeldungen/2026/jaenner-2026/inflation-preisradar.html) (2026): árváltozások, nem lánconkénti árak | – | nem |
+| 🌍 Európán kívül | Izrael: a 2014-es élelmiszer-versenytörvény óta a nagy láncok a teljes árlistájukat az interneten teszik közzé ([Globes](https://en.globes.co.il/en/article-israeli-retailers-must-publish-prices-on-internet-1000983383)); Argentína: SEPA / Precios Claros, napi adatkészletek ([Perfil](https://www.perfil.com/noticias/economia/el-gobierno-difundira-12-millones-de-precios-diarios-de-supermercados-como-funciona-el-sistema.phtml)); Malajzia: [PriceCatcher](https://open.dosm.gov.my/data-catalogue/pricecatcher) nyílt adat | igen | nem (más nyelv, más konyha) |
+| 🌍 mindenhol | [Open Prices](https://prices.openfoodfacts.org) (Open Food Facts, ODbL) – közösségi, vonalkódos árak | igen, de ritkás | nem |
+
+**Ami ebből az appba került:** az app országfüggetlen lett (`market/`), Horvátország a második ország. Ugyanaz a 170 recept, ugyanazok a kiszerelések és tápértékek, csak a boltok, az árforrás, az alapanyag-illesztés és a pénznem helyi:
+
+1. **Forrás:** a cijene.dev aznapi archívuma (`CijeneArchiveProvider`). Lánconként `stores.csv`, `products.csv`, `prices.csv`; a boltonkénti árakból lánconként ugyanazt állítjuk elő, mint amit az Árfigyelő ad: a legolcsóbb és a legdrágább bolt árát, hány boltban kapható, hány boltja van. A drogéria (dm) és a nagykereskedés (Metro) kimarad.
+2. **Kiszerelés:** a horvát listák lánconként másképp írják („0.45 kg”, „500g”, „1.00 ko”, „10 kom”, „JAJA M 10/1”); a „kg” egységű, 1 kg-os sorok **mérlegelősek** (`byWeight`), a darabos sorok tömege a névből jön („KRUH 500 g” → 0,5 kg), ha semmi nincs, az ár / egységár adja.
+3. **Illesztés:** a láncoknak nincs közös kategóriája, ezért a terméknévből (`NameRules`, szabályok: `markets/hr.json`): pl. a csirkemell „a név első szava *pileć…*, és van benne *prsa* vagy *file*, de nincs *pohan* (rántott), *dimlj* (füstölt), *narezak* (felvágott)…”. A szabályokat a cijene.dev nyílt termékadatbázisának **29 685 valódi nevén** hangoltam; minden alapanyag külön ellenőrizve (kész ételek, felvágottak, édességek, állateledel, kozmetikumok kizárva).
+4. **Akció:** ahol a lánc boltjainak legalább harmadában akciós ár van, az a lánc saját akciója (a „Bolti akció” jel, a rendes árral).
+5. **Pénz:** belül forint-egyenérték, a felület euróban mutat (12,49 €); a keret euróban adható meg (30–100 € javaslatokkal).
+6. **Keresés magyarul:** „kávé” → *kava*, „tej” → *mlijeko*, „mosogatószer” → *deterdžent za suđe* (szinonimalista a `hr.json`-ban).
+7. **Betöltés:** csak az első horvát kéréskor, a háttérben; addig a felület töltőképernyőt mutat a letöltés állásával. Hibánál „Újrapróbálom” vagy „Vissza a magyar árakhoz”.
+
+Egy valósághű méretű próbán (15 lánc, 225 000 termék, 4,5 millió boltonkénti ár) a feldolgozás 10 s, a heti terv 0,1–0,2 s, a keresés 0,06 s volt, 512 MB memóriával.
+
+## Ami élvezhetőbb lett
+
+A felületet végigkattintottam telefonon és asztalin (Playwright), és ezeket javítottam:
+
+- **Hibák:** a vacsorakártyáknak nem volt háttere (egy rossz CSS-szelektor miatt csak frissítés közben kaptak), a Receptek fejléce alá a fejléc stílusa került (fehér doboz), a dátum „október 28.-i” volt („28-i” a helyes), a beállítások diéta-chipjein üres színsáv volt, a nézetváltás nyitva hagyta a lapokat, a fejléc fül egérrel „beragadt”.
+- **Bolt-ugrálás:** egy csere után a bolt nem vált át, ha a mostani csak kicsit drágább (lásd 5. pont).
+- **Csere:** választó 6 javaslattal és a hét árának változásával, „Lepj meg”, **Visszavonás**.
+- **Változatosság:** nincs két karfiolos, két fasírtos, két pörköltös vacsora egy héten, krumpli legfeljebb kétszer.
+- **Napok:** a hét mától indul, a kártyákon dátum, a mai kiemelve, az elmúlt napok halványabbak.
+- **Főzés mód** a receptlapról.
+- **Kártyák:** nagy étel-jel színes háttéren (fotó helyett), finom megjelenés, csere után átforduló kártya.
+- **Lista:** haladássáv, pipálás-animáció, a végén ünneplés.
+- **Betűk** az appba csomagolva (offline is szép, nincs külső kérés), egységes ezres tagolás (5 484 Ft), sötét mód a kártyákon is.
 
 ## Mit vettünk át az ajanlatok.hu-tól, a SmartKosártól és a Shoppytól?
 

@@ -53,6 +53,18 @@ final class AdminApi {
     private final Map<String, Instant> tokens = new ConcurrentHashMap<>();
     private final SecureRandom rnd = new SecureRandom();
 
+    private Runnable afterCatalogChange = () -> { };
+
+    /** A közös katalógus változásakor (pl. a többi ország levezetett katalógusának frissítéséhez). */
+    void onCatalogChange(Runnable r) {
+        afterCatalogChange = r == null ? () -> { } : r;
+    }
+
+    private void replaceCatalog(hu.sporolos.data.Catalog c) {
+        repo.replaceCatalog(c);
+        afterCatalogChange.run();
+    }
+
     AdminApi(PriceRepository repo, Storage storage, CatalogSource source, String password) {
         this.repo = repo;
         this.storage = storage;
@@ -123,7 +135,7 @@ final class AdminApi {
             case "/api/admin/product/matches" -> productMatches(body);
             case "/api/admin/categories" -> categories();
             case "/api/admin/refresh" -> { repo.reload(); yield overview(); }
-            case "/api/admin/reset" -> { repo.replaceCatalog(source.reset()); yield overview(); }
+            case "/api/admin/reset" -> { replaceCatalog(source.reset()); yield overview(); }
             case "/api/admin/export" -> Map.of(
                     "products", CatalogSource.pretty(source.products(), "products"),
                     "recipes", CatalogSource.pretty(source.recipes(), "recipes"));
@@ -228,7 +240,7 @@ final class AdminApi {
         if (isNew) list.add(r); else list.set(idx, r);
         root.put("recipes", list);
         Catalog c = source.apply(source.products(), root);
-        repo.replaceCatalog(c);
+        replaceCatalog(c);
         return Map.of("saved", r.get("id"), "issues", recipeIssues(c, c.recipe(Json.str(r.get("id")))));
     }
 
@@ -239,7 +251,7 @@ final class AdminApi {
         if (idx < 0) throw new WebServer.NotFound("Nincs ilyen recept: " + id);
         list.remove(idx);
         root.put("recipes", list);
-        repo.replaceCatalog(source.apply(source.products(), root));
+        replaceCatalog(source.apply(source.products(), root));
         return Map.of("deleted", id);
     }
 
@@ -460,7 +472,7 @@ final class AdminApi {
         if (!isNew && idx < 0) throw new WebServer.NotFound("Nincs ilyen alapanyag: " + p.get("key"));
         if (isNew) list.add(p); else list.set(idx, p);
         root.put("products", list);
-        repo.replaceCatalog(source.apply(root, source.recipes()));
+        replaceCatalog(source.apply(root, source.recipes()));
         return Map.of("saved", p.get("key"));
     }
 
@@ -475,7 +487,7 @@ final class AdminApi {
         if (idx < 0) throw new WebServer.NotFound("Nincs ilyen alapanyag: " + key);
         list.remove(idx);
         root.put("products", list);
-        repo.replaceCatalog(source.apply(root, source.recipes()));
+        replaceCatalog(source.apply(root, source.recipes()));
         return Map.of("deleted", key);
     }
 

@@ -1,0 +1,3362 @@
+{
+ "_comment": "Horvátország. Árforrás: a láncok törvény által előírt napi árlistái (NN 75/2025), a cijene.dev nyilvános napi ZIP-archívumán keresztül. Az alapanyagok illesztése a terméknév alapján történik (a horvát láncoknak nincs közös kategóriarendszerük): 'any' = minta-lista (egy mintában a szóközzel elválasztott darabok mind kellenek, bármilyen sorrendben; ^ = szó eleje, $ = szó vége, < = a név első szava így kezdődik (a 'prefixFillers' előtagokat – bio, svježe, mlade… – átugorva; a 4 betűsnél rövidebbek csak teljes szóként)), 'not' = kizáró darabok, 'unit' = megengedett egységek (kg, l, db), 'qty' = kiszerelés-tartomány az egységben. Az első illeszkedő alapanyag nyer, ezért a szűkebbek állnak elöl.",
+ "id": "hr",
+ "name": "Horvátország",
+ "flag": "🇭🇷",
+ "currency": "EUR",
+ "symbol": "€",
+ "rate": 400,
+ "decimals": 2,
+ "source": "a horvát láncok napi árlistái (cijene.dev)",
+ "sourceUrl": "https://cijene.dev",
+ "beta": true,
+ "archiveList": "https://api.cijene.dev/v0/list",
+ "skipChains": [
+  "dm",
+  "metro"
+ ],
+ "stores": [
+  {
+   "id": "konzum",
+   "name": "Konzum",
+   "color": "#d6001c"
+  },
+  {
+   "id": "lidl",
+   "name": "Lidl",
+   "color": "#0050aa",
+   "card": "Lidl Plus"
+  },
+  {
+   "id": "spar",
+   "name": "Spar",
+   "color": "#1a7f37"
+  },
+  {
+   "id": "kaufland",
+   "name": "Kaufland",
+   "color": "#e10915"
+  },
+  {
+   "id": "plodine",
+   "name": "Plodine",
+   "color": "#e5a000"
+  },
+  {
+   "id": "studenac",
+   "name": "Studenac",
+   "color": "#0067b1"
+  },
+  {
+   "id": "tommy",
+   "name": "Tommy",
+   "color": "#c8102e"
+  },
+  {
+   "id": "eurospin",
+   "name": "Eurospin",
+   "color": "#00338d"
+  },
+  {
+   "id": "ktc",
+   "name": "KTC",
+   "color": "#f07d00"
+  },
+  {
+   "id": "ribola",
+   "name": "Ribola",
+   "color": "#005eb8"
+  },
+  {
+   "id": "ntl",
+   "name": "NTL",
+   "color": "#b5121b"
+  },
+  {
+   "id": "zabac",
+   "name": "Žabac",
+   "color": "#4c9a2a"
+  },
+  {
+   "id": "trgocentar",
+   "name": "Trgocentar",
+   "color": "#2b5ea7"
+  },
+  {
+   "id": "vrutak",
+   "name": "Vrutak",
+   "color": "#2e8b57"
+  },
+  {
+   "id": "roto",
+   "name": "Roto",
+   "color": "#a4161a"
+  },
+  {
+   "id": "boso",
+   "name": "Boso",
+   "color": "#7a4e8c"
+  },
+  {
+   "id": "brodokomerc",
+   "name": "Brodokomerc",
+   "color": "#2f6f73"
+  },
+  {
+   "id": "lorenco",
+   "name": "Lorenco",
+   "color": "#8a6d1d"
+  },
+  {
+   "id": "trgovina_krk",
+   "name": "Trgovina Krk",
+   "color": "#5b6b5f"
+  }
+ ],
+ "notAny": [
+  "^za$ pse",
+  "^za$ macke",
+  "^pas$",
+  "^psi$",
+  "macka",
+  "macji",
+  "pseci",
+  "whiskas",
+  "felix",
+  "pedigree",
+  "friskies",
+  "purina",
+  "gourmet gold",
+  "kitekat",
+  "vitakraft",
+  "brit care",
+  "sampon",
+  "losion",
+  "^gel$",
+  "dezodor",
+  "deterdz",
+  "krema ^za$",
+  "^za$ tijelo",
+  "^za$ lice",
+  "^za$ suncanje",
+  "pelene",
+  "svijec",
+  "igrack",
+  "pjena",
+  "kupanj",
+  "tusir",
+  "gel ^za$",
+  "adventuros",
+  "gourmet",
+  "poslastic",
+  "^sheba",
+  "^dreamies",
+  "^whiskas",
+  "za kosu",
+  "boja za",
+  "^lak$ za",
+  "balm",
+  "^lip$"
+ ],
+ "match": {
+  "passata": {
+   "any": [
+    "pasiran rajc",
+    "rajc pasiran",
+    "passata",
+    "pasata"
+   ],
+   "not": [
+    "juha",
+    "umak ^s$",
+    "kecap"
+   ],
+   "unit": [
+    "kg",
+    "l"
+   ],
+   "qty": [
+    0.2,
+    1.5
+   ]
+  },
+  "csemegeuborka": {
+   "any": [
+    "kisel krastav",
+    "krastav kisel",
+    "<krastavci delikates",
+    "<krastavci klasik",
+    "korniso",
+    "kornison",
+    "krastav ^u$ octu",
+    "krastav naljev"
+   ],
+   "unit": [
+    "kg",
+    "l",
+    "db"
+   ]
+  },
+  "kokusztej": {
+   "any": [
+    "kokos mlijek",
+    "mlijek kokos"
+   ],
+   "not": [
+    "napitak",
+    "cokol",
+    "jogurt",
+    "mlijeko ^za$ tijelo"
+   ],
+   "unit": [
+    "l",
+    "kg"
+   ],
+   "qty": [
+    0.15,
+    1.1
+   ]
+  },
+  "habtejszin": {
+   "any": [
+    "slatk vrhnj",
+    "vrhnj slatk",
+    "vrhnj ^za$ slag",
+    "vrhnj slag",
+    "vrhnj ^za$ ^sl$"
+   ],
+   "not": [
+    "sprej",
+    "spray",
+    "biljn",
+    "^u$ prahu"
+   ],
+   "unit": [
+    "l",
+    "kg"
+   ],
+   "qty": [
+    0.1,
+    1.1
+   ]
+  },
+  "tejszin": {
+   "any": [
+    "vrhnj ^za$ kuh",
+    "vrhnj kuhanj",
+    "vrhnj kuh"
+   ],
+   "not": [
+    "biljn",
+    "^soj"
+   ],
+   "unit": [
+    "l",
+    "kg"
+   ],
+   "qty": [
+    0.1,
+    1.1
+   ]
+  },
+  "tejfol": {
+   "any": [
+    "kisel vrhnj",
+    "vrhnj kisel",
+    "mileram"
+   ],
+   "not": [
+    "light ^s$",
+    "namaz",
+    "umak"
+   ],
+   "unit": [
+    "kg",
+    "l"
+   ],
+   "qty": [
+    0.15,
+    1.1
+   ]
+  },
+  "kefir": {
+   "any": [
+    "kefir"
+   ],
+   "not": [
+    "jagod",
+    "voc",
+    "visnj",
+    "malin",
+    "borovnic",
+    "breskv",
+    "banan",
+    "vanil",
+    "cokol",
+    "protein",
+    "zrnca"
+   ],
+   "unit": [
+    "l",
+    "kg"
+   ],
+   "qty": [
+    0.15,
+    1.1
+   ]
+  },
+  "joghurt": {
+   "any": [
+    "jogurt"
+   ],
+   "not": [
+    "jagod",
+    "voc",
+    "visnj",
+    "malin",
+    "borovnic",
+    "breskv",
+    "banan",
+    "vanil",
+    "cokol",
+    "kava",
+    "musli",
+    "zitar",
+    "jabuk",
+    "kruska",
+    "marelic",
+    "ananas",
+    "limun",
+    "kokos",
+    "lijesnj",
+    "keks",
+    "napitak",
+    "pice",
+    "protein",
+    "cokolad",
+    "smoothie",
+    "probiotic"
+   ],
+   "unit": [
+    "kg",
+    "l"
+   ],
+   "qty": [
+    0.12,
+    1.1
+   ]
+  },
+  "tej": {
+   "any": [
+    "<mlijek"
+   ],
+   "not": [
+    "kokos",
+    "cokol",
+    "^zamj",
+    "bebimil",
+    "formula",
+    "kasic",
+    "^riz",
+    "rizin",
+    "^zob",
+    "zobeno",
+    "soj",
+    "badem",
+    "biljn",
+    "kondenz",
+    "^u$ prahu",
+    "prah",
+    "napitak",
+    "jogurt",
+    "kefir",
+    "kakao",
+    "kava",
+    "vanil",
+    "jagod",
+    "banan",
+    "keks",
+    "sapun",
+    "sladoled",
+    "puding",
+    "pahulj",
+    "vrhnj",
+    "sir",
+    "mlijecn",
+    "kozje",
+    "cokolad",
+    "ferment",
+    "acidofil",
+    "kiselo"
+   ],
+   "unit": [
+    "l"
+   ],
+   "qty": [
+    0.45,
+    2.1
+   ]
+  },
+  "vaj": {
+   "any": [
+    "maslac"
+   ],
+   "not": [
+    "kikiriki",
+    "kakao",
+    "biljn",
+    "namaz",
+    "keks",
+    "cokol",
+    "lijesnj",
+    "badem",
+    "kokos",
+    "ghee",
+    "^s$ cesnjak",
+    "zacin",
+    "bez laktoze",
+    "kokic",
+    "margo",
+    "^s$ maslac",
+    "^sa$ maslac",
+    "^sa$ maslac"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.1,
+    1.1
+   ]
+  },
+  "margarin": {
+   "any": [
+    "margarin",
+    "^biljni namaz"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.2,
+    1.1
+   ]
+  },
+  "gouda": {
+   "any": [
+    "gouda",
+    "gauda",
+    "edamer",
+    "^edam"
+   ],
+   "not": [
+    "topljen",
+    "toplj",
+    "dimlj",
+    "namaz",
+    "umak",
+    "cips",
+    "kreker"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.1,
+    3.5
+   ]
+  },
+  "cheddar": {
+   "any": [
+    "cheddar"
+   ],
+   "not": [
+    "topljen",
+    "toplj",
+    "umak",
+    "cips",
+    "kreker",
+    "burger",
+    "kobasic"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.1,
+    1.5
+   ]
+  },
+  "camembert": {
+   "any": [
+    "camembert",
+    "^brie"
+   ],
+   "not": [
+    "umak",
+    "pohan",
+    "topljen"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.08,
+    0.6
+   ]
+  },
+  "mozzarella": {
+   "any": [
+    "mozzarell",
+    "mocarel"
+   ],
+   "not": [
+    "stapic",
+    "pohan",
+    "pizza",
+    "salata",
+    "burger"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.1,
+    1.1
+   ]
+  },
+  "feta": {
+   "any": [
+    "feta",
+    "^bijel sir",
+    "sir bijel"
+   ],
+   "not": [
+    "namaz",
+    "umak",
+    "pita",
+    "burek",
+    "salata"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.1,
+    1.1
+   ]
+  },
+  "trappista": {
+   "any": [
+    "trapist",
+    "polutv sir",
+    "sir polutv",
+    "sir trapist",
+    "podravec",
+    "paski$"
+   ],
+   "not": [
+    "topljen",
+    "toplj",
+    "dimlj",
+    "namaz",
+    "kozji",
+    "ovcji"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.1,
+    3.5
+   ]
+  },
+  "turo": {
+   "any": [
+    "svjez sir",
+    "sir svjez",
+    "^svj sir",
+    "sir ^svj$",
+    "zrnat sir"
+   ],
+   "not": [
+    "vrhnj",
+    "namaz",
+    "kolac",
+    "strudl",
+    "^sa$ sunk",
+    "^sa$ zacin",
+    "voc",
+    "jagod",
+    "vanil",
+    "cokol",
+    "pita",
+    "burek",
+    "stapic",
+    "krem"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.15,
+    1.1
+   ]
+  },
+  "tojas": {
+   "any": [
+    "^jaja$",
+    "^jaja",
+    "^jaje$"
+   ],
+   "not": [
+    "cokol",
+    "kinder",
+    "pisanic",
+    "^boj",
+    "prepel",
+    "tjesten",
+    "salata",
+    "^uskrs",
+    "sladoled",
+    "surprise",
+    "namaz",
+    "majonez",
+    "ljuske"
+   ],
+   "unit": [
+    "db"
+   ],
+   "qty": [
+    4,
+    30
+   ]
+  },
+  "porcukor": {
+   "any": [
+    "secer ^u$ prahu",
+    "secer ^prah"
+   ],
+   "not": [
+    "vanil",
+    "smed"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.2,
+    1.1
+   ]
+  },
+  "cukor": {
+   "any": [
+    "^secer kristal",
+    "kristal secer",
+    "^secer bijel",
+    "^bijeli secer",
+    "^secer$"
+   ],
+   "not": [
+    "smed",
+    "prah",
+    "vanil",
+    "trsk",
+    "kock",
+    "bez secer",
+    "kokos",
+    "napit",
+    "cokol",
+    "^sok",
+    "zamjen",
+    "stevi",
+    "xilit",
+    "ksilit",
+    "brez",
+    "gelir",
+    "^za$ dzem",
+    "zelirn"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.45,
+    5.1
+   ]
+  },
+  "retesliszt": {
+   "any": [
+    "brasno ostro",
+    "ostro brasno",
+    "brasno ^ostro"
+   ],
+   "not": [
+    "kukuruz",
+    "integr",
+    "^razen",
+    "pirov",
+    "heljd"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.45,
+    5.1
+   ]
+  },
+  "liszt": {
+   "any": [
+    "brasno glatko",
+    "glatko brasno",
+    "psen brasno",
+    "brasno psen",
+    "brasno ^t$ 400",
+    "brasno ^t$ 550",
+    "brasno ^t400",
+    "brasno ^t550",
+    "brasno namj",
+    "brasno bijel",
+    "bijelo brasno",
+    "brasno ^tip 400",
+    "brasno ^tip 550"
+   ],
+   "not": [
+    "kukuruz",
+    "integr",
+    "^razen",
+    "pirov",
+    "heljd",
+    "rizin",
+    "bademov",
+    "kokos",
+    "zob",
+    "smjes",
+    "^za$ pizz",
+    "manitob",
+    "ostro",
+    "bez glut",
+    "^krus",
+    "^za$ kruh"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.45,
+    5.1
+   ]
+  },
+  "kakao": {
+   "any": [
+    "<kakao prah",
+    "<kakao ^u$ prah",
+    "<kakao$",
+    "<kakao posn",
+    "<kakao nemasn",
+    "<cacao",
+    "<kakao ^za$ kolac"
+   ],
+   "not": [
+    "napit",
+    "cokol",
+    "keks",
+    "maslac",
+    "krem",
+    "pudin",
+    "mlijek",
+    "instant",
+    "nesquik",
+    "kolac",
+    "sladoled",
+    "namaz",
+    "^u$ zrnu",
+    "zitar",
+    "pahulj",
+    "^cips",
+    "ploca",
+    "^bar$",
+    "figuric",
+    "mrvic",
+    "paw",
+    "rizom",
+    "jagod"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.05,
+    0.6
+   ]
+  },
+  "keksz": {
+   "any": [
+    "petit beurre",
+    "petit ^beure",
+    "cajni keks",
+    "keks cajni",
+    "^albert",
+    "keks ^za$ kolac",
+    "^mini keks"
+   ],
+   "not": [
+    "cokol",
+    "kakao",
+    "punjen",
+    "krem",
+    "choco",
+    "multigrain",
+    "lijesnj",
+    "^mini$ albert cokol"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.1,
+    1.1
+   ]
+  },
+  "rizsteszta": {
+   "any": [
+    "rizin rezanc",
+    "rizin tjestenin",
+    "rezanc ^od$ riz",
+    "tjestenin ^od$ rizin",
+    "rice noodle",
+    "^pad thai rezanc"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.1,
+    1.1
+   ]
+  },
+  "rizs": {
+   "any": [
+    "^riza",
+    "^riz okrugl",
+    "^riz dug"
+   ],
+   "not": [
+    "basmati",
+    "jasmin",
+    "integr",
+    "smed",
+    "arborio",
+    "risotto",
+    "rizoto",
+    "divlj",
+    "crven",
+    "^crn",
+    "mlijecn",
+    "mlij",
+    "pahulj",
+    "vafl",
+    "^napit",
+    "brasno",
+    "cokol",
+    "^sushi",
+    "^u$ vrecic",
+    "kuhana",
+    "gotov",
+    "^sa$ povrc",
+    "salata",
+    "mix",
+    "^mjes"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.4,
+    5.1
+   ]
+  },
+  "spagetti": {
+   "any": [
+    "spaget",
+    "spaghett"
+   ],
+   "not": [
+    "umak",
+    "gotov",
+    "kasic",
+    "integr",
+    "bolonj",
+    "bolog",
+    "carbonar",
+    "konzerv",
+    "rizin",
+    "bez glut"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.2,
+    1.1
+   ]
+  },
+  "lasagne": {
+   "any": [
+    "lazanj list",
+    "list ^za$ lazanj",
+    "listovi ^za$ lazanj",
+    "^lasagne$",
+    "lasagne ^list",
+    "tjestenin lazanj",
+    "lazanje$"
+   ],
+   "not": [
+    "bolonj",
+    "bolog",
+    "gotov",
+    "zamrz",
+    "smrz",
+    "^sa$",
+    "povrc",
+    "spinat"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.2,
+    1.1
+   ]
+  },
+  "kuszkusz": {
+   "any": [
+    "kuskus",
+    "^kus ^kus",
+    "couscous"
+   ],
+   "not": [
+    "salata",
+    "gotov",
+    "^sa$"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.2,
+    1.1
+   ]
+  },
+  "penne": {
+   "any": [
+    "penne",
+    "fusill",
+    "makaron",
+    "pipe rigate",
+    "^pipe$",
+    "farfall",
+    "puzic",
+    "rigatoni",
+    "tortiglion",
+    "mašn",
+    "masnic",
+    "^tjestenin"
+   ],
+   "not": [
+    "umak",
+    "gotov",
+    "kasic",
+    "integr",
+    "bolonj",
+    "bolog",
+    "carbonar",
+    "konzerv",
+    "rizin",
+    "bez glut",
+    "salata",
+    "instant",
+    "^juha",
+    "^s$ povrc",
+    "^sa$ sir",
+    "terijak",
+    "teriyak",
+    "noodl",
+    "maggi",
+    "^kup",
+    "^u$ casi",
+    "punjen",
+    "tortellin",
+    "ravioli",
+    "njoki",
+    "mlinci",
+    "jajcan",
+    "domac",
+    "^svjez",
+    "spinat",
+    "tagliatelle ^sa$",
+    "^sa$ spinat"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.2,
+    1.1
+   ]
+  },
+  "lencse": {
+   "any": [
+    "^leca$",
+    "^leca"
+   ],
+   "not": [
+    "kontakt",
+    "juha",
+    "salata",
+    "varivo",
+    "gotov",
+    "konzerv",
+    "chips",
+    "cips",
+    "tjestenin",
+    "namaz"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.2,
+    2.1
+   ]
+  },
+  "zabpehely": {
+   "any": [
+    "zob pahulj",
+    "zobene pahulj",
+    "pahulj zob"
+   ],
+   "not": [
+    "cokol",
+    "voc",
+    "musli",
+    "jagod",
+    "banan",
+    "kakao",
+    "med",
+    "instant",
+    "kasa ^s$"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.2,
+    2.1
+   ]
+  },
+  "csicseri": {
+   "any": [
+    "slanutak",
+    "slanutk",
+    "leblebij"
+   ],
+   "not": [
+    "humus",
+    "brasno",
+    "cips",
+    "pecen",
+    "salata",
+    "namaz",
+    "tjestenin",
+    "medaljon",
+    "vege",
+    "burger",
+    "hummus"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.2,
+    1.1
+   ]
+  },
+  "voros_bab": {
+   "any": [
+    "grah crven",
+    "crven grah",
+    "grah ^kidney",
+    "kidney"
+   ],
+   "not": [
+    "juha",
+    "varivo",
+    "salata",
+    "gotov",
+    "^s$ kobas",
+    "chili con",
+    "meksick"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.2,
+    1.1
+   ]
+  },
+  "feher_bab": {
+   "any": [
+    "grah bijel",
+    "bijel grah",
+    "grah ^tetovac",
+    "^tetovac",
+    "grah ^cannellin",
+    "cannellini"
+   ],
+   "not": [
+    "juha",
+    "varivo",
+    "salata",
+    "gotov",
+    "^s$ kobas",
+    "^u$ umaku"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.2,
+    1.1
+   ]
+  },
+  "kukorica": {
+   "any": [
+    "kukuruz secer",
+    "secerac",
+    "kukuruz slad",
+    "kukuruz ^zrn",
+    "kukuruz ^u$ zrnu"
+   ],
+   "not": [
+    "brasno",
+    "pahulj",
+    "krupic",
+    "palent",
+    "kokic",
+    "ulje",
+    "cips",
+    "skrob",
+    "^klip",
+    "salata",
+    "mix"
+   ],
+   "unit": [
+    "kg",
+    "l"
+   ],
+   "qty": [
+    0.1,
+    1.1
+   ]
+  },
+  "tonhal": {
+   "any": [
+    "^tuna",
+    "tunjevin",
+    "^tunj"
+   ],
+   "not": [
+    "salata",
+    "pasteta",
+    "namaz",
+    "^s$ povrc",
+    "^sa$ povrc",
+    "tjestenin",
+    "sendvic",
+    "pizza",
+    "rizot",
+    "^steak",
+    "odrezak",
+    "file tune",
+    "smrz",
+    "krem sir",
+    "^sir$"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.06,
+    0.5
+   ]
+  },
+  "lazac": {
+   "any": [
+    "losos",
+    "^salmon"
+   ],
+   "not": [
+    "dimlj",
+    "namaz",
+    "pasteta",
+    "burger",
+    "stapic",
+    "konzerv",
+    "sushi",
+    "salata",
+    "^ulje",
+    "omega",
+    "macka",
+    "macji",
+    "pse",
+    "nareza",
+    "^tost",
+    "^u$ umaku",
+    "^u$ umak",
+    "marinir",
+    "marinad",
+    "umaku"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.1,
+    2.1
+   ]
+  },
+  "harcsa": {
+   "any": [
+    "^som file",
+    "file ^som$",
+    "^som$"
+   ],
+   "not": [
+    "pohan",
+    "dimlj"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.2,
+    3.1
+   ]
+  },
+  "ponty": {
+   "any": [
+    "saran"
+   ],
+   "not": [
+    "dimlj",
+    "pohan",
+    "ikra",
+    "glava",
+    "^rep$",
+    "panir",
+    "cips"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.3,
+    5.1
+   ]
+  },
+  "halfile": {
+   "any": [
+    "oslic",
+    "pangasius",
+    "aljask",
+    "^kolja",
+    "bakalar file",
+    "file bakalar",
+    "^tilapij",
+    "file ^ribe",
+    "riblj file",
+    "^osli"
+   ],
+   "not": [
+    "pohan",
+    "panir",
+    "stapic",
+    "dimlj",
+    "losos",
+    "pasteta",
+    "namaz",
+    "^u$ umaku",
+    "burger",
+    "salata",
+    "^suhi",
+    "^bakalar$",
+    "^na$ bijelo",
+    "^sa$",
+    "bez glave",
+    "cijel"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.2,
+    2.1
+   ]
+  },
+  "pulykamell": {
+   "any": [
+    "<pure prsa",
+    "<purec prsa",
+    "<purec file",
+    "<pure file",
+    "<puran prsa",
+    "<prsa purec",
+    "<file purec",
+    "<puret prsa"
+   ],
+   "not": [
+    "nareza",
+    "dimlj",
+    "salam",
+    "sunk",
+    "parizer",
+    "pecen",
+    "kuhan",
+    "pasteta",
+    "^u$ ovitku",
+    "rolad",
+    "kobasic",
+    "hrenov",
+    "pohan",
+    "^listici",
+    "delikates"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.2,
+    3.1
+   ]
+  },
+  "csirkeszarny": {
+   "any": [
+    "<pilec kril",
+    "<kril pilec",
+    "<krilca",
+    "<krila$"
+   ],
+   "not": [
+    "pohan",
+    "bbq",
+    "pecen",
+    "gotov",
+    "ljut",
+    "^hot",
+    "marinir",
+    "smrz",
+    "marinad"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.3,
+    3.1
+   ]
+  },
+  "csirkecomb": {
+   "any": [
+    "<batak",
+    "<zabatak",
+    "<pilec batak",
+    "<pilec zabatak",
+    "<pilec bedr",
+    "<bedr pilec",
+    "<pilec but"
+   ],
+   "not": [
+    "pohan",
+    "dimlj",
+    "pecen",
+    "gotov",
+    "nareza",
+    "pure",
+    "purec",
+    "puret",
+    "marinir",
+    "kobasic",
+    "^bez$ kost",
+    "otkost"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.3,
+    3.1
+   ]
+  },
+  "csirkemell": {
+   "any": [
+    "<pilec prsa",
+    "<pilec file",
+    "<prsa pilec",
+    "<file pilec",
+    "<pilec filet",
+    "<pilet prsa",
+    "<piletin prsa"
+   ],
+   "not": [
+    "pohan",
+    "dimlj",
+    "pecen",
+    "kuhan",
+    "gotov",
+    "nareza",
+    "salam",
+    "sunk",
+    "parizer",
+    "pasteta",
+    "filetino",
+    "^u$ ovitku",
+    "hrenov",
+    "kobasic",
+    "burger",
+    "medaljon",
+    "nugget",
+    "stapic",
+    "rolad",
+    "^listici",
+    "^slim",
+    "^s&f",
+    "kebab",
+    "pure",
+    "purec",
+    "puret",
+    "smrz",
+    "^u$ umaku",
+    "salata",
+    "juha",
+    "kasic",
+    "^grill$",
+    "marinir",
+    "panir",
+    "zabat",
+    "jeli",
+    "delikates",
+    "marinad",
+    "sezam",
+    "spice",
+    "sjemenk"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.2,
+    3.1
+   ]
+  },
+  "egesz_csirke": {
+   "any": [
+    "<pile$",
+    "<pile cijel",
+    "<cijel pile",
+    "<pilic",
+    "<pile grill"
+   ],
+   "not": [
+    "pecen",
+    "gotov",
+    "dimlj",
+    "juha",
+    "pasteta",
+    "kobasic",
+    "hrenov",
+    "salama",
+    "nareza",
+    "^batak",
+    "prsa",
+    "kril",
+    "zabatak",
+    "file",
+    "jetr",
+    "srca",
+    "zelud",
+    "vrat"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.8,
+    3.1
+   ]
+  },
+  "daralt_marha": {
+   "any": [
+    "<junec mljeven",
+    "<junet mljeven",
+    "<goved mljeven",
+    "<mljeven junec",
+    "<mljeven goved",
+    "<mljeven junet",
+    "<meso mljeven junec",
+    "<meso mljeven goved"
+   ],
+   "not": [
+    "svinj",
+    "mjes",
+    "mijes",
+    "cevap",
+    "pljesk",
+    "burger",
+    "smrz",
+    "kobasic"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.2,
+    2.1
+   ]
+  },
+  "daralthus": {
+   "any": [
+    "<mljeven",
+    "<svinj mljeven",
+    "<mjes mljeven",
+    "<mijes mljeven",
+    "<meso mljeven"
+   ],
+   "not": [
+    "junec",
+    "goved",
+    "junet",
+    "pilec",
+    "pure",
+    "purec",
+    "cevap",
+    "pljesk",
+    "burger",
+    "smrz",
+    "kobasic",
+    "^umak"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.2,
+    2.1
+   ]
+  },
+  "marhalabszar": {
+   "any": [
+    "<junet",
+    "<junec but",
+    "<junec plec",
+    "<junec koljen",
+    "<goved koljen",
+    "<junec meso",
+    "<goved meso",
+    "<junec ^za$ gulas",
+    "<goved ^za$ gulas",
+    "<govedin ^za$ gulas",
+    "<govedin but",
+    "<govedin plec",
+    "<govedin koljen"
+   ],
+   "not": [
+    "mljeven",
+    "file",
+    "odrezak",
+    "steak",
+    "biftek",
+    "^rib",
+    "rebr",
+    "jezik",
+    "konzerv",
+    "pasteta",
+    "juha",
+    "trgan",
+    "pecen",
+    "gotov",
+    "kobasic",
+    "carpaccio",
+    "nareza",
+    "kost",
+    "jetr",
+    "burger",
+    "cevap",
+    "pljesk",
+    "smrz",
+    "dimlj",
+    "suh",
+    "^za$ juhu",
+    "rostilj",
+    "^lungic",
+    "ramstek",
+    "rozbif"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.3,
+    3.1
+   ]
+  },
+  "sertes_karaj": {
+   "any": [
+    "<svinj kare",
+    "<kare svinj",
+    "<svinj lungic",
+    "<svinj kotlet",
+    "<kotlet svinj",
+    "<kare$",
+    "<kare ^bez"
+   ],
+   "not": [
+    "dimlj",
+    "pohan",
+    "pecen",
+    "kuhan",
+    "nareza",
+    "sunk",
+    "gotov",
+    "^suh",
+    "susen",
+    "marinir"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.3,
+    3.1
+   ]
+  },
+  "sertes_tarja": {
+   "any": [
+    "<svinj vrat",
+    "<vrat svinj",
+    "<vrat$"
+   ],
+   "not": [
+    "dimlj",
+    "^suh",
+    "nareza",
+    "pecen",
+    "kuhan",
+    "^ruls",
+    "gotov",
+    "kobasic",
+    "^budjol",
+    "^budel"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.3,
+    3.1
+   ]
+  },
+  "sertes_oldalas": {
+   "any": [
+    "<svinj rebr",
+    "<rebr svinj",
+    "<rebarc",
+    "<rebra$"
+   ],
+   "not": [
+    "dimlj",
+    "bbq",
+    "marinir",
+    "pecen",
+    "gotov",
+    "^suh"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.3,
+    3.1
+   ]
+  },
+  "sertes_comb": {
+   "any": [
+    "<svinj but",
+    "<but svinj",
+    "<svinj plec",
+    "<plecka svinj",
+    "<svinjetin",
+    "<svinj meso ^za$ gulas",
+    "<meso ^za$ gulas svinj",
+    "<but$"
+   ],
+   "not": [
+    "dimlj",
+    "^suh",
+    "nareza",
+    "sunk",
+    "pecen",
+    "kuhan",
+    "gotov",
+    "kobasic",
+    "konzerv",
+    "pasteta",
+    "^mast",
+    "slanin",
+    "mljeven",
+    "rebr",
+    "vrat",
+    "kare",
+    "lungic",
+    "kotlet",
+    "koljenic",
+    "jetr",
+    "^papci",
+    "^uho",
+    "^rep$",
+    "kosti",
+    "gyoza",
+    "povrc",
+    "raznjic",
+    "marinir"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.3,
+    3.1
+   ]
+  },
+  "virsli": {
+   "any": [
+    "hrenovk",
+    "^hrenov",
+    "^frankfurt",
+    "^wiener"
+   ],
+   "not": [
+    "^u$ tijestu",
+    "pecivo",
+    "pizza",
+    "hot dog pecivo",
+    "^s$ sirom"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.1,
+    1.6
+   ]
+  },
+  "parizsi": {
+   "any": [
+    "parizer",
+    "pariska",
+    "^pariz"
+   ],
+   "not": [
+    "^u$ tijestu",
+    "salata"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.08,
+    1.6
+   ]
+  },
+  "szalami": {
+   "any": [
+    "salama",
+    "^salam"
+   ],
+   "not": [
+    "cokol",
+    "keks",
+    "^pasteta",
+    "kakao",
+    "pizza",
+    "sendvic",
+    "^tost"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.05,
+    1.6
+   ]
+  },
+  "kolbasz": {
+   "any": [
+    "<kobasic",
+    "<domac kobasic",
+    "<cesnjovk",
+    "<slavonsk kobasic",
+    "<baranjsk kobasic",
+    "<kulen$",
+    "<kranjsk",
+    "<dimljen kobasic",
+    "<ljut kobasic",
+    "<srijemsk"
+   ],
+   "not": [
+    "narezak",
+    "cajna",
+    "posebn",
+    "becka",
+    "tirolsk",
+    "topljen",
+    "^sir$",
+    "krem sir",
+    "pilec",
+    "pure",
+    "hrenov",
+    "bijel",
+    "cevap",
+    "tost",
+    "pizza",
+    "sendvic",
+    "grah",
+    "varivo",
+    "juha",
+    "sarma",
+    "teletin",
+    "rostilj",
+    "suha",
+    "trajn",
+    "tartuf"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.1,
+    1.6
+   ]
+  },
+  "bacon": {
+   "any": [
+    "slanin",
+    "panceta",
+    "^bacon",
+    "^speck"
+   ],
+   "not": [
+    "pecen",
+    "gotov",
+    "cips",
+    "^grah",
+    "^s$ graho",
+    "^u$ tijestu",
+    "pizza",
+    "rolad",
+    "zaba"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.05,
+    1.6
+   ]
+  },
+  "sonka": {
+   "any": [
+    "sunka",
+    "sunk"
+   ],
+   "not": [
+    "prsut",
+    "pilec",
+    "purec",
+    "pure",
+    "puret",
+    "pizza",
+    "sendvic",
+    "^tost",
+    "salata",
+    "namaz",
+    "pasteta",
+    "^sa$ sunk",
+    "^s$ sunk",
+    "rolad",
+    "sir ^sa$",
+    "pecivo",
+    "tijest",
+    "^u$ tijestu",
+    "kroasan",
+    "burek",
+    "^dimljena$",
+    "^pecen",
+    "krem sir",
+    "^sir$",
+    "^sir "
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.05,
+    1.6
+   ]
+  },
+  "zsir": {
+   "any": [
+    "svinj mast",
+    "mast svinj",
+    "^mast$",
+    "^mast ^domac"
+   ],
+   "not": [
+    "krema",
+    "maslin",
+    "kokos",
+    "^mast ^za$",
+    "biljn"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.2,
+    2.1
+   ]
+  },
+  "napraforgoolaj": {
+   "any": [
+    "suncokret ulje",
+    "ulje suncokret",
+    "^jestivo ulje",
+    "ulje jestiv"
+   ],
+   "not": [
+    "majonez",
+    "tuna",
+    "tunj",
+    "sardin",
+    "^u$ ulju",
+    "^u$ biljn",
+    "^cips",
+    "spray",
+    "sprej",
+    "sjemenk",
+    "^pecen",
+    "^s$ okus",
+    "maslin",
+    "rep"
+   ],
+   "unit": [
+    "l"
+   ],
+   "qty": [
+    0.4,
+    5.1
+   ]
+  },
+  "olivaolaj": {
+   "any": [
+    "maslin ulje",
+    "ulje maslin"
+   ],
+   "not": [
+    "tuna",
+    "tunj",
+    "sardin",
+    "^u$ maslin",
+    "pasteta",
+    "pesto",
+    "masline",
+    "^sapun",
+    "krema",
+    "spray",
+    "sprej",
+    "^s$ cesnjak",
+    "^s$ ljut"
+   ],
+   "unit": [
+    "l"
+   ],
+   "qty": [
+    0.2,
+    5.1
+   ]
+  },
+  "olajbogyo": {
+   "any": [
+    "masline",
+    "maslin ^zelen",
+    "maslin ^crn",
+    "maslina",
+    "^olive"
+   ],
+   "not": [
+    "ulje",
+    "pasteta",
+    "namaz",
+    "pizza",
+    "tuna",
+    "sardin",
+    "kruh",
+    "sapun",
+    "krema",
+    "^sir ^s$",
+    "tapenad"
+   ],
+   "unit": [
+    "kg",
+    "l"
+   ],
+   "qty": [
+    0.08,
+    1.1
+   ]
+  },
+  "pesto": {
+   "any": [
+    "pesto"
+   ],
+   "not": [
+    "tjestenin",
+    "spaget",
+    "pizza",
+    "kruh",
+    "^sir ^s$",
+    "chips"
+   ],
+   "unit": [
+    "kg",
+    "l"
+   ],
+   "qty": [
+    0.08,
+    0.6
+   ]
+  },
+  "tofu": {
+   "any": [
+    "tofu"
+   ],
+   "not": [
+    "^kobasic",
+    "burger",
+    "namaz"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.1,
+    1.1
+   ]
+  },
+  "dio": {
+   "any": [
+    "orah mljeven",
+    "oras mljeven",
+    "mljeven orah",
+    "mljeven oras",
+    "^orah jezgr",
+    "jezgr oraha",
+    "^orasi$",
+    "^orasi ^jezgr"
+   ],
+   "not": [
+    "cokol",
+    "kolac",
+    "strudl",
+    "^keks",
+    "^med",
+    "maslac",
+    "indijsk",
+    "brazil",
+    "muskat",
+    "^kokos",
+    "pecen",
+    "^pekan",
+    "makadam"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.05,
+    1.1
+   ]
+  },
+  "mak": {
+   "any": [
+    "^mak mljeven",
+    "mljeven ^mak$",
+    "^mak plav",
+    "^plavi mak",
+    "^mak$"
+   ],
+   "not": [
+    "makaron",
+    "makovnj",
+    "strudl",
+    "kolac",
+    "kruh",
+    "pecivo",
+    "sjemenke mix",
+    "zemick",
+    "nadjev"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.05,
+    1.1
+   ]
+  },
+  "mogyoro": {
+   "any": [
+    "kikiriki"
+   ],
+   "not": [
+    "maslac",
+    "cokol",
+    "flips",
+    "smoki",
+    "keks",
+    "ulje",
+    "cips",
+    "krem",
+    "namaz",
+    "^karamel",
+    "^med",
+    "^u$ cokol",
+    "^bar$",
+    "^bar",
+    "^snack"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.08,
+    1.1
+   ]
+  },
+  "almale": {
+   "any": [
+    "^sok jabuk",
+    "jabuk ^sok",
+    "jabucn sok",
+    "sok ^od$ jabuk",
+    "^sok 100 jabuk"
+   ],
+   "not": [
+    "nektar",
+    "mix",
+    "^multi",
+    "mrkv",
+    "^s$",
+    "gazir",
+    "sirup",
+    "ocat",
+    "^cijed",
+    "^kasic",
+    "visnj",
+    "rabarbar",
+    "mrkv",
+    "^multi",
+    "breskv",
+    "^mix$",
+    "nektar",
+    "^family"
+   ],
+   "unit": [
+    "l"
+   ],
+   "qty": [
+    0.5,
+    3.1
+   ]
+  },
+  "lekvar": {
+   "any": [
+    "^dzem",
+    "pekmez",
+    "marmelad",
+    "^dzem$",
+    "dzem ^extra",
+    "^ekstra dzem"
+   ],
+   "not": [
+    "keks",
+    "kroasan",
+    "pecivo",
+    "krafn",
+    "cokol",
+    "jogurt",
+    "palacink",
+    "kolac",
+    "^tortica",
+    "^rolat",
+    "^sendvic",
+    "^bar"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.15,
+    1.1
+   ]
+  },
+  "tortilla": {
+   "any": [
+    "tortilj",
+    "tortilla",
+    "^wrap",
+    "wrap ^tortil"
+   ],
+   "not": [
+    "cips",
+    "chips",
+    "nacho",
+    "^kukuruzn cips",
+    "^salsa"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.15,
+    1.6
+   ]
+  },
+  "leveles_teszta": {
+   "any": [
+    "lisnat tijest",
+    "tijesto lisnat"
+   ],
+   "not": [
+    "pecivo",
+    "^s$",
+    "punjen",
+    "^kifl",
+    "^burek",
+    "^pita"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.2,
+    1.1
+   ]
+  },
+  "hasabburgonya": {
+   "any": [
+    "<pomfrit",
+    "<pommes",
+    "<krumpir pomfrit",
+    "<krumpir prut",
+    "<krumpir ^za$ przenje"
+   ],
+   "not": [
+    "zacin",
+    "^sol$",
+    "cips",
+    "umak"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.4,
+    3.1
+   ]
+  },
+  "edesburgonya": {
+   "any": [
+    "<batat",
+    "<slatk krumpir"
+   ],
+   "not": [
+    "cips",
+    "pire",
+    "pomfrit",
+    "kasic",
+    "zacin",
+    "mlinci",
+    "rezanc",
+    "tjesten"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ]
+  },
+  "burgonya": {
+   "any": [
+    "<krumpir"
+   ],
+   "not": [
+    "pire",
+    "pomfrit",
+    "pommes",
+    "cips",
+    "chips",
+    "prah",
+    "kroket",
+    "njok",
+    "salata",
+    "slatk",
+    "pecen",
+    "pekarsk",
+    "zacinj",
+    "wedges",
+    "ploske",
+    "kriske",
+    "kasic",
+    "kuhan",
+    "flips",
+    "stapic",
+    "dehidr",
+    "pita",
+    "burek",
+    "tijest",
+    "juha",
+    "gratin",
+    "rost",
+    "smrz",
+    "^za$ salatu xx"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.5,
+    10.1
+   ]
+  },
+  "voroshagyma": {
+   "any": [
+    "<luk crven",
+    "<crven luk",
+    "<luk zut",
+    "<zut luk",
+    "<luk$",
+    "<luk mrez",
+    "<kapula"
+   ],
+   "not": [
+    "mlad",
+    "bijel",
+    "cesnjak",
+    "poriluk",
+    "sjemenk",
+    "prah",
+    "przen",
+    "pecen",
+    "zacin",
+    "kolutov",
+    "umak",
+    "cips",
+    "flips",
+    "salata",
+    "kisel",
+    "octu",
+    "vlasac",
+    "ljut",
+    "srebr",
+    "naljev",
+    "kapulic",
+    "kikiriki",
+    "vrhnj",
+    "kockic",
+    "smrz"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.05,
+    10.1
+   ]
+  },
+  "fokhagyma": {
+   "any": [
+    "<cesnjak",
+    "<bijel luk",
+    "<luk bijel"
+   ],
+   "not": [
+    "prah",
+    "granul",
+    "umak",
+    "kobasic",
+    "mljeven",
+    "zacin",
+    "kruh",
+    "maslac",
+    "ulje",
+    "majonez",
+    "pecivo",
+    "^sol$",
+    "pasta",
+    "kisel",
+    "octu",
+    "medvjed",
+    "pikant",
+    "mlinac",
+    "^u$ ulju",
+    "rolls",
+    "bruschet",
+    "klice",
+    "kreker"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.03,
+    2.1
+   ]
+  },
+  "paradicsom": {
+   "any": [
+    "<rajcic",
+    "<pomidor"
+   ],
+   "not": [
+    "pasiran",
+    "koncentrat",
+    "pelat",
+    "kecap",
+    "umak",
+    "sok",
+    "susen",
+    "konzerv",
+    "salsa",
+    "juha",
+    "pizza",
+    "polpa",
+    "sjeckan",
+    "krem",
+    "cips",
+    "kreker",
+    "ulju",
+    "rizot",
+    "ajvar",
+    "pesto",
+    "namaz",
+    "ljut",
+    "tjestenin",
+    "pomodorini",
+    "alla",
+    "^u$ soku",
+    "kasic",
+    "snack"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.2,
+    5.1
+   ]
+  },
+  "paprika": {
+   "any": [
+    "<paprika$",
+    "<paprika babur",
+    "<babur",
+    "<paprika ^zelen",
+    "<paprika ^crven",
+    "<paprika ^zut",
+    "<paprika ^siljast",
+    "<paprika ^roga"
+   ],
+   "not": [
+    "mljeven",
+    "dimljen",
+    "prah",
+    "pire",
+    "ajvar",
+    "cips",
+    "chips",
+    "kobasic",
+    "pasteta",
+    "punjen",
+    "konzerv",
+    "kisel",
+    "salata",
+    "octu",
+    "pecen",
+    "zacin",
+    "flips",
+    "krem",
+    "feferon",
+    "^sir$",
+    "namaz",
+    "umak",
+    "chili",
+    "pindjur",
+    "lecho",
+    "filet",
+    "naljev",
+    "^u$",
+    "file",
+    "rezan",
+    "tucan",
+    "^mix$",
+    "sirom"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.1,
+    3.1
+   ]
+  },
+  "uborka": {
+   "any": [
+    "<krastavac",
+    "<krastav salat",
+    "<krastavci salat",
+    "<krastav ^svjez"
+   ],
+   "not": [
+    "kisel",
+    "octu",
+    "korniso",
+    "kornison",
+    "delikates",
+    "klasik",
+    "sok",
+    "sapun",
+    "krema",
+    "maska",
+    "tonik",
+    "naljev"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.15,
+    3.1
+   ]
+  },
+  "sargarepa": {
+   "any": [
+    "<mrkv"
+   ],
+   "not": [
+    "sok",
+    "kasic",
+    "juha",
+    "pire",
+    "nektar",
+    "cips",
+    "salata",
+    "mix",
+    "grasak",
+    "naribana smrz",
+    "kock",
+    "smrz"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.3,
+    5.1
+   ]
+  },
+  "petrezselyem": {
+   "any": [
+    "<persin$",
+    "<persin korij",
+    "<korij persin",
+    "<persin list",
+    "<persin vez"
+   ],
+   "not": [
+    "usitnjen",
+    "susen",
+    "zacin",
+    "sjeckan",
+    "smrz",
+    "^sol$",
+    "pesto",
+    "maslac",
+    "^sir$"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.02,
+    2.1
+   ]
+  },
+  "karfiol": {
+   "any": [
+    "<cvjetac",
+    "<karfiol"
+   ],
+   "not": [
+    "juha",
+    "pire",
+    "krem",
+    "salata",
+    "mix",
+    "medaljon",
+    "mjesav",
+    "curry"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.3,
+    3.1
+   ]
+  },
+  "brokkoli": {
+   "any": [
+    "<brokul",
+    "<brokol"
+   ],
+   "not": [
+    "juha",
+    "pire",
+    "krem",
+    "salata",
+    "mix",
+    "medaljon",
+    "mjesav",
+    "kasic",
+    "pita"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.2,
+    2.1
+   ]
+  },
+  "kelkaposzta": {
+   "any": [
+    "<kelj$",
+    "<kelj glav",
+    "<kelj ^bijel"
+   ],
+   "not": [
+    "pupc",
+    "kovrc",
+    "salata",
+    "juha"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.4,
+    3.1
+   ]
+  },
+  "kaposzta": {
+   "any": [
+    "<kupus"
+   ],
+   "not": [
+    "kisel",
+    "salata",
+    "list",
+    "sarma",
+    "crven",
+    "kinesk",
+    "pekins",
+    "mlinci",
+    "juha",
+    "varivo",
+    "pita",
+    "strudl",
+    "mix",
+    "cips",
+    "rezan"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.5,
+    4.1
+   ]
+  },
+  "cukkini": {
+   "any": [
+    "<tikvic",
+    "<zucchin"
+   ],
+   "not": [
+    "pire",
+    "juha",
+    "krem",
+    "mix",
+    "cips",
+    "sjemenk",
+    "rizot",
+    "bulgur",
+    "mjesav"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.2,
+    3.1
+   ]
+  },
+  "padlizsan": {
+   "any": [
+    "<patlidzan",
+    "<melanzan"
+   ],
+   "not": [
+    "namaz",
+    "ajvar",
+    "pecen",
+    "krem",
+    "umak",
+    "pire"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.2,
+    3.1
+   ]
+  },
+  "sutotok": {
+   "any": [
+    "<bundev",
+    "<buca$",
+    "<buca ^hokaido",
+    "<hokaido",
+    "<hokkaido",
+    "<tikva butternut",
+    "butternut"
+   ],
+   "not": [
+    "sjemenk",
+    "ulje",
+    "juha",
+    "krem",
+    "pire",
+    "kruh",
+    "pecivo",
+    "kolac",
+    "cereali"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.4,
+    5.1
+   ]
+  },
+  "cekla": {
+   "any": [
+    "<cikl"
+   ],
+   "not": [
+    "salata",
+    "kisel",
+    "sok",
+    "octu",
+    "cips",
+    "juha",
+    "pire",
+    "krem",
+    "rezan",
+    "naljev"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.3,
+    3.1
+   ]
+  },
+  "gomba": {
+   "any": [
+    "<sampinjon",
+    "<gljiv"
+   ],
+   "not": [
+    "suh",
+    "susen",
+    "juha",
+    "umak",
+    "pasteta",
+    "pizza",
+    "krem",
+    "rizot",
+    "namaz",
+    "mix",
+    "kisel",
+    "octu",
+    "ulju",
+    "shii",
+    "bukov",
+    "vrganj",
+    "lisicark",
+    "zacin",
+    "prah",
+    "ragu",
+    "konzerv",
+    "limenk"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.15,
+    2.1
+   ]
+  },
+  "zoldbab": {
+   "any": [
+    "<mahun"
+   ],
+   "not": [
+    "mahunark",
+    "juha",
+    "varivo",
+    "salata",
+    "kisel"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.2,
+    2.1
+   ]
+  },
+  "zoldsegkeverek": {
+   "any": [
+    "mjesavin povrc",
+    "mijesan povrc",
+    "povrc mjesavin",
+    "povrc mijesan",
+    "^povrce ^za$ juhu",
+    "^juha povrce smrz",
+    "^povrce mix",
+    "^mix povrc"
+   ],
+   "not": [
+    "^juha ^u$",
+    "^kocka",
+    "^vegeta",
+    "zacin",
+    "^umak",
+    "^rizot",
+    "^pire",
+    "^kasic",
+    "^krem"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.3,
+    2.6
+   ]
+  },
+  "borso": {
+   "any": [
+    "<grasak"
+   ],
+   "not": [
+    "juha",
+    "mrkv",
+    "kukuruz",
+    "pire",
+    "krem",
+    "cips",
+    "suh",
+    "sjemen",
+    "salata",
+    "mix",
+    "varivo",
+    "lomljen"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.2,
+    2.6
+   ]
+  },
+  "spenot": {
+   "any": [
+    "<spinat"
+   ],
+   "not": [
+    "tjestenin",
+    "pita",
+    "burek",
+    "njok",
+    "lazanj",
+    "tortelin",
+    "tortel",
+    "^sir$",
+    "tijesto",
+    "strudl",
+    "kroasan",
+    "ravioli",
+    "pizza",
+    "salata",
+    "mix",
+    "baby",
+    "krem juha",
+    "fuzi"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.2,
+    2.6
+   ]
+  },
+  "alma": {
+   "any": [
+    "<jabuk"
+   ],
+   "not": [
+    "sok",
+    "kasic",
+    "ocat",
+    "pita",
+    "strudl",
+    "kompot",
+    "cips",
+    "susen",
+    "musli",
+    "jogurt",
+    "cokol",
+    "caj",
+    "keks",
+    "nektar",
+    "cider",
+    "kolac",
+    "pire",
+    "sirup",
+    "voda",
+    "snack",
+    "zele",
+    "dzem",
+    "chips",
+    "savijac"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.4,
+    5.1
+   ]
+  },
+  "korte": {
+   "any": [
+    "<krusk"
+   ],
+   "not": [
+    "sok",
+    "kompot",
+    "kasic",
+    "rakij",
+    "susen",
+    "cokol",
+    "jogurt",
+    "caj",
+    "pita",
+    "nektar",
+    "zele",
+    "dzem",
+    "voda",
+    "likero",
+    "vilijam"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.4,
+    3.1
+   ]
+  },
+  "banan": {
+   "any": [
+    "<banan"
+   ],
+   "not": [
+    "cips",
+    "jogurt",
+    "napitak",
+    "kasic",
+    "sok",
+    "susen",
+    "cokol",
+    "keks",
+    "mlijek",
+    "sirup",
+    "nektar",
+    "puding",
+    "pire",
+    "smoothie",
+    "bombon",
+    "zele"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.15,
+    3.1
+   ]
+  },
+  "narancs": {
+   "any": [
+    "<naranc",
+    "<narac"
+   ],
+   "not": [
+    "sok",
+    "nektar",
+    "marmelad",
+    "cokol",
+    "caj",
+    "keks",
+    "jogurt",
+    "napitak",
+    "sirup",
+    "korica",
+    "voda",
+    "soda",
+    "limunad",
+    "dzem",
+    "gazir",
+    "likero",
+    "bombon",
+    "zele"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.4,
+    5.1
+   ]
+  },
+  "citrom": {
+   "any": [
+    "<limun$",
+    "<limuni",
+    "<limun ^bio",
+    "<limun ^pakiran",
+    "<limun ^mrez"
+   ],
+   "not": [
+    "sok",
+    "limunad",
+    "caj",
+    "sirup",
+    "napitak",
+    "keks",
+    "cokol",
+    "jogurt",
+    "voda",
+    "soda",
+    "ice",
+    "korica",
+    "trava",
+    "esencij",
+    "aroma",
+    "ulje",
+    "sapun",
+    "deterd",
+    "gel",
+    "osvjez",
+    "bombon",
+    "zele",
+    "tonik",
+    "pivo",
+    "radler"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.1,
+    2.1
+   ]
+  },
+  "eper": {
+   "any": [
+    "<jagod"
+   ],
+   "not": [
+    "jogurt",
+    "dzem",
+    "sok",
+    "cokol",
+    "napitak",
+    "sirup",
+    "keks",
+    "caj",
+    "puding",
+    "torta",
+    "sladoled",
+    "zele",
+    "nektar",
+    "kasic",
+    "bombon",
+    "voda",
+    "mlijek",
+    "kefir",
+    "krem",
+    "susen",
+    "liofil",
+    "musli"
+   ],
+   "unit": [
+    "kg"
+   ],
+   "qty": [
+    0.2,
+    2.1
+   ]
+  },
+  "kenyer": {
+   "any": [
+    "<kruh"
+   ],
+   "not": [
+    "mrvic",
+    "krutoni",
+    "dvopek",
+    "tostir",
+    "namaz",
+    "kvas",
+    "pecivo",
+    "smjes",
+    "brasno",
+    "bez glut",
+    "hrskav",
+    "kreker",
+    "prepecen",
+    "cips",
+    "rolls",
+    "sticks",
+    "grisin"
+   ],
+   "unit": [
+    "kg",
+    "db"
+   ],
+   "qty": [
+    0.25,
+    1.6
+   ]
+  },
+  "zsemle": {
+   "any": [
+    "<zemlj",
+    "<kajzeric",
+    "<pecivo zemlj",
+    "<pecivo kajzeric",
+    "<pecivo$",
+    "<pecivo bijel",
+    "<pecivo obicn",
+    "<zemick"
+   ],
+   "not": [
+    "lisnat",
+    "slatk",
+    "kroasan",
+    "cokol",
+    "^sir$",
+    "hot dog",
+    "integr",
+    "kukuruzn",
+    "kifl",
+    "raz",
+    "sjemenk",
+    "burger",
+    "punjen",
+    "maslin",
+    "sezam",
+    "sirom",
+    "coko",
+    "kokos",
+    "graham",
+    "hamb",
+    "bao",
+    "makov",
+    "bucin",
+    "pletenic"
+   ],
+   "unit": [
+    "db",
+    "kg"
+   ],
+   "qty": [
+    0.03,
+    1.1
+   ]
+  }
+ },
+ "search": {
+  "kave": "kava",
+  "kavé": "kava",
+  "kenyer": "kruh",
+  "tej": "mlijeko",
+  "tojas": "jaja",
+  "sor": "pivo",
+  "bor": "vino",
+  "viz": "voda",
+  "asvanyviz": "voda",
+  "uditol": "sok",
+  "gyumolcsle": "sok",
+  "almale": "sok jabuka",
+  "narancsle": "sok naranca",
+  "csoki": "cokolada",
+  "csokolade": "cokolada",
+  "keksz": "keks",
+  "sajt": "sir",
+  "vaj": "maslac",
+  "joghurt": "jogurt",
+  "tejfol": "vrhnje",
+  "teszta": "tjestenina",
+  "rizs": "riza",
+  "cukor": "secer",
+  "liszt": "brasno",
+  "so": "sol",
+  "bors": "papar",
+  "olaj": "ulje",
+  "ecet": "ocat",
+  "mez": "med",
+  "banan": "banana",
+  "alma": "jabuka",
+  "korte": "kruska",
+  "narancs": "naranca",
+  "citrom": "limun",
+  "szolo": "grozde",
+  "paradicsom": "rajcica",
+  "uborka": "krastavac",
+  "hagyma": "luk",
+  "fokhagyma": "cesnjak",
+  "krumpli": "krumpir",
+  "burgonya": "krumpir",
+  "repa": "mrkva",
+  "csirke": "pilec",
+  "sertes": "svinj",
+  "marha": "junec",
+  "hal": "riba",
+  "sonka": "sunka",
+  "kolbasz": "kobasica",
+  "szalami": "salama",
+  "mosogatoszer": "deterdzent za sude",
+  "mososzer": "deterdzent",
+  "wc papir": "toaletni papir",
+  "papirtorlo": "rucnik papirnati",
+  "fogkrem": "pasta za zube",
+  "sampon": "sampon",
+  "szappan": "sapun",
+  "pelenka": "pelene",
+  "zsebkendo": "maramice",
+  "tea": "caj",
+  "kakao": "kakao",
+  "chips": "cips",
+  "fagyi": "sladoled",
+  "jegkrem": "sladoled",
+  "pizza": "pizza",
+  "zab": "zob",
+  "muzli": "musli"
+ },
+ "prefixFillers": [
+  "bio",
+  "eko",
+  "svjez",
+  "svj",
+  "trajn",
+  "tr",
+  "mlad",
+  "domac",
+  "hrvatsk",
+  "fresh",
+  "premium",
+  "extra",
+  "ekstra",
+  "natur",
+  "organsk",
+  "k",
+  "plus",
+  "spar",
+  "budget",
+  "s",
+  "mini",
+  "baby",
+  "cherry",
+  "klasa",
+  "i",
+  "1",
+  "a"
+ ]
+}

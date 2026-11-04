@@ -100,7 +100,8 @@ public final class DealAnalyzer {
             // 4. kategória egységárához képest
             String cu = e.categoryId() + "|" + e.unit();
             List<Double> sorted = byCategoryUnit.get(cu);
-            if (sorted.size() >= 6) {
+            // ismeretlen kategóriában (0) az egységár-összevetésnek nincs értelme
+            if (e.categoryId() != 0 && sorted.size() >= 6) {
                 double med = categoryMedian.get(cu);
                 double s = (med - e.unitPrice()) / med;
                 if (s >= CATEGORY_MIN && Stats.percentileRank(sorted, e.unitPrice()) <= 0.05) {
@@ -181,13 +182,6 @@ public final class DealAnalyzer {
     }
 
     static String ft(double v) {
-        long r = Math.round(v);
-        String s = String.valueOf(r);
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < s.length(); i++) {
-            if (i > 0 && (s.length() - i) % 3 == 0) sb.append(' ');
-            sb.append(s.charAt(i));
-        }
-        return sb + " Ft";
+        return hu.sporolos.market.Market.current().money(v);
     }
 }

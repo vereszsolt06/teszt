@@ -20,7 +20,8 @@ import java.util.TreeSet;
  * a böngésző megjegyez, és egy linkkel megosztható a háztartás többi tagjával.
  */
 record Household(String store, int people, int dinners, int budget, Set<String> diets, Set<String> equipment,
-                 Set<String> stores, boolean bulk, Set<String> cards, boolean onboarded, String cookMode, boolean split) {
+                 Set<String> stores, boolean bulk, Set<String> cards, boolean onboarded, String cookMode, boolean split,
+                 String country) {
 
     /** Minden nap főz / kétnaponta főz (a maradék másnapra). */
     static final String DAILY = "daily", EVERY_OTHER = "every2";
@@ -30,13 +31,28 @@ record Household(String store, int people, int dinners, int budget, Set<String> 
 
     static Household defaults() {
         return new Household(null, 2, 5, 15000, Set.of(), Set.of(RecipeMeta.STOVE, RecipeMeta.OVEN),
-                Set.of(), false, Set.of(), false, DAILY, false);
+                Set.of(), false, Set.of(), false, DAILY, false, "hu");
     }
 
-    /** JSON-ból, minden mezőt ellenőrizve; az ismeretlen / hibás értékek helyett alapérték. */
+    /**
+     * JSON-ból, minden mezőt ellenőrizve; az ismeretlen / hibás értékek helyett alapérték. A boltok az ország
+     * láncai közül valók (a keret belső, forint-egyenértékű egységben van, lásd {@link hu.sporolos.market.Market}).
+     */
+    static Household from(Map<String, Object> m, hu.sporolos.market.Markets markets) {
+        String country = m == null || m.get("country") == null ? "hu" : Json.str(m.get("country"));
+        if (!markets.has(country)) country = "hu";
+        return from(m, markets.get(country).storeIds(), country);
+    }
+
+    /** Csak magyar boltokkal (tesztekhez és a régi hívókhoz). */
     static Household from(Map<String, Object> m, Collection<String> knownStores) {
+        return from(m, knownStores, "hu");
+    }
+
+    static Household from(Map<String, Object> m, Collection<String> knownStores, String country) {
         Household d = defaults();
-        if (m == null) return d;
+        if (m == null) return new Household(d.store(), d.people(), d.dinners(), d.budget(), d.diets(), d.equipment(),
+                d.stores(), d.bulk(), d.cards(), d.onboarded(), d.cookMode(), d.split(), country);
         String store = m.get("store") == null ? null : Json.str(m.get("store"));
         if (store != null && !knownStores.contains(store)) store = null;
         Set<String> equipment = subset(m.get("equipment"), EQUIPMENT);
@@ -51,7 +67,7 @@ record Household(String store, int people, int dinners, int budget, Set<String> 
                 subset(m.get("cards"), Set.copyOf(knownStores)),
                 Boolean.TRUE.equals(m.get("onboarded")),
                 EVERY_OTHER.equals(m.get("cookMode")) ? EVERY_OTHER : DAILY,
-                Boolean.TRUE.equals(m.get("split")));
+                Boolean.TRUE.equals(m.get("split")), country);
     }
 
     Map<String, Object> toJson() {
@@ -68,6 +84,7 @@ record Household(String store, int people, int dinners, int budget, Set<String> 
         m.put("onboarded", onboarded);
         m.put("cookMode", cookMode);
         m.put("split", split);
+        m.put("country", country);
         return m;
     }
 
@@ -78,13 +95,14 @@ record Household(String store, int people, int dinners, int budget, Set<String> 
 
     /** A hét újratervezését kívánó beállítások „ujjlenyomata”: ha ez változik, új hetet kell tervezni. */
     String planKey() {
-        return store + "|" + people + "|" + dinners + "|" + budget + "|" + diets + "|" + equipment + "|" + stores + "|" + bulk + "|" + cards + "|" + cookMode;
+        return (country.equals("hu") ? "" : country + "|") + store + "|" + people + "|" + dinners + "|" + budget + "|" + diets
+                + "|" + equipment + "|" + stores + "|" + bulk + "|" + cards + "|" + cookMode;
     }
 
-    static Household load(Storage storage, String id, Collection<String> knownStores) throws IOException {
+    static Household load(Storage storage, String id, hu.sporolos.market.Markets markets) throws IOException {
         Map<String, Object> m = storage.profile(Ids.check(id));
         if (m == null) throw new WebServer.NotFound("Nincs ilyen háztartás-profil");
-        return from(m, knownStores);
+        return from(m, markets);
     }
 
     private static int clamp(Object o, int def, int min, int max) {

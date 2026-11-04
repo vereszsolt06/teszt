@@ -33,11 +33,20 @@ public final class Models {
      * @param chainCount      hány üzletláncban kapható
      * @param shopCount       hány boltban kapható ebben a láncban
      * @param totalShops      a lánc összes boltjának száma (0, ha ismeretlen)
+     * @param byWeight        mérlegelős tétel: az ár 1 kg-ra szól, annyit veszel, amennyi kell (a forrás jelöli,
+     *                        pl. a horvát árlistákban a „kg” mértékegység); false, ha a névből kell kitalálni
      */
     public record PriceEntry(String itemId, String productName, int categoryId, String categoryName,
                              String storeId, double price, double maxPrice, String unit,
                              double quantity, double unitPrice, int chainCount, int shopCount,
-                             int totalShops) {
+                             int totalShops, boolean byWeight) {
+
+        public PriceEntry(String itemId, String productName, int categoryId, String categoryName,
+                          String storeId, double price, double maxPrice, String unit,
+                          double quantity, double unitPrice, int chainCount, int shopCount, int totalShops) {
+            this(itemId, productName, categoryId, categoryName, storeId, price, maxPrice, unit, quantity, unitPrice,
+                    chainCount, shopCount, totalShops, false);
+        }
 
         /** A lánc boltjainak hányad részében kapható (0..1); ismeretlen bolt­számnál 1. */
         public double availability() {

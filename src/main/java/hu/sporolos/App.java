@@ -3,6 +3,9 @@ package hu.sporolos;
 import hu.sporolos.core.PriceRepository;
 import hu.sporolos.data.ArfigyeloExcelProvider;
 import hu.sporolos.data.Catalog;
+import hu.sporolos.data.CijeneArchiveProvider;
+import hu.sporolos.market.MarketDef;
+import hu.sporolos.market.Markets;
 import hu.sporolos.data.CatalogSource;
 import hu.sporolos.data.DemoPriceProvider;
 import hu.sporolos.data.PriceHistory;
@@ -38,6 +41,9 @@ import java.util.Properties;
  *   promo.feeds     (PROMO_FEEDS)     – akció-feedek URL-jei vesszővel elválasztva (ugyanilyen JSON/CSV)
  *   admin.password  (ADMIN_PASSWORD)  – az admin felület (/admin) jelszava; ha üres, induláskor véletlen jelszó
  *   database.url    (DATABASE_URL)    – postgres://felh:jelszo@host:5432/db; ha üres, fájlokban tárol (data/)
+ *   markets         (MARKETS)         – országok vesszővel: hu,hr (alap); csak „hu” esetén nincs horvát árforrás
+ *   cijene.url      (CIJENE_URL)      – a horvát napi archívumok listája (alap: https://api.cijene.dev/v0/list)
+ *   cijene.file     (CIJENE_FILE)     – kézzel letöltött horvát napi archívum (ZIP); ha meg van adva, nem tölt le
  */
 public final class App {
 
@@ -89,7 +95,21 @@ public final class App {
         String adminPassword = get(cfg, "admin.password", "ADMIN_PASSWORD", "");
         boolean generated = adminPassword.isBlank();
         if (generated) adminPassword = hu.sporolos.store.Ids.newProfileId().substring(0, 12);
-        WebServer server = new WebServer(repo, storage, catalogSource, adminPassword);
+        Markets markets = new Markets(repo);
+        String marketList = get(cfg, "markets", "MARKETS", "hu,hr").toLowerCase();
+        if (java.util.Arrays.asList(marketList.split("[,\\s]+")).contains("hr")) {
+            MarketDef hr = MarketDef.resource("hr");
+            Catalog hrCatalog = hr.deriveCatalog(CatalogSource.pretty(catalogSource.products(), "products"),
+                    CatalogSource.pretty(catalogSource.recipes(), "recipes"));
+            String cijeneFile = get(cfg, "cijene.file", "CIJENE_FILE", "");
+            List<PriceProvider> hrProviders = List.of(new CijeneArchiveProvider(hr,
+                    get(cfg, "cijene.url", "CIJENE_URL", hr.archiveList()), dataDir.resolve("hr"),
+                    cijeneFile.isBlank() ? null : Path.of(cijeneFile)));
+            markets.add(hr, new PriceRepository(hr.market(), hrCatalog, hrProviders, null, null,
+                    Duration.ofHours(Math.max(refreshHours, 12))));
+            System.out.println("[árforrás] Horvátország: a cijene.dev napi archívuma, az első horvát kéréskor töltődik be");
+        }
+        WebServer server = new WebServer(markets, storage, catalogSource, adminPassword);
         // ha a port foglalt (pl. másik program vagy egy korábban elindított példány), a következő szabadot veszi
         int actual = -1;
         for (int p = port; p < port + 20 && actual < 0; p++) {

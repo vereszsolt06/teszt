@@ -16,6 +16,7 @@ const state = {
   sheet: null,        // a nyitott receptlap: {id, servings, data, swapped, day}
   ingredients: null,
   weekBusy: 0,
+  prevDays: [],       // az előző kirajzolás receptjei (az új kártyák animálásához)
 };
 
 const DEAL_LABEL = {
@@ -31,13 +32,48 @@ const DAY_TO = { Hétfő: "hétfőre", Kedd: "keddre", Szerda: "szerdára", Csü
 const IN_STORE = {
   aldi: "az Aldiban", lidl: "a Lidlben", penny: "a Pennyben", auchan: "az Auchanban",
   tesco: "a Tescóban", spar: "a Sparban",
+  // Horvátország
+  konzum: "a Konzumban", kaufland: "a Kauflandban", plodine: "a Plodinében", studenac: "a Studenacban",
+  tommy: "a Tommyban", eurospin: "az Eurospinben", ktc: "a KTC-ben", ribola: "a Ribolában", ntl: "az NTL-ben",
+  zabac: "a Žabacban", trgocentar: "a Trgocentarban", vrutak: "a Vrutakban", roto: "a Rotóban", boso: "a Bosóban",
+  brodokomerc: "a Brodokomercben", lorenco: "a Lorencóban", trgovina_krk: "a Trgovina Krkben",
 };
+const HU_MARKET = { id: "hu", name: "Magyarország", flag: "🇭🇺", currency: "HUF", symbol: "Ft", rate: 1, decimals: 0, source: "GVH Árfigyelő", sourceUrl: "https://arfigyelo.gvh.hu" };
+/** Keret-javaslatok az ország pénznemében (az első indításnál). */
+const BUDGETS = { HUF: [8000, 12000, 15000, 20000, 30000], EUR: [30, 40, 50, 70, 100] };
+const DEFAULT_BUDGET = { HUF: 15000, EUR: 50 };
 
 // ---------- formázás, DOM ----------
 
 const nf = new Intl.NumberFormat("hu-HU", { maximumFractionDigits: 0 });
-const ft = (v) => nf.format(Math.round(v)).replace(/\s/g, " ") + " Ft";
+const NB = "\u00a0";
+/** Ezres tagolás nem törhető szóközzel (5 484, 15 000). */
+const group = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, NB);
+
+/** A megjelenített ország (pénznem, árforrás); az árak belül forint-egyenértékben jönnek. */
+const market = () => state.status?.market || state.marketHint || HU_MARKET;
+/** Az ország, ahol a háztartás vásárol (a kérésekhez). */
+const country = () => state.profile?.settings?.country || ob.draft?.country || "hu";
+
+/** Pénz a kiválasztott ország pénznemében: 5 484 Ft, 12,49 €. */
+function ft(v) {
+  const m = market();
+  const x = (Number(v) || 0) / (m.rate || 1);
+  const sign = x < 0 ? "−" : "";
+  if (!m.decimals) return `${sign}${group(Math.round(Math.abs(x)))}${NB}${m.symbol}`;
+  const c = Math.round(Math.abs(x) * 100);
+  const cents = c % 100 ? `,${String(c % 100).padStart(2, "0")}` : "";
+  return `${sign}${group(Math.floor(c / 100))}${cents}${NB}${m.symbol}`;
+}
+/** Belső összeg ↔ a felhasználó pénzneme (a keret mezőihez). */
+const toLocalMoney = (internal) => (Number(internal) || 0) / (market().rate || 1);
+const toInternalMoney = (local) => Math.round((Number(local) || 0) * (market().rate || 1));
 const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+/** „október 28.” → „október 28-i” (a magyar dátum toldaléka pont nélkül). */
+function dateAdj(d) {
+  return d.toLocaleDateString("hu-HU", { month: "long", day: "numeric" }).replace(/\.$/, "") + "-i";
+}
+const shortDate = (iso) => new Date(iso + "T00:00:00").toLocaleDateString("hu-HU", { month: "short", day: "numeric" });
 
 function qty(amount, unit) {
   const comma = (n) => String(n).replace(".", ",");
@@ -65,26 +101,78 @@ function local(key, value) {
   return null;
 }
 
-async function api(path, opts) {
-  const res = await fetch(path, opts);
-  let body = null;
-  try { body = await res.json(); } catch (e) { /* nem JSON */ }
-  if (!res.ok) {
-    const err = new Error(body?.error || `Hiba (${res.status})`);
-    err.status = res.status;
-    throw err;
+/**
+ * API-hívás. A nem magyar országoknál hozzáteszi a „market” paramétert. Ha az ország árai még töltődnek
+ * (503 + loading), töltőképernyőt mutat, és addig próbálja újra, amíg kész nem lesz – a hívó ebből semmit nem lát.
+ */
+async function api(path, opts, forCountry) {
+  const c = forCountry || country();
+  if (path.startsWith("/api/") && !path.startsWith("/api/admin") && c !== "hu" && !/[?&]market=/.test(path)) {
+    path += (path.includes("?") ? "&" : "?") + "market=" + encodeURIComponent(c);
   }
-  return body;
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(path, opts);
+    let body = null;
+    try { body = await res.json(); } catch (e) { /* nem JSON */ }
+    if (res.status === 503 && body && "loading" in body && (!opts || !opts.method || opts.method === "GET")) {
+      await waitForMarket(body);
+      continue;
+    }
+    hideLoader();
+    if (!res.ok) {
+      const err = new Error(body?.error || `Hiba (${res.status})`);
+      err.status = res.status;
+      throw err;
+    }
+    return body;
+  }
+}
+
+// ---------- egy ország árainak betöltése (pl. az első horvát kéréskor) ----------
+
+let loaderRetry = null;
+function waitForMarket(info) {
+  const m = info.market || {};
+  const box = $("#loader");
+  box.hidden = false;
+  $("#loader-flag").textContent = m.flag || "🛒";
+  const failed = info.failed;
+  $("#loader-title").textContent = failed ? `${m.name || "Az ország"} árai most nem tölthetők be` : `${m.name || "Az ország"} árai töltődnek…`;
+  $("#loader-text").textContent = failed
+    ? `${info.error || ""} Lehet, hogy nincs internet, vagy a forrás (${m.source || ""}) épp nem érhető el.`
+    : `Forrás: ${m.source || ""}. Az első alkalommal ez egy-két perc (a napi árlista nagy), utána naponta egyszer frissül.`;
+  $("#loader-phase").textContent = failed ? "" : (info.phase || "Indul…");
+  $("#loader-bar").style.width = `${Math.round((info.progress || 0) * 100)}%`;
+  $("#loader-actions").hidden = !failed;
+  $(".loader-meter").hidden = !!failed;
+  return new Promise((resolve) => {
+    if (failed) { loaderRetry = resolve; return; }
+    setTimeout(resolve, 1500);
+  });
+}
+function hideLoader() {
+  const box = $("#loader");
+  if (box && !box.hidden) box.hidden = true;
 }
 const jsonOpts = (method, data) => ({ method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
 
 let toastTimer;
-function toast(msg) {
+/** Rövid üzenet alul; opcionálisan egy gombbal (pl. „Visszavonás”). */
+function toast(msg, action) {
   const t = $("#toast");
-  t.textContent = msg;
+  $("#toast-text").textContent = msg;
+  const b = $("#toast-action");
+  b.hidden = !action;
+  if (action) {
+    b.textContent = action.label;
+    b.onclick = () => { t.hidden = true; action.run(); };
+  }
   t.hidden = false;
+  t.classList.remove("pop");
+  void t.offsetWidth; // az animáció újraindítása
+  t.classList.add("pop");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.hidden = true; }, 3800);
+  toastTimer = setTimeout(() => { t.hidden = true; }, action ? 6500 : 3600);
 }
 
 function openDialog(dlg) {
@@ -198,19 +286,30 @@ function updateSettings(patch, immediate) {
 async function loadStatus() {
   state.status = await api(`/api/status${prefQuery().replace(/^&/, "?")}`);
   const s = state.status;
+  const m = market();
   const d = new Date(s.date + "T00:00:00");
   const dateText = d.toLocaleDateString("hu-HU", { month: "long", day: "numeric" });
-  $("#foot-source").textContent = `Most: ${s.source}, ${dateText}, ${nf.format(s.itemCount)} élelmiszerár.`;
+  const foot = $("#foot-text");
+  foot.replaceChildren();
+  if (m.id === "hu") {
+    foot.append("Árak: ", el("a", null, "GVH Árfigyelő", { href: "https://arfigyelo.gvh.hu", target: "_blank", rel: "noopener" }),
+      " napi adatai lánconként (a lánc legolcsóbb boltjának ára; a te boltodban lehet drágább) és a felvitt bolti akciók.");
+  } else {
+    foot.append(`${m.flag} ${m.name}${m.beta ? " (béta)" : ""} – árak: `, el("a", null, "cijene.dev", { href: m.sourceUrl, target: "_blank", rel: "noopener" }),
+      ": a láncok törvény által előírt napi árlistái (NN 75/2025), lánconként a legolcsóbb bolt ára; a te boltodban lehet drágább. Az akciós árakat a láncok maguk jelölik.");
+  }
+  $("#foot-source").textContent = `Most: ${s.source}, ${dateText}, ${nf.format(s.itemCount)} ár.`;
   const banner = $("#banner");
   if (s.demo) {
-    banner.textContent = "Demó árakat látsz: az Árfigyelő napi fájlja most nem volt elérhető. A Beállításokban újra próbálhatod.";
+    banner.textContent = "Demó árakat látsz: a napi árlista most nem volt elérhető. Később magától újrapróbálja.";
     banner.hidden = false;
   } else if (s.stale) {
-    banner.textContent = `Az árak ${dateText}-i állapotot mutatnak.`;
+    banner.textContent = `Az árak ${dateAdj(d)} állapotot mutatnak.`;
     banner.hidden = false;
   } else {
     banner.hidden = true;
   }
+  document.documentElement.dataset.market = m.id;
 }
 
 function renderStorePill() {
@@ -273,6 +372,8 @@ function route() {
 
 function setView(v) {
   state.view = v;
+  // nézetváltáskor a nyitott lapok bezárulnak (az első indítás kérdései kivételével)
+  for (const d of $$("dialog[open]")) if (d.id !== "onboard") d.close();
   for (const sec of $$(".view")) sec.hidden = sec.dataset.view !== v;
   const navView = v === "nom" ? "receptek" : v;
   for (const a of $$("a[data-view]")) {
@@ -317,15 +418,21 @@ function renderWeek() {
   const people = w.people;
   $("#week-total").textContent = `≈ ${ft(w.checkoutTotal)}`;
   const cooks = w.days.filter((d) => d.leftoverOf < 0).length;
-  $("#week-meta").textContent = `${w.days.length} vacsora ${people} főre${cooks < w.days.length ? `, ${cooks}× főzöl` : ""} · ${w.storeName}${w.autoStore ? " (itt a legolcsóbb a heted)" : ""} · átlagosan ${w.avgKcal} kcal, ${w.avgProtein} g fehérje adagonként`;
+  $("#week-meta").textContent = `${w.days.length} vacsora · ${people} fő${cooks < w.days.length ? ` · ${cooks}× főzöl` : ""} · ${w.storeName}${w.autoStore ? ", mert itt a legolcsóbb" : ""}`;
+  const facts = $("#week-facts");
+  facts.replaceChildren();
+  const fact = (t, title) => facts.appendChild(el("span", "fact", t, title ? { title } : null));
+  if (w.avgKcal) fact(`~${w.avgKcal} kcal / adag`, "Egy vacsora-adag átlagosan");
+  if (w.avgProtein) fact(`${w.avgProtein} g fehérje`, "Egy vacsora-adag átlagosan");
+  if (w.days.length) fact(`≈ ${ft(w.checkoutTotal / Math.max(1, w.days.length * people))} / adag`, "A hét ára adagonként");
   const meter = $("#week-meter");
   if (w.budget > 0) {
     meter.hidden = false;
     meter.classList.toggle("over", w.overBudget);
     meter.firstElementChild.style.width = `${Math.min(100, (w.checkoutTotal / w.budget) * 100)}%`;
     $("#week-meter-text").textContent = w.overBudget
-      ? `${ft(w.checkoutTotal - w.budget)}-tal a ${ft(w.budget)}-os keret fölött`
-      : `keret ${ft(w.budget)} · ${ft(w.budget - w.checkoutTotal)} marad`;
+      ? `${ft(w.budget)} a keret · túllépés: ${ft(w.checkoutTotal - w.budget)}`
+      : `${ft(w.budget)} a keret · ${ft(w.budget - w.checkoutTotal)} marad`;
   } else {
     meter.hidden = true;
     $("#week-meter-text").textContent = "nincs megadva heti keret";
@@ -334,7 +441,7 @@ function renderWeek() {
   notes.replaceChildren(...w.notes.map((n) => el("p", "note-box", n)));
   if (w.split) {
     const n = el("p", "note-box good");
-    n.append(`Ha két boltba is elmész (${w.split.stores.map((x) => x.name).join(" + ")}), ${ft(w.split.saving)}-ot spórolsz: ${ft(w.split.checkout)}. `);
+    n.append(`Ha két boltba is elmész (${w.split.stores.map((x) => x.name).join(" + ")}), ${ft(w.split.saving)} marad a zsebedben: ${ft(w.split.checkout)}. `);
     const a = el("a", null, "A lista boltonként →", { href: "#lista" });
     n.appendChild(a);
     notes.appendChild(n);
@@ -346,49 +453,77 @@ function renderWeek() {
   if (!w.days.length) {
     ol.appendChild(el("li", "empty", "Ezekkel a beállításokkal most nem áll össze terv. Próbáld kevesebb szűrővel vagy másik bolttal."));
   }
-  w.days.forEach((d, i) => ol.appendChild(dinnerCard(d, i, people)));
+  const prev = state.prevDays;
+  w.days.forEach((d, i) => {
+    const card = dinnerCard(d, i, people);
+    const id = (d.leftoverOf >= 0 ? "=" : "") + d.suggestion.recipe.id;
+    if (prev.length && prev[i] !== id) card.classList.add("changed");
+    else if (!prev.length) { card.classList.add("enter"); card.style.setProperty("--i", i); }
+    ol.appendChild(card);
+  });
+  state.prevDays = w.days.map((d) => (d.leftoverOf >= 0 ? "=" : "") + d.suggestion.recipe.id);
   $("#week-fine").textContent = (w.staplesTotal > 0 ? `Az összegben nincs benne ${ft(w.staplesTotal)} kamraáru (olaj, liszt, cukor…), ha venni kell. ` : "")
-    + "A vacsoránkénti ár a közös bevásárlólistából rá eső rész, így a kártyák összege kiadja a hét árát; ami csomagból megmarad, az a többi vacsorához jut.";
+    + "A vacsoránkénti ár a közös bevásárlólistából rá eső rész: a kártyák összege kiadja a hét árát, a megkezdett csomagok a többi vacsorához jutnak.";
 }
 
-/** Ugyanez a hét a többi boltban – rövid sáv a hét alatt. */
+/** Ugyanez a hét a többi boltban – egy sor gomb a hét alatt (keskeny kijelzőn görgethető). */
 function renderCompare(w) {
   const box = $("#week-compare");
   box.replaceChildren();
   if (!w.compare || w.compare.length < 2) return;
   box.appendChild(el("span", "cmp-label", "Ugyanez a hét:"));
+  const row = el("div", "cmp-row");
+  const best = w.compare[0];
   for (const c of w.compare) {
-    const b = el("button", "cmp" + (c.store === w.store ? " current" : ""), null, { type: "button", title: c.estimated ? `${c.estimated} tétel ott nincs az Árfigyelőben, becsült áron` : "" });
+    const b = el("button", "cmp" + (c.store === w.store ? " current" : ""), null, { type: "button", "aria-pressed": String(c.store === w.store) });
     b.style.setProperty("--c", c.color);
     const miss = (c.estimated || 0) + (c.extrasMissing || 0);
-    b.append(el("span", null, c.name), el("b", null, ft(c.checkout) + (miss ? "*" : "")));
-    if (miss) b.title = `${miss} tétel ott nem kapható (vagy nincs az Árfigyelőben) – a sorrendben ezt is figyelembe vettük`;
+    b.append(el("span", "cmp-name", c.name), el("b", null, ft(c.checkout) + (miss ? "*" : "")));
+    if (c !== best && c.checkout > best.checkout) b.appendChild(el("span", "cmp-diff", `+${ft(c.checkout - best.checkout)}`));
+    b.title = miss ? `${miss} tétel ott nem kapható (vagy nincs a forrásban) – a sorrendben ezt is figyelembe vettük` : `A hét ${c.name} árain`;
     b.addEventListener("click", () => {
       if (c.store !== w.store) updateSettings({ store: c.store }, true);
     });
-    box.appendChild(b);
+    row.appendChild(b);
   }
+  box.appendChild(row);
 }
+
+const DAY_ADJ = { Hétfő: "hétfői", Kedd: "keddi", Szerda: "szerdai", Csütörtök: "csütörtöki", Péntek: "pénteki", Szombat: "szombati", Vasárnap: "vasárnapi" };
 
 function dinnerCard(d, i, people) {
   const s = d.suggestion, r = s.recipe;
   const leftover = d.leftoverOf >= 0;
+  const today = state.week.today;
   const li = el("li", "dinner" + (leftover ? " leftover" : ""));
+  if (d.date && today) {
+    if (d.date === today) li.classList.add("today");
+    else if (d.date < today) li.classList.add("past");
+  }
   const open = el("button", "dinner-open", null, { type: "button", "aria-label": `${d.label}: ${r.name} – recept megnyitása` });
-  const top = el("span", "dinner-top");
-  top.append(el("span", "day-chip", d.label), icon(r));
-  open.appendChild(top);
+  const hero = el("span", "dinner-hero");
+  let h = 0;
+  for (const c of r.id) h = (h * 31 + c.charCodeAt(0)) % 360;
+  hero.style.setProperty("--h", h);
+  const when = el("span", "dinner-when");
+  when.append(el("span", "day-chip", d.label));
+  if (d.date) {
+    const rel = d.date === today ? "ma" : (today && d.date === addDays(today, 1)) ? "holnap" : null;
+    when.append(el("span", "day-date", rel ? `${rel} · ${shortDate(d.date)}` : shortDate(d.date)));
+  }
+  hero.append(when, el("span", "hero-emoji", r.emoji || "🍽️", { "aria-hidden": "true" }));
+  open.appendChild(hero);
   const body = el("span", "dinner-body");
   if (leftover) {
-    const from = state.week.days[d.leftoverOf]?.label.toLowerCase() || "";
-    body.append(el("span", "dinner-kicker", `Maradék ${from ? `a ${from}i főzésből` : ""}`.replace("a hétfői", "a hétfői")),
+    const from = state.week.days.find((x) => x.index === d.leftoverOf) || state.week.days[d.leftoverOf];
+    body.append(el("span", "dinner-kicker", `Maradék ${from ? `a ${DAY_ADJ[from.label] || from.label.toLowerCase()} főzésből` : ""}`),
       el("span", "dinner-name", r.name),
       el("span", "dinner-line", "Nem kell főzni, nem kell vásárolni – csak melegíteni."));
   } else {
     body.append(el("span", "dinner-name", r.name));
     const line = el("span", "dinner-line");
     const cover = d.coversDays > 1 ? ` · ${s.servings} adag (${d.coversDays} napra)` : ` · ${s.servings} adag`;
-    line.append(el("b", null, `≈ ${ft(d.shareOfList / s.servings)}`), document.createTextNode(` / adag${cover} · ${r.minutes} perc`));
+    line.append(el("b", "per-serving", `≈ ${ft(d.shareOfList / s.servings)}`), document.createTextNode(` / adag${cover} · ${r.minutes} perc`));
     body.append(line, el("span", "dinner-sub", macroLine(r)), badges(r, 3));
   }
   open.appendChild(body);
@@ -399,26 +534,85 @@ function dinnerCard(d, i, people) {
   const acts = el("div", "dinner-acts");
   const next = state.week.days[i + 1];
   if (leftover) {
-    acts.appendChild(actBtn("Inkább mást főzök", "fresh", i));
+    acts.appendChild(actBtn("Inkább mást főzök", () => runWeek("fresh", i)));
   } else {
-    acts.appendChild(actBtn("Csere", "swap", i, '<path d="M4 9h13l-3-3M20 15H7l3 3"/>'));
+    acts.appendChild(actBtn("Csere", () => openSwap(i), '<path d="M4 9h13l-3-3M20 15H7l3 3"/>'));
   }
   if (next && !(next.leftoverOf >= 0 && next.leftoverOf === src)) {
-    acts.appendChild(actBtn(leftover ? "Holnap is ez" : "Holnapra is főzök", "repeat", i, '<path d="M12 5v14M5 12h14"/>'));
+    acts.appendChild(actBtn(leftover ? "Holnap is ez" : "Holnapra is főzök", () => runWeek("repeat", i), '<path d="M12 5v14M5 12h14"/>'));
   }
   li.appendChild(acts);
   return li;
 }
 
-function actBtn(label, action, day, path) {
+function addDays(iso, n) {
+  const d = new Date(iso + "T12:00:00");
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+function actBtn(label, onClick, path) {
   const b = el("button", "act-btn", null, { type: "button" });
   if (path) b.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
   b.appendChild(el("span", null, label));
-  b.addEventListener("click", () => {
-    b.closest(".dinner")?.classList.add("swapping");
-    loadWeek(action, day).catch((e) => toast(e.message));
-  });
+  b.addEventListener("click", onClick);
   return b;
+}
+
+/** Egy heti művelet (csere, maradék…) a kártya rövid „dolgozom” állapotával. */
+function runWeek(action, day, recipe) {
+  $$(".dinner")[day]?.classList.add("swapping");
+  return loadWeek(action, day, recipe).catch((e) => toast(e.message));
+}
+
+// ---------- csere: mi legyen helyette ----------
+
+async function openSwap(day) {
+  const w = state.week;
+  const d = w.days[day];
+  const cur = d.suggestion.recipe;
+  $("#swap-title").textContent = `Mi legyen helyette ${DAY_TO[d.label] || "erre a napra"}?`;
+  $("#swap-hint").textContent = `Most: ${cur.name}. A többi nap marad; mellettük látod, mennyivel változik a hét ára.`;
+  const ul = $("#swap-list");
+  ul.replaceChildren(...Array.from({ length: 4 }, () => el("li", "swap-skel", null, { "aria-hidden": "true" })));
+  $("#swap-random").onclick = () => {
+    $("#swap-sheet").close();
+    runWeek("swap", day).then(() => undoToast(day, cur));
+  };
+  openDialog($("#swap-sheet"));
+  let res;
+  try {
+    res = await api(`/api/week?id=${state.profile.id}&action=options&day=${day}`);
+  } catch (e) {
+    ul.replaceChildren(el("li", "empty", e.message));
+    return;
+  }
+  ul.replaceChildren();
+  if (!res.options.length) ul.appendChild(el("li", "empty", "Most nincs más recept, ami a beállításaidnak és a hét többi napjának megfelel. Próbáld a „Lepj meg” gombot."));
+  for (const o of res.options) {
+    const r = o.recipe;
+    const li = el("li");
+    const b = el("button", "swap-opt", null, { type: "button" });
+    const delta = o.weekTotal - w.checkoutTotal;
+    const dTxt = Math.abs(toLocalMoney(delta)) < (market().decimals ? 0.05 : 15) ? "ugyanannyi" : `${delta > 0 ? "+" : "−"}${ft(Math.abs(delta))} a héten`;
+    const info = el("span", "swap-info");
+    info.append(el("span", "swap-name", r.name),
+      el("span", "swap-sub", `${r.minutes} perc · ${macroLine(r)}`), badges(r, 3));
+    b.append(icon(r), info, el("span", "swap-delta" + (delta < -1 ? " cheaper" : delta > 1 ? " dearer" : ""), dTxt));
+    b.addEventListener("click", () => {
+      $("#swap-sheet").close();
+      runWeek("set", day, r.id).then(() => undoToast(day, cur));
+    });
+    li.appendChild(b);
+    ul.appendChild(li);
+  }
+}
+
+/** „X került a helyére” – visszavonással. */
+function undoToast(day, prev) {
+  const now = state.week?.days[day]?.suggestion.recipe;
+  if (!now || now.id === prev.id) return;
+  toast(`${now.name} került a helyére.`, { label: "Visszavonás", run: () => runWeek("set", day, prev.id) });
 }
 
 // ---------- bevásárlólista ----------
@@ -587,9 +781,9 @@ function renderSheet() {
   const acts = el("div", "rs-actions");
   if (sh.day != null && state.week?.days[sh.day]?.suggestion.recipe.id === r.id) {
     const swap = el("button", "ghost", `Másikat kérek ${DAY_TO[state.week.days[sh.day].label] || "erre a napra"}`, { type: "button" });
-    swap.addEventListener("click", async () => {
+    swap.addEventListener("click", () => {
       $("#recipe-sheet").close();
-      await loadWeek("swap", sh.day).catch((e) => toast(e.message));
+      openSwap(sh.day);
     });
     acts.appendChild(swap);
   } else if (state.week?.days.length) {
@@ -604,6 +798,9 @@ function renderSheet() {
     });
     acts.append(sel, add);
   }
+  const cookBtn = el("button", "ghost", "👩‍🍳 Főzés mód", { type: "button" });
+  cookBtn.addEventListener("click", () => openCook(r, items));
+  acts.appendChild(cookBtn);
   const liked = state.profile?.liked.includes(r.id);
   const heart = el("button", "ghost", liked ? "♥ Kedvenc" : "♡ Kedvencekhez", { type: "button", "aria-pressed": String(!!liked) });
   heart.addEventListener("click", async () => {
@@ -617,6 +814,52 @@ function renderSheet() {
   cols.append(ingredientsBox(items, s), stepsBox(r));
   body.appendChild(cols);
   body.appendChild(compareBox(s, checkout));
+}
+
+// ---------- főzés mód ----------
+
+const cook = { recipe: null, step: 0, lock: null };
+
+async function openCook(r, items) {
+  cook.recipe = r;
+  cook.step = 0;
+  $("#cook-title").textContent = r.name;
+  const ings = $("#cook-ings");
+  ings.replaceChildren(...items.map((i) => {
+    const li = el("li");
+    li.append(el("b", null, i.label), document.createTextNode(i.amount ? ` – ${i.amount}` : ""));
+    return li;
+  }));
+  renderCook();
+  openDialog($("#cook"));
+  // a képernyő ne aludjon el főzés közben (ahol a böngésző engedi)
+  try { if (navigator.wakeLock) cook.lock = await navigator.wakeLock.request("screen"); } catch (e) { cook.lock = null; }
+}
+
+function renderCook() {
+  const steps = cook.recipe.steps;
+  const n = steps.length;
+  const i = cook.step;
+  $("#cook-kicker").textContent = `Főzés mód · ${i + 1}. lépés / ${n}`;
+  $("#cook-dots").replaceChildren(...steps.map((_, k) => el("span", k < i ? "done" : k === i ? "on" : null)));
+  const stage = $("#cook-stage");
+  stage.replaceChildren(el("span", "cook-num", String(i + 1)), el("p", "cook-step", steps[i]));
+  stage.classList.remove("slide");
+  void stage.offsetWidth;
+  stage.classList.add("slide");
+  $("#cook-prev").disabled = i === 0;
+  $("#cook-next").textContent = i === n - 1 ? "Kész! 🎉" : "Következő →";
+}
+
+function cookMove(d) {
+  const n = cook.recipe.steps.length;
+  if (cook.step + d >= n) {
+    $("#cook").close();
+    toast("Jó étvágyat! 🍽️");
+    return;
+  }
+  cook.step = Math.max(0, cook.step + d);
+  renderCook();
 }
 
 function servingsControl(n) {
@@ -930,6 +1173,9 @@ async function renderToday(store) {
 const offerState = { store: "", all: false };
 
 async function renderOffers() {
+  $("#offers-sub").textContent = market().id === "hu"
+    ? "A boltjaid kiemelt árai a GVH Árfigyelő mai adataiból és a felvitt bolti akciókból: a legnagyobb megtakarítás elöl. Egy termékre koppintva látod az árát minden láncban, és felteheted a listádra."
+    : "A boltjaid kiemelt árai a láncok mai árlistáiból – az akciós árakat a láncok maguk jelölik: a legnagyobb megtakarítás elöl. Magyarul is kereshetsz (kávé, sajt, csirke). Egy termékre koppintva látod az árát minden láncban.";
   const chips = $("#offer-stores");
   if (!chips.childElementCount) {
     const mine = state.status.stores.filter((x) => !settings().stores?.length || settings().stores.includes(x.id));
@@ -1015,7 +1261,7 @@ function renderHistory(hist) {
   const box = $("#item-history");
   box.replaceChildren();
   if (!hist.length) {
-    box.appendChild(el("p", "fineprint", "Árelőzmény még nincs: az app minden nap elmenti az árakat, néhány nap múlva itt látszik, olcsóbb-e most a szokásosnál."));
+    if (market().id === "hu") box.appendChild(el("p", "fineprint", "Árelőzmény még nincs: az app minden nap elmenti az árakat, néhány nap múlva itt látszik, olcsóbb-e most a szokásosnál."));
     return;
   }
   box.appendChild(el("h3", "hist-title", "Az elmúlt hetekben"));
@@ -1045,7 +1291,33 @@ function renderHistory(hist) {
 
 const ob = { step: 0, draft: null };
 
+/** Az első indításnál kiválasztott ország adatai (a státusz országlistájából). */
+const obMarket = () => (state.status?.markets || []).find((m) => m.id === ob.draft?.country) || HU_MARKET;
+
+const COUNTRY_SUB = {
+  hu: "GVH Árfigyelő · Aldi, Lidl, Penny, Auchan, Tesco, Spar · forint",
+  hr: "a láncok kötelező napi árlistái · Konzum, Lidl, Spar, Kaufland, Plodine, Studenac… · euró – nyaraláshoz is",
+};
+
 const OB_STEPS = [
+  {
+    id: "country",
+    title: "Hol vásárolsz?",
+    hint: "Az ország boltjainak napi árai alapján tervezünk. A receptek és a felület magyarul maradnak.",
+    skip: () => (state.status?.markets || []).length < 2,
+    render(box) {
+      const list = el("div", "choice-list");
+      for (const m of state.status.markets) {
+        const b = el("button", "choice country", null, { type: "button", "aria-pressed": String(ob.draft.country === m.id) });
+        const t = el("span", "choice-text");
+        t.append(el("b", null, `${m.name}${m.beta ? " · béta" : ""}`), el("span", null, COUNTRY_SUB[m.id] || m.source));
+        b.append(el("span", "flag", m.flag, { "aria-hidden": "true" }), t);
+        b.addEventListener("click", () => { ob.draft.country = m.id; renderOb(); });
+        list.appendChild(b);
+      }
+      box.appendChild(list);
+    },
+  },
   {
     title: "Hányan esztek?",
     hint: "Ennyi adaggal számolunk, és ennyi vacsorát tervezünk a hétre.",
@@ -1072,16 +1344,19 @@ const OB_STEPS = [
     hint: "A vacsorák bevásárlására. A terv ebbe próbál beleférni – és ha lehet, maradjon is belőle.",
     render(box) {
       const chips = el("div", "chips-row");
-      for (const v of [8000, 12000, 15000, 20000, 30000, 0]) {
+      const cur = market().currency;
+      for (const local of [...(BUDGETS[cur] || BUDGETS.HUF), 0]) {
+        const v = toInternalMoney(local);
         const b = el("button", null, v ? ft(v) : "nincs keret", { type: "button", "aria-pressed": String(ob.draft.budget === v) });
         b.addEventListener("click", () => { ob.draft.budget = v; renderOb(); });
         chips.appendChild(b);
       }
-      const input = el("input", null, null, { type: "number", min: "0", step: "500", inputmode: "numeric", "aria-label": "Saját összeg forintban" });
-      input.value = ob.draft.budget || "";
-      input.addEventListener("input", () => { ob.draft.budget = Math.max(0, Math.round(Number(input.value) || 0)); });
+      const dec = market().decimals;
+      const input = el("input", null, null, { type: "number", min: "0", step: dec ? "5" : "500", inputmode: "numeric", "aria-label": `Saját összeg (${market().symbol})` });
+      input.value = ob.draft.budget ? Math.round(toLocalMoney(ob.draft.budget)) : "";
+      input.addEventListener("input", () => { ob.draft.budget = Math.max(0, toInternalMoney(Number(input.value) || 0)); });
       const money = el("label", "money");
-      money.append(el("span", null, "vagy saját összeg:"), input, el("span", null, "Ft"));
+      money.append(el("span", null, "vagy saját összeg:"), input, el("span", null, market().symbol));
       box.append(chips, money);
     },
   },
@@ -1164,34 +1439,64 @@ function toggleChips(options, key, atLeastOne) {
 
 function startOnboarding() {
   ob.step = 0;
-  ob.draft = { store: null, people: 2, dinners: 5, budget: 15000, diets: [], equipment: ["tuzhely", "suto"], cookMode: "daily",
-    stores: state.status.stores.map((x) => x.id), split: false };
+  ob.draft = { country: market().id, store: null, people: 2, dinners: 5, budget: toInternalMoney(DEFAULT_BUDGET[market().currency] || 15000),
+    diets: [], equipment: ["tuzhely", "suto"], cookMode: "daily", stores: state.status.stores.map((x) => x.id), split: false };
+  while (OB_STEPS[ob.step].skip?.()) ob.step++;
   renderOb();
   const dlg = $("#onboard");
   dlg.addEventListener("cancel", (e) => e.preventDefault());
   openDialog(dlg);
 }
 
+const obSteps = () => OB_STEPS.filter((x) => !x.skip?.());
+
 function renderOb() {
   const st = OB_STEPS[ob.step];
   const box = $("#ob-step");
   box.replaceChildren();
-  if (ob.step === 0) {
+  const visible = obSteps();
+  const pos = visible.indexOf(st);
+  if (pos === 0) {
     box.appendChild(el("p", "ob-kicker", "Mi legyen ma vacsora – megint? Pár kérdés, és kész a heted."));
   }
   box.append(el("h1", "ob-title", st.title, { id: "ob-title" }), el("p", "sub", st.hint));
   st.render(box);
-  $("#ob-progress").replaceChildren(...OB_STEPS.map((_, i) => el("span", i <= ob.step ? "on" : null)));
-  $("#ob-back").hidden = ob.step === 0;
-  $("#ob-next").textContent = ob.step === OB_STEPS.length - 1 ? "Kérem a hetet" : "Tovább";
+  box.classList.remove("slide");
+  void box.offsetWidth;
+  box.classList.add("slide");
+  $("#ob-progress").replaceChildren(...visible.map((_, i) => el("span", i <= pos ? "on" : null)));
+  $("#ob-back").hidden = pos === 0;
+  $("#ob-next").textContent = pos === visible.length - 1 ? "Kérem a hetet" : "Tovább";
+}
+
+function obMove(dir) {
+  let i = ob.step + dir;
+  while (i > 0 && i < OB_STEPS.length - 1 && OB_STEPS[i].skip?.()) i += dir;
+  ob.step = Math.max(0, Math.min(OB_STEPS.length - 1, i));
+  renderOb();
 }
 
 async function obNext() {
   const st = OB_STEPS[ob.step];
   if (st.ok && !st.ok()) return;
-  if (ob.step < OB_STEPS.length - 1) {
-    ob.step++;
-    renderOb();
+  if (st.id === "country" && market().id !== ob.draft.country) {
+    // az ország árai (első alkalommal letöltés – a töltőképernyő mutatja), aztán az ottani boltok és pénznem
+    $("#ob-next").disabled = true;
+    try {
+      state.marketHint = obMarket();
+      state.status = await api("/api/status", undefined, ob.draft.country);
+      ob.draft.stores = state.status.stores.map((x) => x.id);
+      ob.draft.budget = toInternalMoney(DEFAULT_BUDGET[market().currency] || 15000);
+      ob.draft.cards = [];
+    } catch (e) {
+      toast(e.message);
+      return;
+    } finally {
+      $("#ob-next").disabled = false;
+    }
+  }
+  if (OB_STEPS.indexOf(st) < OB_STEPS.length - 1) {
+    obMove(1);
     return;
   }
   $("#ob-next").disabled = true;
@@ -1222,6 +1527,21 @@ function openSettings() {
     return fs;
   };
 
+  const markets = state.status.markets || [];
+  if (markets.length > 1) {
+    const ctry = group("Ország", "Melyik ország boltjainak árai alapján tervezzünk. Váltáskor új hét készül az ottani boltokkal (a kedvenceid maradnak).");
+    const list = el("div", "choice-list two");
+    for (const m of markets) {
+      const b = el("button", "choice country", null, { type: "button", "aria-pressed": String(market().id === m.id) });
+      const t = el("span", "choice-text");
+      t.append(el("b", null, `${m.name}${m.beta ? " · béta" : ""}`), el("span", null, COUNTRY_SUB[m.id] || m.source));
+      b.append(el("span", "flag", m.flag, { "aria-hidden": "true" }), t);
+      b.addEventListener("click", () => { if (m.id !== market().id) switchCountry(m); });
+      list.appendChild(b);
+    }
+    ctry.appendChild(list);
+  }
+
   const house = group("A háztartásod", "Ezekből készül a heti terv.");
   const row = el("div", "fields");
   row.append(
@@ -1230,10 +1550,10 @@ function openSettings() {
   const money = el("label", "field");
   money.appendChild(el("span", "field-label", "Heti keret"));
   const m = el("span", "money");
-  const input = el("input", null, null, { type: "number", min: "0", step: "500", inputmode: "numeric", placeholder: "nincs" });
-  input.value = s.budget || "";
-  input.addEventListener("input", () => updateSettings({ budget: Math.max(0, Math.round(Number(input.value) || 0)) }));
-  m.append(input, el("span", null, "Ft"));
+  const input = el("input", null, null, { type: "number", min: "0", step: market().decimals ? "5" : "500", inputmode: "numeric", placeholder: "nincs" });
+  input.value = s.budget ? Math.round(toLocalMoney(s.budget)) : "";
+  input.addEventListener("input", () => updateSettings({ budget: Math.max(0, toInternalMoney(Number(input.value) || 0)) }));
+  m.append(input, el("span", null, market().symbol));
   money.appendChild(m);
   row.appendChild(money);
   house.appendChild(row);
@@ -1285,7 +1605,7 @@ function openSettings() {
 
   const cards = group("Hűségkártyáim és appjaim", "A kártyás akciók csak akkor számítanak, ha van ilyened.");
   cards.appendChild(checkChips(all.filter((x) => x.cardName).map((x) => [x.id, x.cardName, x.color]), s.cards || [], (v) => updateSettings({ cards: v }, true)));
-  cards.appendChild(el("p", "hint", "Az akciós újságok és appok árait az admin felületen lehet felvinni (/admin)."));
+  if (market().id === "hu") cards.appendChild(el("p", "hint", "Az akciós újságok és appok árait az admin felületen lehet felvinni (/admin)."));
 
   const share = group("Közös háztartás", "Ezzel a linkkel a párod vagy a családod ugyanazt a hetet és ugyanazt a bevásárlólistát látja, a kipipálás is közös. Csak annak add oda, akivel közösen vásároltok.");
   const link = `${location.origin}${location.pathname}#profil=${state.profile.id}`;
@@ -1309,9 +1629,33 @@ function openSettings() {
 
   const data = group("Adatok");
   const st = state.status;
-  data.appendChild(el("p", "hint", `Árak: ${st.source} (${st.date}), ${nf.format(st.itemCount)} élelmiszerár${st.historyDays ? `, ${st.historyDays} nap előzmény` : ""}. Tárolás: ${state.profile.storage}.`));
-  data.appendChild(el("p", "hint", "Az árak 6 óránként maguktól frissülnek. A receptek, alapanyagok és bolti akciók az admin felületen (/admin) kezelhetők."));
+  data.appendChild(el("p", "hint", `Árak: ${st.source} (${st.date}), ${nf.format(st.itemCount)} ár${st.historyDays ? `, ${st.historyDays} nap előzmény` : ""}. Tárolás: ${state.profile.storage}.`));
+  data.appendChild(el("p", "hint", market().id === "hu"
+    ? "Az árak 6 óránként maguktól frissülnek. A receptek, alapanyagok és bolti akciók az admin felületen (/admin) kezelhetők."
+    : "A horvát árlisták naponta egyszer frissülnek (a láncok minden reggel közzéteszik őket). A receptek és az alapanyagok közösek, az illesztés a terméknevek alapján történik – béta."));
   openDialog($("#settings"));
+}
+
+/** Ország váltása: új profilbeállítás (az ottani boltokkal), az árak betöltése, új hét. */
+async function switchCountry(m) {
+  $("#settings").close();
+  try {
+    state.marketHint = m;
+    state.profile = await api(`/api/profile?id=${state.profile.id}`, jsonOpts("PUT",
+      { ...settings(), country: m.id, store: null, stores: [], cards: [], budget: toInternalMoney(DEFAULT_BUDGET[m.currency] || 15000) }), m.id);
+    state.week = null;
+    state.recipes = null;
+    state.prevDays = [];
+    $("#offer-stores").replaceChildren();
+    $("#dinners").replaceChildren(...skeletonCards(settings().dinners || 5));
+    await loadStatus();
+    renderStorePill();
+    await loadWeek();
+    if (state.view !== "het" && state.view !== "lista") setView(state.view);
+    toast(`${m.flag} ${m.name}: mostantól az ottani árakkal tervezünk.`);
+  } catch (e) {
+    toast(e.message);
+  }
 }
 
 function settingStepper(label, value, min, max, fmt, onChange) {
@@ -1431,6 +1775,12 @@ function bindExtras() {
 
 async function toggleCheck(key, on, li) {
   li.classList.toggle("done", on);
+  if (on) {
+    li.classList.remove("just-done");
+    void li.offsetWidth;
+    li.classList.add("just-done");
+    if (navigator.vibrate) try { navigator.vibrate(12); } catch (e) { /* nem támogatott */ }
+  }
   try {
     const r = await api(`/api/check?id=${state.profile.id}`, jsonOpts("POST", { key: state.week.listKey, item: key, on }));
     state.week.checked = r.checked;
@@ -1442,11 +1792,44 @@ function listItems(w) {
   return (w.split ? w.split.groups.flatMap((g) => g.aisles) : w.aisles).flatMap((a) => a.items).filter((x) => !x.staple);
 }
 
+let celebrated = "";
 function updateProgress() {
   const w = state.week;
   const checked = new Set(w.checked || []);
   const items = listItems(w).map((x) => x.label).concat((w.extras || []).map((x) => `extra:${x.name}`));
-  $("#list-progress").textContent = `${items.filter((k) => checked.has(k)).length} / ${items.length} a kosárban`;
+  const done = items.filter((k) => checked.has(k)).length;
+  const box = $("#list-progress");
+  box.replaceChildren(el("span", "progress-text", done === items.length && items.length ? "Minden a kosárban 🎉" : `${done} / ${items.length} a kosárban`));
+  const bar = el("span", "progress-bar");
+  const fill = el("span");
+  fill.style.width = `${items.length ? (done / items.length) * 100 : 0}%`;
+  bar.appendChild(fill);
+  box.appendChild(bar);
+  if (items.length && done === items.length && celebrated !== w.listKey && state.view === "lista") {
+    celebrated = w.listKey;
+    confetti();
+    toast("Kész a bevásárlás! Jó főzést 👩‍🍳");
+  }
+  if (done < items.length && celebrated === w.listKey) celebrated = "";
+}
+
+/** Egy kis ünneplés (csak ha a rendszer nem kér kevesebb mozgást). */
+function confetti() {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const box = $("#confetti");
+  box.replaceChildren();
+  const colors = ["var(--tag)", "var(--leaf)", "var(--red)", "#4c7bd9", "#f08c2e"];
+  for (let i = 0; i < 70; i++) {
+    const p = el("i");
+    p.style.left = `${Math.random() * 100}%`;
+    p.style.background = colors[i % colors.length];
+    p.style.setProperty("--dx", `${(Math.random() - 0.5) * 220}px`);
+    p.style.setProperty("--rot", `${Math.random() * 720 - 360}deg`);
+    p.style.animationDelay = `${Math.random() * 0.35}s`;
+    p.style.animationDuration = `${1.6 + Math.random() * 1.2}s`;
+    box.appendChild(p);
+  }
+  setTimeout(() => box.replaceChildren(), 3400);
 }
 
 // ---------- indulás ----------
@@ -1493,7 +1876,38 @@ function bind() {
     renderBrowse().catch((err) => toast(err.message));
   });
   $("#ob-next").addEventListener("click", obNext);
-  $("#ob-back").addEventListener("click", () => { ob.step = Math.max(0, ob.step - 1); renderOb(); });
+  $("#cook-next").addEventListener("click", () => cookMove(1));
+  $("#cook-prev").addEventListener("click", () => cookMove(-1));
+  $("#cook-close").addEventListener("click", () => $("#cook").close());
+  $("#cook").addEventListener("close", () => { try { cook.lock?.release(); } catch (e) { /* már elengedve */ } cook.lock = null; });
+  $("#cook").addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight") cookMove(1);
+    if (e.key === "ArrowLeft") cookMove(-1);
+  });
+  let cx = null;
+  $("#cook-stage").addEventListener("pointerdown", (e) => { cx = e.clientX; });
+  $("#cook-stage").addEventListener("pointerup", (e) => {
+    if (cx == null) return;
+    const dx = e.clientX - cx;
+    cx = null;
+    if (Math.abs(dx) > 60) cookMove(dx < 0 ? 1 : -1);
+  });
+  $("#loader-retry").addEventListener("click", () => {
+    $("#loader-actions").hidden = true;
+    $("#loader-phase").textContent = "Újrapróbálom…";
+    const r = loaderRetry;
+    loaderRetry = null;
+    if (r) r();
+  });
+  $("#loader-home").addEventListener("click", async () => {
+    if (state.profile) {
+      try {
+        await fetch(`/api/profile?id=${state.profile.id}`, jsonOpts("PUT", { ...settings(), country: "hu", store: null, stores: [], cards: [] }));
+      } catch (e) { /* a hálózati hibát az újratöltés úgyis jelzi */ }
+    }
+    location.reload();
+  });
+  $("#ob-back").addEventListener("click", () => obMove(-1));
   for (const dlg of $$("dialog:not(#onboard)")) {
     dlg.addEventListener("click", (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); });
   }

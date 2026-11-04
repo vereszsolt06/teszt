@@ -8,6 +8,8 @@ import hu.sporolos.core.PriceRepository;
 import hu.sporolos.core.PromoMerger;
 import hu.sporolos.data.Catalog;
 import hu.sporolos.data.Promo;
+import hu.sporolos.market.Market;
+import hu.sporolos.market.Markets;
 import hu.sporolos.data.PromoStore;
 import hu.sporolos.core.WeeklyPlanner;
 import hu.sporolos.store.Ids;
@@ -76,11 +78,13 @@ public final class WebServer {
 
     private static final int MAX_BODY = 1_000_000;
 
-    private final PriceRepository repo;
+    private final Markets markets;
     private final Storage storage;
     private final AdminApi admin;
     private HttpServer server;
     private ExecutorService executor;
+    /** A kérés országa (a pénznem a {@link Market#current()}-ben). */
+    private static final ThreadLocal<Markets.Runtime> CUR = new ThreadLocal<>();
 
     public WebServer(PriceRepository repo) {
         this(repo, null);
@@ -90,15 +94,54 @@ public final class WebServer {
         this(repo, storage, null, null);
     }
 
+    public WebServer(PriceRepository repo, Storage storage, hu.sporolos.data.CatalogSource source, String adminPassword) {
+        this(new Markets(repo), storage, source, adminPassword);
+    }
+
     /**
      * @param adminPassword ha nem null, bekapcsol az admin felület (/admin), és az akciók írása,
      *                      valamint az árfrissítés admin belépéshez kötött
      */
-    public WebServer(PriceRepository repo, Storage storage, hu.sporolos.data.CatalogSource source, String adminPassword) {
-        this.repo = repo;
+    public WebServer(Markets markets, Storage storage, hu.sporolos.data.CatalogSource source, String adminPassword) {
+        this.markets = markets;
         this.storage = storage;
-        this.admin = adminPassword == null ? null : new AdminApi(repo, storage, source, adminPassword);
-        ApiMapper.catalog = repo::catalog;
+        this.admin = adminPassword == null ? null : new AdminApi(markets.hungary().repo(), storage, source, adminPassword);
+        if (admin != null && source != null) {
+            admin.onCatalogChange(() -> markets.catalogChanged(hu.sporolos.data.CatalogSource.pretty(source.products(), "products"),
+                    hu.sporolos.data.CatalogSource.pretty(source.recipes(), "recipes")));
+        }
+        ApiMapper.catalog = () -> repo().catalog();
+    }
+
+    /** A kérés országa. */
+    private Markets.Runtime rt() {
+        Markets.Runtime r = CUR.get();
+        return r == null ? markets.hungary() : r;
+    }
+
+    /** A kérés országának ártára. */
+    private PriceRepository repo() {
+        return rt().repo();
+    }
+
+    /** A kérés országának árállapota (ha még töltődik: {@link Markets.Loading}). */
+    private PriceRepository.State st() {
+        return markets.state(rt());
+    }
+
+    /** Melyik ország árait kéri a kérés: a háztartás-profil országa, különben a „market” paraméter. */
+    private Markets.Runtime resolveMarket(String path, Map<String, String> q) {
+        boolean profileBased = path.equals("/api/week") || path.equals("/api/extras") || path.equals("/api/rate")
+                || path.equals("/api/check") || path.equals("/api/profile");
+        if (profileBased && storage != null && Ids.valid(q.get("id"))) {
+            try {
+                Map<String, Object> prof = storage.profile(q.get("id"));
+                if (prof != null && prof.get("country") != null) return markets.get(Json.str(prof.get("country")));
+            } catch (IOException | RuntimeException ignored) {
+                // a profil hibáját a végpont jelzi
+            }
+        }
+        return markets.get(q.get("market"));
     }
 
     public int start(String host, int port) throws IOException {
@@ -124,6 +167,9 @@ public final class WebServer {
             String path = ex.getRequestURI().getPath();
             String method = ex.getRequestMethod();
             Map<String, String> q = query(ex.getRequestURI().getRawQuery());
+            Markets.Runtime runtime = path.startsWith("/api/admin/") ? markets.hungary() : resolveMarket(path, q);
+            CUR.set(runtime);
+            Market.set(runtime.market());
             if (path.startsWith("/api/admin/")) {
                 if (admin == null) throw new NotFound("Az admin felület nincs bekapcsolva");
                 Object res;
@@ -155,34 +201,45 @@ public final class WebServer {
                 admin.require(ex.getRequestHeaders().getFirst("X-Admin-Token"));
             }
             Object body = switch (path) {
-                case "/api/status" -> status(repo.get(), prefs(q));
-                case "/api/deals" -> deals(repo.get(), q, prefs(q));
-                case "/api/suggestions" -> suggestions(repo.get(), q, prefs(q));
-                case "/api/recipe" -> recipe(repo.get(), q, prefs(q));
-                case "/api/item" -> item(repo.get(), q, prefs(q));
-                case "/api/search" -> search(repo.get(), q, prefs(q));
+                case "/api/status" -> status(st(), prefs(q));
+                case "/api/markets" -> marketsJson();
+                case "/api/deals" -> deals(st(), q, prefs(q));
+                case "/api/suggestions" -> suggestions(st(), q, prefs(q));
+                case "/api/recipe" -> recipe(st(), q, prefs(q));
+                case "/api/item" -> item(st(), q, prefs(q));
+                case "/api/search" -> search(st(), q, prefs(q));
                 case "/api/ingredients" -> ingredients();
-                case "/api/plan" -> plan(repo.get(), q, prefs(q));
-                case "/api/recipes" -> recipes(repo.get(), q, prefs(q));
-                case "/api/offers" -> offers(repo.get(), q, prefs(q));
+                case "/api/plan" -> plan(st(), q, prefs(q));
+                case "/api/recipes" -> recipes(st(), q, prefs(q));
+                case "/api/offers" -> offers(st(), q, prefs(q));
                 case "/api/extras" -> extrasEndpoint(method, q, method.equals("POST") ? readBody(ex) : "");
                 case "/api/promos" -> switch (method) {
                     case "POST" -> addPromo(readBody(ex), prefs(q));
                     case "DELETE" -> deletePromo(q, prefs(q));
-                    default -> promos(repo.get(), prefs(q));
+                    default -> promos(st(), prefs(q));
                 };
-                case "/api/refresh" -> status(repo.reload(), prefs(q));
+                case "/api/refresh" -> status(repo().reload(), prefs(q));
                 case "/api/profile" -> switch (method) {
                     case "POST" -> createProfile(readBody(ex));
                     case "PUT" -> saveProfile(q, readBody(ex));
                     default -> profileJson(requireId(q));
                 };
                 case "/api/rate" -> method.equals("DELETE") ? clearRatings(q) : rate(q, readBody(ex));
-                case "/api/week" -> week(repo.get(), q);
+                case "/api/week" -> week(q);
                 case "/api/check" -> check(q, readBody(ex));
                 default -> throw new NotFound("Ismeretlen végpont: " + path);
             };
             send(ex, 200, "application/json; charset=utf-8", Json.write(body));
+        } catch (Markets.Loading e) {
+            Markets.Runtime r = e.runtime();
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("error", e.getMessage());
+            m.put("loading", r.repo().loading() || r.repo().lastError() == null);
+            m.put("failed", r.repo().lastError() != null && !r.repo().loading());
+            m.put("market", marketJson(r));
+            m.put("progress", Math.round(r.progress() * 1000) / 1000.0);
+            m.put("phase", r.phase());
+            send(ex, 503, "application/json; charset=utf-8", Json.write(m));
         } catch (AdminApi.Unauthorized e) {
             send(ex, 401, "application/json; charset=utf-8", Json.write(Map.of("error", e.getMessage())));
         } catch (NotFound e) {
@@ -193,6 +250,9 @@ public final class WebServer {
             e.printStackTrace();
             send(ex, 500, "application/json; charset=utf-8",
                     Json.write(Map.of("error", "Belső hiba: " + e.getClass().getSimpleName())));
+        } finally {
+            CUR.remove();
+            Market.clear();
         }
     }
 
@@ -237,7 +297,34 @@ public final class WebServer {
             stores.add(sm);
         }
         m.put("stores", stores);
+        m.put("market", marketJson(rt()));
+        m.put("markets", marketsJson());
         return m;
+    }
+
+    /** Egy ország a felületnek (pénznem, árforrás, betöltöttség). */
+    private static Map<String, Object> marketJson(Markets.Runtime r) {
+        Market mk = r.market();
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", mk.id());
+        m.put("name", mk.name());
+        m.put("flag", mk.flag());
+        m.put("currency", mk.currency());
+        m.put("symbol", mk.symbol());
+        m.put("rate", mk.rate());
+        m.put("decimals", mk.decimals());
+        m.put("source", mk.source());
+        m.put("sourceUrl", mk.sourceUrl());
+        m.put("beta", mk.beta());
+        m.put("loaded", r.repo().peek() != null);
+        m.put("loading", r.repo().loading());
+        return m;
+    }
+
+    private List<Object> marketsJson() {
+        List<Object> out = new ArrayList<>();
+        for (Markets.Runtime r : markets.all()) out.add(marketJson(r));
+        return out;
     }
 
     private static Object deals(PriceRepository.State s, Map<String, String> q, Prefs p) {
@@ -304,7 +391,7 @@ public final class WebServer {
         });
         m.put("offers", list);
         // árelőzmény (az ajanlatok.hu-hoz hasonlóan 8 hétre): lánconként napi árak és összegzés
-        if (storage != null) {
+        if (storage != null && rt().def() == null) {
             LocalDate today = s.snapshot().date();
             var hist = storage.itemHistory(id, today.minusDays(56), today.plusDays(1));
             List<Object> h = new ArrayList<>();
@@ -339,7 +426,7 @@ public final class WebServer {
         int limit = intParam(q, "limit", 60, 1, 300);
         boolean onlyIngredients = !"false".equals(q.get("ingredients"));
         Set<String> only = csv(q.get("store"));
-        String query = Catalog.normalize(q.getOrDefault("q", ""));
+        String query = localQuery(Catalog.normalize(q.getOrDefault("q", "")));
         List<Deal> all = new ArrayList<>();
         for (Store st : s.stores()) {
             if (!p.stores().isEmpty() && !p.stores().contains(st.id())) continue;
@@ -372,7 +459,7 @@ public final class WebServer {
 
     private Object extrasEndpoint(String method, Map<String, String> q, String body) throws IOException {
         String id = requireId(q);
-        Household.load(requireStorage(), id, storeIds());
+        Household.load(requireStorage(), id, markets);
         List<Map<String, Object>> list = extras(id);
         if (method.equals("POST")) {
             Map<String, Object> in = Json.obj(Json.parse(body));
@@ -382,7 +469,7 @@ public final class WebServer {
             Map<String, Object> e = new LinkedHashMap<>();
             e.put("name", name);
             String itemId = in.get("itemId") == null ? null : Json.str(in.get("itemId"));
-            if (itemId != null && repo.get().byItem().containsKey(itemId)) e.put("itemId", itemId);
+            if (itemId != null && st().byItem().containsKey(itemId)) e.put("itemId", itemId);
             list.add(e);
         } else if (method.equals("DELETE")) {
             int n = intParam(q, "n", -1, -1, 100);
@@ -409,28 +496,32 @@ public final class WebServer {
         if (best != null || same.isEmpty()) return best;
         PriceEntry ref = same.get(0);
         PriceEntry sim = null;
-        for (PriceEntry e : a.entries()) {
-            if (!e.storeId().equals(storeId) || e.categoryId() != ref.categoryId() || !e.unit().equals(ref.unit())) continue;
+        // ismeretlen kategóriánál (pl. horvát kávé) a név első szava a hasonlóság (kava → kava)
+        String first = ref.categoryId() == 0 ? firstWord(ref.productName()) : null;
+        for (PriceEntry e : a.byStore().getOrDefault(storeId, List.of())) {
+            if (e.categoryId() != ref.categoryId() || !e.unit().equals(ref.unit())) continue;
+            if (first != null && (first.length() < 3 || !first.equals(firstWord(e.productName())))) continue;
             if (e.quantity() <= 0 || e.quantity() < ref.quantity() * 0.4 || e.quantity() > ref.quantity() * 2.5) continue;
             if (sim == null || e.unitPrice() < sim.unitPrice()) sim = e;
         }
         return sim;
     }
 
-    private static Object search(PriceRepository.State s, Map<String, String> q, Prefs p) {
+    private Object search(PriceRepository.State s, Map<String, String> q, Prefs p) {
         String query = Catalog.normalize(q.getOrDefault("q", ""));
         if (query.length() < 2) throw new IllegalArgumentException("Legalább 2 karakteres keresőszó kell");
+        query = localQuery(query);
         String store = q.get("store");
         var a = s.analysis(p.cards());
         int limit = intParam(q, "limit", 30, 1, 100);
         List<String> tokens = Arrays.asList(query.split(" "));
         List<PriceEntry> hits = new ArrayList<>();
-        for (List<PriceEntry> offers : a.byItem().values()) {
-            for (PriceEntry e : offers) {
-                if (store != null && !store.isBlank() && !e.storeId().equals(store)) continue;
-                String n = Catalog.normalize(e.productName() + " " + e.categoryName());
-                if (tokens.stream().allMatch(n::contains)) hits.add(e);
-            }
+        SearchIndex idx = searchIndex(a);
+        for (int i = 0; i < idx.entries.length; i++) {
+            PriceEntry e = idx.entries[i];
+            if (store != null && !store.isBlank() && !e.storeId().equals(store)) continue;
+            String n = idx.names[i];
+            if (tokens.stream().allMatch(n::contains)) hits.add(e);
         }
         hits.sort(Comparator.comparingDouble(PriceEntry::unitPrice));
         return hits.stream().limit(limit).map(e -> {
@@ -439,6 +530,44 @@ public final class WebServer {
             o.put("deal", ApiMapper.dealSummary(a.deals().dealFor(e)));
             return o;
         }).toList();
+    }
+
+    /** A keresés gyorsításához: a termékek normalizált neve (elemzésenként egyszer számolva). */
+    private record SearchIndex(PriceEntry[] entries, String[] names) {}
+
+    /** Országonként az utolsó elemzés indexe (azonosság szerint: új árállapotnál újraépül, a régi felszabadul). */
+    private final Map<String, Object[]> searchCache = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private SearchIndex searchIndex(PriceRepository.Analysis a) {
+        String key = rt().market().id();
+        Object[] cached = searchCache.get(key);
+        if (cached != null && cached[0] == a) return (SearchIndex) cached[1];
+        PriceEntry[] es = a.entries().toArray(new PriceEntry[0]);
+        String[] ns = new String[es.length];
+        for (int i = 0; i < es.length; i++) ns[i] = Catalog.normalize(es[i].productName() + " " + es[i].categoryName());
+        SearchIndex idx = new SearchIndex(es, ns);
+        searchCache.put(key, new Object[]{a, idx});
+        return idx;
+    }
+
+    private static String firstWord(String name) {
+        String n = Catalog.normalize(name);
+        int i = n.indexOf(' ');
+        return i < 0 ? n : n.substring(0, i);
+    }
+
+    /** Külföldi árlistában magyarul is lehessen keresni: „kávé” → „kava” (az ország szinonimalistája szerint). */
+    private String localQuery(String query) {
+        if (rt().def() == null) return query;
+        Map<String, String> syn = rt().def().search();
+        String whole = syn.get(query);
+        if (whole != null) return whole;
+        StringBuilder sb = new StringBuilder();
+        for (String t : query.split(" ")) {
+            if (sb.length() > 0) sb.append(' ');
+            sb.append(syn.getOrDefault(t, t));
+        }
+        return sb.toString();
     }
 
     private Object plan(PriceRepository.State s, Map<String, String> q, Prefs p) {
@@ -450,11 +579,21 @@ public final class WebServer {
                 intParam(q, "people", 2, 1, 12), intParam(q, "dinners", 5, 1, 7), intParam(q, "budget", 0, 0, 1_000_000),
                 csv(q.get("diets")), csv(q.get("equipment")), csv(q.get("liked")), csv(q.get("disliked")),
                 keep, csv(q.get("exclude")), longParam(q, "seed", 1), p.stores(), p.bulk());
-        var plan = new WeeklyPlanner(repo.catalog(), a.recommender()).plan(store, req);
+        var plan = new WeeklyPlanner(repo().catalog(), a.recommender()).plan(store, req);
         return planJson(s, store, req.people(), plan);
     }
 
     private Map<String, Object> planJson(PriceRepository.State s, String store, int people, WeeklyPlanner.Plan plan) {
+        return planJson(s, store, people, plan, null);
+    }
+
+    private static final java.util.List<String> DAY_NAMES = java.util.Arrays.asList(WeeklyPlanner.DAYS);
+
+    /**
+     * @param start a hét első napja (a napok neve és dátuma ehhez igazodik); null = hétfőtől, dátum nélkül
+     */
+    private Map<String, Object> planJson(PriceRepository.State s, String store, int people, WeeklyPlanner.Plan plan,
+                                         LocalDate start) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("store", store);
         m.put("storeName", storeName(s, store));
@@ -471,7 +610,15 @@ public final class WebServer {
         List<Object> days = new ArrayList<>();
         for (var d : plan.days()) {
             Map<String, Object> dm = new LinkedHashMap<>();
-            dm.put("label", d.label());
+            int idx = Math.max(0, DAY_NAMES.indexOf(d.label()));
+            if (start != null) {
+                LocalDate date = start.plusDays(idx);
+                dm.put("label", WeeklyPlanner.DAYS[date.getDayOfWeek().getValue() - 1]);
+                dm.put("date", date.toString());
+            } else {
+                dm.put("label", d.label());
+            }
+            dm.put("index", idx);
             dm.put("kept", d.kept());
             dm.put("shareOfList", d.shareOfList());
             dm.put("leftoverOf", d.leftoverOf());
@@ -499,25 +646,25 @@ public final class WebServer {
     }
 
     private List<String> storeIds() {
-        return repo.get().stores().stream().map(Store::id).toList();
+        return rt().storeIds();
     }
 
     private Object createProfile(String body) throws IOException {
         String id = Ids.newProfileId();
         Map<String, Object> in = body.isBlank() ? Map.of() : Json.obj(Json.parse(body));
-        requireStorage().saveProfile(id, Household.from(in, storeIds()).toJson());
+        requireStorage().saveProfile(id, Household.from(in, markets).toJson());
         return profileJson(id);
     }
 
     private Object saveProfile(Map<String, String> q, String body) throws IOException {
         String id = requireId(q);
-        Household.load(requireStorage(), id, storeIds()); // létezik-e
-        requireStorage().saveProfile(id, Household.from(Json.obj(Json.parse(body)), storeIds()).toJson());
+        Household.load(requireStorage(), id, markets); // létezik-e
+        requireStorage().saveProfile(id, Household.from(Json.obj(Json.parse(body)), markets).toJson());
         return profileJson(id);
     }
 
     private Map<String, Object> profileJson(String id) throws IOException {
-        Household h = Household.load(requireStorage(), id, storeIds());
+        Household h = Household.load(requireStorage(), id, markets);
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", id);
         m.put("settings", h.toJson());
@@ -531,10 +678,10 @@ public final class WebServer {
 
     private Object rate(Map<String, String> q, String body) throws IOException {
         String id = requireId(q);
-        Household.load(requireStorage(), id, storeIds());
+        Household.load(requireStorage(), id, markets);
         Map<String, Object> in = Json.obj(Json.parse(body));
         String recipe = in.get("recipe") == null ? null : Json.str(in.get("recipe"));
-        if (recipe == null || repo.catalog().recipe(recipe) == null) throw new IllegalArgumentException("Ismeretlen recept: " + recipe);
+        if (recipe == null || repo().catalog().recipe(recipe) == null) throw new IllegalArgumentException("Ismeretlen recept: " + recipe);
         Object liked = in.get("liked");
         storage.rate(id, recipe, liked == null ? null : Boolean.TRUE.equals(liked));
         return profileJson(id);
@@ -542,14 +689,14 @@ public final class WebServer {
 
     private Object clearRatings(Map<String, String> q) throws IOException {
         String id = requireId(q);
-        Household.load(requireStorage(), id, storeIds());
+        Household.load(requireStorage(), id, markets);
         storage.clearRatings(id);
         return profileJson(id);
     }
 
     private Object check(Map<String, String> q, String body) throws IOException {
         String id = requireId(q);
-        Household.load(requireStorage(), id, storeIds());
+        Household.load(requireStorage(), id, markets);
         Map<String, Object> in = Json.obj(Json.parse(body));
         String key = Json.str(in.get("key")), item = Json.str(in.get("item"));
         if (key == null || item == null || key.length() > 200 || item.length() > 200) throw new IllegalArgumentException("Hibás tétel");
@@ -557,9 +704,15 @@ public final class WebServer {
         return Map.of("checked", storage.checked(id, key));
     }
 
-    private Object week(PriceRepository.State s, Map<String, String> q) throws IOException {
+    /** Az új hét első napja: ma (vasárnap a következő hétfő – vasárnap jellemzően a jövő hetet tervezik). */
+    static LocalDate weekStart(LocalDate today) {
+        return today.getDayOfWeek() == java.time.DayOfWeek.SUNDAY ? today.plusDays(1) : today;
+    }
+
+    private Object week(Map<String, String> q) throws IOException {
         String id = requireId(q);
-        Household h = Household.load(requireStorage(), id, storeIds());
+        Household h = Household.load(requireStorage(), id, markets);
+        PriceRepository.State s = st();
         var a = s.analysis(h.cards());
         List<String> allowed = new ArrayList<>();
         for (Store st : s.stores()) if (h.stores().isEmpty() || h.stores().contains(st.id())) allowed.add(st.id());
@@ -571,11 +724,18 @@ public final class WebServer {
         List<String> excluded = new ArrayList<>();
         long seed = 1;
         String savedStore = null;
+        LocalDate start = null;
         if (saved != null && h.planKey().equals(saved.get("planKey"))) {
             slots.addAll(Household.strings(saved.get("ids")));
             excluded.addAll(Household.strings(saved.get("excluded")));
             seed = (long) Json.num(saved.get("seed"), 1);
             savedStore = saved.get("store") == null ? null : Json.str(saved.get("store"));
+            try {
+                Object st0 = saved.get("start") != null ? saved.get("start") : saved.get("date");
+                if (st0 != null) start = LocalDate.parse(Json.str(st0));
+            } catch (RuntimeException ignored) {
+                // régi mentés dátum nélkül
+            }
         }
         int n = h.dinners();
         while (slots.size() < n) slots.add(null);
@@ -588,6 +748,10 @@ public final class WebServer {
         String action = q.getOrDefault("action", "");
         int day = intParam(q, "day", -1, -1, 6);
         if (!action.isEmpty() && !action.equals("new") && (day < 0 || day >= n)) throw new IllegalArgumentException("Hibás nap");
+        // egy régi (több mint egy hete kezdődött) hét helyett újat kezdünk, a mostani napoktól
+        LocalDate today = LocalDate.now();
+        if (start == null || start.isBefore(today.minusDays(6)) || action.equals("new")) start = weekStart(today);
+        if (action.equals("options")) return weekOptions(s, h, id, slots, excluded, day);
         switch (action) {
             case "new" -> {
                 excluded.clear();
@@ -604,7 +768,7 @@ public final class WebServer {
             }
             case "set" -> {
                 String recipe = q.get("recipe");
-                if (recipe == null || repo.catalog().recipe(recipe) == null) throw new IllegalArgumentException("Ismeretlen recept");
+                if (recipe == null || repo().catalog().recipe(recipe) == null) throw new IllegalArgumentException("Ismeretlen recept");
                 // ha egy maradéknapra teszünk receptet, az a nap ezentúl főzős nap
                 slots.set(day, recipe);
                 detachLeftovers(slots, day);
@@ -645,7 +809,7 @@ public final class WebServer {
         String planStore = h.autoStore()
                 ? (savedStore != null && allowed.contains(savedStore) ? savedStore : bestStore(a, allowed, h))
                 : h.store();
-        WeeklyPlanner planner = new WeeklyPlanner(repo.catalog(), a.recommender());
+        WeeklyPlanner planner = new WeeklyPlanner(repo().catalog(), a.recommender());
         var req = new WeeklyPlanner.Request(h.people(), n, h.budget(), h.diets(), h.equipment(),
                 liked, disliked, keep, Set.copyOf(excluded), seed, h.stores(), h.bulk(), leftoverOf);
         var plan = planner.plan(planStore, req);
@@ -672,6 +836,12 @@ public final class WebServer {
         if (h.autoStore()) {
             // automatikus: ahol a hét a legolcsóbb (a becsült, ott nem kapható tételek büntetésével)
             WeeklyPlanner.StoreTotal cheapest = totals.stream().min(Comparator.comparingDouble(rank)).orElse(null);
+            // egy csere miatt ne ugráljon a bolt: a mostani marad, ha legfeljebb ~3%-kal (150 Ft-tal) drágább
+            WeeklyPlanner.StoreTotal current = totals.stream().filter(t -> t.storeId().equals(planStore)).findFirst().orElse(null);
+            if (cheapest != null && current != null && savedStore != null && !action.equals("new")) {
+                double cr = rank.applyAsDouble(current), br = rank.applyAsDouble(cheapest);
+                if (cr - br <= Math.max(150, 0.03 * cr)) cheapest = current;
+            }
             if (cheapest != null && !cheapest.storeId().equals(planStore)) {
                 store = cheapest.storeId();
                 List<String> ids = new ArrayList<>();
@@ -695,9 +865,12 @@ public final class WebServer {
         w.put("excluded", excluded);
         w.put("seed", seed);
         w.put("date", LocalDate.now().toString());
+        w.put("start", start.toString());
         storage.saveWeek(id, w);
 
-        Map<String, Object> m = planJson(s, store, h.people(), plan);
+        Map<String, Object> m = planJson(s, store, h.people(), plan, start);
+        m.put("start", start.toString());
+        m.put("today", today.toString());
         m.put("autoStore", h.autoStore());
         List<Object> compare = new ArrayList<>();
         // ugyanazzal a mércével, mint az automatikus választás (a nem kapható, becsült tételek büntetésével)
@@ -771,6 +944,48 @@ public final class WebServer {
         return m;
     }
 
+    /**
+     * Mi kerülhetne egy nap helyére (a „Csere” választója): a hét többi napja marad, a jelöltek a tervezés
+     * mércéjével rangsorolva, mindegyiknél a hét új összegével.
+     */
+    private Object weekOptions(PriceRepository.State s, Household h, String id, List<String> slots,
+                               List<String> excluded, int day) throws IOException {
+        var a = s.analysis(h.cards());
+        Map<String, Object> saved = storage.week(id);
+        String savedStore = saved != null && saved.get("store") != null ? Json.str(saved.get("store")) : null;
+        String store = savedStore != null && s.stores().stream().anyMatch(x -> x.id().equals(savedStore)) ? savedStore
+                : h.autoStore() ? s.stores().get(0).id() : h.store();
+        int cook = cookDay(slots, day);
+        List<String> keep = new ArrayList<>();
+        List<Integer> leftoverOf = new ArrayList<>();
+        for (String x : slots) {
+            boolean lo = x != null && x.startsWith("=");
+            keep.add(lo ? null : x);
+            leftoverOf.add(lo ? Integer.parseInt(x.substring(1)) : -1);
+        }
+        Set<String> ex = new TreeSet<>(excluded);
+        String current = keep.get(cook);
+        if (current != null) ex.add(current);
+        Map<String, Boolean> ratings = storage.ratings(id);
+        Set<String> liked = new TreeSet<>(), disliked = new TreeSet<>();
+        ratings.forEach((r, l) -> (l ? liked : disliked).add(r));
+        WeeklyPlanner planner = new WeeklyPlanner(repo().catalog(), a.recommender());
+        var req = new WeeklyPlanner.Request(h.people(), slots.size(), h.budget(), h.diets(), h.equipment(),
+                liked, disliked, keep, ex, 1, h.stores(), h.bulk(), leftoverOf);
+        List<Object> out = new ArrayList<>();
+        for (var o : planner.options(store, req, cook, 6)) {
+            Map<String, Object> m = new LinkedHashMap<>(ApiMapper.suggestion(o.suggestion()));
+            m.put("weekTotal", o.weekTotal());
+            out.add(m);
+        }
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("day", cook);
+        res.put("store", store);
+        res.put("current", current);
+        res.put("options", out);
+        return res;
+    }
+
     /** A nap főzős napja (maradéknapnál az, amelyiknek a maradékát esszük). */
     private static int cookDay(List<String> slots, int day) {
         String x = slots.get(day);
@@ -826,8 +1041,8 @@ public final class WebServer {
         Set<String> diets = csv(q.get("diets")), equipment = csv(q.get("equipment"));
         int servings = intParam(q, "servings", 0, 0, 40); // 0 = a recept alapadagja
         List<Object> out = new ArrayList<>();
-        for (var r : repo.catalog().recipes()) {
-            var meta = repo.catalog().meta(r.id());
+        for (var r : repo().catalog().recipes()) {
+            var meta = repo().catalog().meta(r.id());
             if (meta != null && (!meta.fits(diets) || !meta.cookableWith(equipment))) continue;
             Suggestion sug = rec.suggestion(r.id(), store, servings, p.stores(), p.bulk());
             Map<String, Object> m = new LinkedHashMap<>();
@@ -848,7 +1063,7 @@ public final class WebServer {
 
     private Object ingredients() {
         List<Object> out = new ArrayList<>();
-        for (Catalog.Product p : repo.catalog().products().values()) {
+        for (Catalog.Product p : repo().catalog().products().values()) {
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("key", p.key());
             m.put("name", p.name());
@@ -866,7 +1081,7 @@ public final class WebServer {
         for (PromoMerger.PromoStatus ps : s.analysis(p.cards()).promoStatuses()) {
             Map<String, Object> m = new LinkedHashMap<>(ps.promo().toJson());
             m.put("storeName", storeName(s, ps.promo().storeId()));
-            Catalog.Product prod = PromoMerger.resolveIngredient(repo.catalog(), ps.promo().ingredientKey());
+            Catalog.Product prod = PromoMerger.resolveIngredient(repo().catalog(), ps.promo().ingredientKey());
             m.put("ingredientName", prod == null ? null : prod.name());
             m.put("status", ps.status().name());
             m.put("statusText", ps.status().label);
@@ -877,7 +1092,7 @@ public final class WebServer {
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("promos", list);
         out.put("warnings", s.warnings().stream().filter(w -> w.startsWith("Akció")).toList());
-        out.put("enabled", repo.promoStore() != null);
+        out.put("enabled", repo().promoStore() != null);
         return out;
     }
 
@@ -892,7 +1107,7 @@ public final class WebServer {
             skipped.addAll(r.warnings());
         } else {
             Promo promo = Promo.fromJson(in, "kézi");
-            if (!repo.catalog().stores().containsKey(promo.storeId())) {
+            if (!repo().catalog().stores().containsKey(promo.storeId())) {
                 throw new IllegalArgumentException("Ismeretlen bolt: " + promo.storeId());
             }
             if (promo.ingredientKey() == null && promo.itemId() == null) {
@@ -901,7 +1116,7 @@ public final class WebServer {
             store.add(promo);
             added = 1;
         }
-        PriceRepository.State s = repo.reloadPromos();
+        PriceRepository.State s = repo().reloadPromos();
         Map<String, Object> out = new LinkedHashMap<>(Json.obj(promos(s, p)));
         out.put("added", added);
         out.put("skipped", skipped);
@@ -912,12 +1127,12 @@ public final class WebServer {
         PromoStore store = requirePromoStore();
         String id = q.getOrDefault("id", "");
         if (!store.remove(id)) throw new NotFound("Nincs ilyen kézi akció: " + id);
-        return promos(repo.reloadPromos(), p);
+        return promos(repo().reloadPromos(), p);
     }
 
     private PromoStore requirePromoStore() {
-        if (repo.promoStore() == null) throw new IllegalArgumentException("Az akciók kezelése nincs bekapcsolva");
-        return repo.promoStore();
+        if (repo().promoStore() == null) throw new IllegalArgumentException("Az akciók kezelése nincs bekapcsolva");
+        return repo().promoStore();
     }
 
     // ---------- segédek ----------
@@ -987,7 +1202,8 @@ public final class WebServer {
                 send(ex, 404, "text/plain; charset=utf-8", "Nem található: " + path);
                 return;
             }
-            ex.getResponseHeaders().set("Cache-Control", "no-cache");
+            // a betűk nem változnak: egy napig a böngészőben maradhatnak; minden más mindig friss
+            ex.getResponseHeaders().set("Cache-Control", path.startsWith("/fonts/") ? "public, max-age=86400" : "no-cache");
             sendBytes(ex, 200, contentType(path), in.readAllBytes());
         }
     }
@@ -1000,6 +1216,9 @@ public final class WebServer {
         if (path.endsWith(".svg")) return "image/svg+xml";
         if (path.endsWith(".png")) return "image/png";
         if (path.endsWith(".ico")) return "image/x-icon";
+        if (path.endsWith(".woff")) return "font/woff";
+        if (path.endsWith(".woff2")) return "font/woff2";
+        if (path.endsWith(".txt")) return "text/plain; charset=utf-8";
         return "application/octet-stream";
     }
 

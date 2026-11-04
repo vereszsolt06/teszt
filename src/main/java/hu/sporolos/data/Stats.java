@@ -21,9 +21,14 @@ public final class Stats {
     /** Hányadik percentilisben van x a listában (0 = legolcsóbb, 1 = legdrágább). */
     public static double percentileRank(List<Double> sorted, double x) {
         if (sorted.size() <= 1) return 0.5;
-        int below = 0;
-        for (double v : sorted) if (v < x) below++;
-        return below / (double) (sorted.size() - 1);
+        // bináris kereséssel: hány elem kisebb x-nél (nagy kategóriáknál is gyors)
+        int lo = 0, hi = sorted.size();
+        while (lo < hi) {
+            int mid = (lo + hi) >>> 1;
+            if (sorted.get(mid) < x) lo = mid + 1;
+            else hi = mid;
+        }
+        return lo / (double) (sorted.size() - 1);
     }
 
     public static double clamp01(double v) {

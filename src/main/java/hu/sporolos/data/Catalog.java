@@ -198,7 +198,8 @@ public final class Catalog {
     /** Kisbetűsít, ékezetet töröl, a nem betű/szám karaktereket szóközre cseréli. */
     public static String normalize(String s) {
         if (s == null) return "";
-        return Normalizer.normalize(s.toLowerCase(Locale.ROOT), Normalizer.Form.NFD)
+        // a horvát đ nem bontható ékezetre (önálló betű), ezért külön: đ → d
+        return Normalizer.normalize(s.toLowerCase(Locale.ROOT).replace('đ', 'd'), Normalizer.Form.NFD)
                 .replaceAll("\\p{M}", "")
                 .replaceAll("[^a-z0-9]+", " ")
                 .trim();
