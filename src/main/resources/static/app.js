@@ -885,6 +885,9 @@ function renderSheet() {
     });
     acts.append(sel, add);
   }
+  const shareBtn = el("button", "ghost", t("🔗 Megosztás"), { type: "button" });
+  shareBtn.addEventListener("click", () => shareRecipe(r));
+  acts.appendChild(shareBtn);
   const cookBtn = el("button", "ghost", t("👩‍🍳 Főzés mód"), { type: "button" });
   cookBtn.addEventListener("click", () => openCook(r, items));
   acts.appendChild(cookBtn);
@@ -901,6 +904,18 @@ function renderSheet() {
   cols.append(ingredientsBox(items, s), stepsBox(r));
   body.appendChild(cols);
   body.appendChild(compareBox(s, checkout));
+}
+
+/** Egy recept linkje (a megnyitó a saját nyelvén és boltja áraival látja). */
+async function shareRecipe(r) {
+  const url = `${location.origin}${location.pathname}#recept=${encodeURIComponent(r.id)}`;
+  try {
+    if (navigator.share) { await navigator.share({ title: r.name, text: `${r.emoji || "🍽️"} ${r.name}`, url }); return; }
+    await navigator.clipboard.writeText(url);
+    toast(t("A recept linkje a vágólapra került."));
+  } catch (e) {
+    if (e && e.name !== "AbortError") toast(url);
+  }
 }
 
 // ---------- főzés mód ----------
@@ -1183,10 +1198,14 @@ async function renderBrowse() {
   const f = state.filter;
   const liked = new Set(state.profile.liked);
   const norm = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-  const nq = norm(q);
+  // több szó: mind szerepeljen a névben, a címkékben vagy a hozzávalókban („csirke rizs”, „cukkini”)
+  const words = norm(q).split(/\s+/).filter(Boolean);
   const rows = list.filter((x) => {
     const r = x.recipe;
-    if (nq && !norm(`${r.name} ${r.tags.join(" ")}`).includes(nq)) return false;
+    if (words.length) {
+      const hay = norm(`${r.name} ${r.tags.map((g) => `${g} ${t(g)}`).join(" ")} ${(x.ingredientNames || []).join(" ")}`);
+      if (!words.every((w) => hay.includes(w))) return false;
+    }
     if (!f) return true;
     if (f === "kedvenc") return liked.has(r.id);
     if (f === "airfryer") return (r.equipment || []).some((e) => e.includes("airfryer"));
@@ -1998,6 +2017,7 @@ function bind() {
   });
   $("#list-share").addEventListener("click", shareList);
   $("#week-ics").addEventListener("click", exportIcs);
+  $("#list-print").addEventListener("click", () => window.print());
   const hide = $("#list-hide-done");
   const applyHide = () => $('section[data-view="lista"]').classList.toggle("hide-done", hide.checked);
   hide.checked = local("sporolos.hideDone") === "1";

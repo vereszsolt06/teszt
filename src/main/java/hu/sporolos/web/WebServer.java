@@ -1105,7 +1105,10 @@ public final class WebServer {
             if (meta != null && (!meta.fits(diets) || !meta.cookableWith(equipment))) continue;
             Suggestion sug = rec.suggestion(r.id(), store, servings, p.stores(), p.bulk());
             Map<String, Object> m = new LinkedHashMap<>();
-            m.put("recipe", ApiMapper.recipe(r));
+            // a listához az elkészítés nem kell (a receptlap külön kéri): a válasz így kb. harmadakkora
+            Map<String, Object> rm = new LinkedHashMap<>(ApiMapper.recipe(r));
+            rm.remove("steps");
+            m.put("recipe", rm);
             m.put("ingredientNames", r.ingredients().stream().filter(i -> !i.pantry()).map(i -> i.label()).toList());
             if (sug != null) {
                 m.put("totalCost", sug.totalCost());

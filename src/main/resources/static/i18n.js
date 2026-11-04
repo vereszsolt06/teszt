@@ -392,6 +392,9 @@ const I18N = {
     "Maradék: {name}": "Leftovers: {name}",
     "vacsorak": "dinners",
     "Recept: {url}": "Recipe: {url}",
+    "🔗 Megosztás": "🔗 Share",
+    "A recept linkje a vágólapra került.": "Recipe link copied.",
+    "🖨 Nyomtatás": "🖨 Print",
   },
   hr: {
     "Itt a legolcsóbb": "Ovdje najjeftinije",
@@ -738,6 +741,9 @@ const I18N = {
     "Maradék: {name}": "Ostaci: {name}",
     "vacsorak": "vecere",
     "Recept: {url}": "Recept: {url}",
+    "🔗 Megosztás": "🔗 Podijeli",
+    "A recept linkje a vágólapra került.": "Poveznica recepta je kopirana.",
+    "🖨 Nyomtatás": "🖨 Ispis",
   },
 };
 

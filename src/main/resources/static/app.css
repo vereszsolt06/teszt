@@ -733,3 +733,20 @@ dialog::backdrop { background: rgb(15 12 5 / 0.5); }
 .hide-done-toggle { margin-right: auto; font-size: 0.92rem; }
 .install-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .banner.offline { background: color-mix(in srgb, var(--ink) 8%, var(--paper)); color: var(--ink); }
+
+/* ---------- nyomtatás: csak a bevásárlólista, papírra szabva ---------- */
+@media (max-width: 760px) { .desktop-only { display: none; } }
+@media print {
+  header.top, .bottom-tabs, .foot, .banner, .extras .sub, .extra-add, .list-tools button, .hide-done-toggle, .progress,
+  .view:not([data-view="lista"]), dialog, .toast, .confetti, .icon-del { display: none !important; }
+  body { background: #fff; color: #000; }
+  main { padding: 0; max-width: none; }
+  .aisle, .extras { box-shadow: none; border: 1px solid #bbb; background: #fff; margin: 0 0 10px; }
+  .extras:has(#extras:empty) { display: none; }
+  #aisles { columns: 2; column-gap: 14px; }
+  .aisle { break-inside: auto; }
+  .aisle h2 { break-after: avoid; }
+  .buy li { break-inside: avoid; }
+  .buy input[type="checkbox"] { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .price-tag { background: none !important; border: 1px solid #000; }
+}
