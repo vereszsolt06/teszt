@@ -1723,7 +1723,8 @@
   "Túl nagy kérés (legfeljebb 1 MB)": "Zahtjev je prevelik (najviše 1 MB)",
   "Ismeretlen recept": "Nepoznat recept",
   "Az admin felület nincs bekapcsolva": "Administracija nije uključena",
-  "Az akciók kezelése nincs bekapcsolva": "Upravljanje akcijama nije uključeno"
+  "Az akciók kezelése nincs bekapcsolva": "Upravljanje akcijama nije uključeno",
+  "Túl sok kérés – próbáld újra egy perc múlva.": "Previše zahtjeva – pokušaj ponovno za minutu."
  },
  "patterns": [
   [

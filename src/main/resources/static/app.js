@@ -751,6 +751,50 @@ async function shareList() {
   }
 }
 
+// ---------- naptár (.ics) ----------
+
+/** iCalendar-szöveg: vessző, pontosvessző, sortörés escape-elve. */
+const icsText = (s) => String(s).replace(/\\/g, "\\\\").replace(/[,;]/g, (c) => "\\" + c).replace(/\n/g, "\\n");
+
+/**
+ * A hét vacsorái naptárfájlként: minden nap egy 18:30–19:30-as esemény (helyi idő), benne az adagár és a recept
+ * linkje. A naptár-alkalmazások (Google, Apple, Outlook) megnyitáskor felveszik; nincs fiók, nincs szinkron.
+ */
+function exportIcs() {
+  const w = state.week;
+  if (!w?.days.length) return;
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z");
+  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Sporolos Konyha//HU", "CALSCALE:GREGORIAN"];
+  w.days.forEach((d, i) => {
+    if (!d.date) return;
+    const r = d.suggestion.recipe;
+    const day = d.date.replace(/-/g, "");
+    const leftover = d.leftoverOf >= 0;
+    const url = `${location.origin}${location.pathname}#recept=${encodeURIComponent(r.id)}`;
+    const desc = leftover ? t("Nem kell főzni, nem kell vásárolni – csak melegíteni.")
+      : `${t("≈ {price} / adag", { price: ft(d.shareOfList / d.suggestion.servings) })} · ${t("{n} perc", { n: r.minutes })}\n${t("Recept: {url}", { url })}`;
+    lines.push("BEGIN:VEVENT", `UID:${w.listKey}-${i}-${r.id}@sporolos`, `DTSTAMP:${stamp}`,
+      `DTSTART:${day}T183000`, `DTEND:${day}T193000`,
+      `SUMMARY:${icsText(`${r.emoji || "🍽️"} ${leftover ? t("Maradék: {name}", { name: r.name }) : r.name}`)}`,
+      `DESCRIPTION:${icsText(desc)}`, `URL:${url}`, "END:VEVENT");
+  });
+  lines.push("END:VCALENDAR");
+  const blob = new Blob([lines.join("\r\n") + "\r\n"], { type: "text/calendar;charset=utf-8" });
+  const a = el("a", null, null, { href: URL.createObjectURL(blob), download: `${t("vacsorak")}-${w.days[0].date || "het"}.ics` });
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  toast(t("A naptárfájl letöltve – nyisd meg, és a vacsorák bekerülnek a naptáradba."));
+}
+
+// ---------- telepítés (PWA) ----------
+
+let installPrompt = null;
+window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installPrompt = e; });
+window.addEventListener("appinstalled", () => { installPrompt = null; });
+const isStandalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+
 // ---------- receptlap ----------
 
 async function openRecipe(id, opts) {
@@ -1659,6 +1703,22 @@ function openSettings() {
   cards.appendChild(checkChips(all.filter((x) => x.cardName).map((x) => [x.id, x.cardName, x.color]), s.cards || [], (v) => updateSettings({ cards: v }, true)));
   if (market().id === "hu") cards.appendChild(el("p", "hint", t("Az akciós újságok és appok árait az admin felületen lehet felvinni (/admin).")));
 
+  if (!isStandalone() && (installPrompt || isIos())) {
+    const app = group(t("Alkalmazás"), t("Telepítsd a telefonodra: ikonként indul, teljes képernyőn, és a lista offline is megy."));
+    if (installPrompt) {
+      const b = el("button", "primary small", t("Telepítés a kezdőképernyőre"), { type: "button" });
+      b.addEventListener("click", async () => {
+        const p = installPrompt;
+        installPrompt = null;
+        try { await p.prompt(); } catch (e) { /* a böngésző elutasította */ }
+        app.remove();
+      });
+      app.appendChild(b);
+    } else {
+      app.appendChild(el("p", "hint", t("iPhone-on: Safariban Megosztás → Főképernyőhöz adás.")));
+    }
+  }
+
   const share = group(t("Közös háztartás"), t("Ezzel a linkkel a párod vagy a családod ugyanazt a hetet és ugyanazt a bevásárlólistát látja, a kipipálás is közös. Csak annak add oda, akivel közösen vásároltok."));
   const link = `${location.origin}${location.pathname}#profil=${state.profile.id}`;
   const linkBox = el("input", "link-box", null, { type: "text", readonly: "", value: link, "aria-label": t("Megosztási link") });
@@ -1860,6 +1920,8 @@ async function toggleCheck(key, on, li) {
     li.classList.remove("just-done");
     void li.offsetWidth;
     li.classList.add("just-done");
+    // „kipipáltak elrejtése” módban az animáció után tűnik el
+    setTimeout(() => li.classList.remove("just-done"), 900);
     if (navigator.vibrate) try { navigator.vibrate(12); } catch (e) { /* nem támogatott */ }
   }
   const c = { id: state.profile.id, key: state.week.listKey, item: key, on };
@@ -1935,6 +1997,12 @@ function bind() {
     loadWeek("new").catch((e) => toast(e.message)).finally(() => $("#dinners").classList.remove("refreshing"));
   });
   $("#list-share").addEventListener("click", shareList);
+  $("#week-ics").addEventListener("click", exportIcs);
+  const hide = $("#list-hide-done");
+  const applyHide = () => $('section[data-view="lista"]').classList.toggle("hide-done", hide.checked);
+  hide.checked = local("sporolos.hideDone") === "1";
+  applyHide();
+  hide.addEventListener("change", () => { local("sporolos.hideDone", hide.checked ? "1" : null); applyHide(); });
   $("#nom-yes").addEventListener("click", () => decide(true));
   $("#nom-no").addEventListener("click", () => decide(false));
   $("#nom-later").addEventListener("click", () => decide(null));

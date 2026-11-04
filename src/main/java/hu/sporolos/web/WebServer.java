@@ -166,7 +166,44 @@ public final class WebServer {
     /** A kérés közös beállításai. */
     private record Prefs(Set<String> stores, boolean bulk, Set<String> cards) {}
 
+    private RateLimiter limiter = new RateLimiter(0);
+    private boolean trustProxy;
+
+    /**
+     * Kéréskorlát IP-címenként (percenként; 0 = nincs). {@code trustProxy}: terheléselosztó / reverse proxy mögött
+     * az X-Forwarded-For első címe a kliens (csak akkor kapcsold be, ha a proxy ezt maga állítja be).
+     */
+    public WebServer rateLimit(int perMinute, boolean trustProxy) {
+        this.limiter = new RateLimiter(perMinute);
+        this.trustProxy = trustProxy;
+        return this;
+    }
+
+    private String clientKey(HttpExchange ex) {
+        if (trustProxy) {
+            String fwd = ex.getRequestHeaders().getFirst("X-Forwarded-For");
+            if (fwd != null && !fwd.isBlank()) return fwd.split(",")[0].trim();
+        }
+        return ex.getRemoteAddress() == null ? "?" : ex.getRemoteAddress().getAddress().getHostAddress();
+    }
+
+    /** A válasz nyelve: a ?lang= paraméter, különben a böngésző Accept-Language fejléce. */
+    private static String requestLang(HttpExchange ex, Map<String, String> q) {
+        return q.containsKey("lang") ? Lang.normalize(q.get("lang"))
+                : Lang.fromAcceptLanguage(ex.getRequestHeaders().getFirst("Accept-Language"));
+    }
+
     private void api(HttpExchange ex) throws IOException {
+        if (limiter.enabled() && !limiter.allow(clientKey(ex))) {
+            ex.getResponseHeaders().set("Retry-After", String.valueOf(RateLimiter.retryAfterSeconds(System.currentTimeMillis())));
+            Lang.set(requestLang(ex, query(ex.getRequestURI().getRawQuery())));
+            try {
+                send(ex, 429, "application/json; charset=utf-8", Json.write(localized(Map.of("error", "Túl sok kérés – próbáld újra egy perc múlva."))));
+            } finally {
+                Lang.clear();
+            }
+            return;
+        }
         try {
             String path = ex.getRequestURI().getPath();
             String method = ex.getRequestMethod();
@@ -174,9 +211,7 @@ public final class WebServer {
             Markets.Runtime runtime = path.startsWith("/api/admin/") ? markets.hungary() : resolveMarket(path, q);
             CUR.set(runtime);
             Market.set(runtime.market());
-            String lang = q.containsKey("lang") ? Lang.normalize(q.get("lang"))
-                    : Lang.fromAcceptLanguage(ex.getRequestHeaders().getFirst("Accept-Language"));
-            Lang.set(lang);
+            Lang.set(requestLang(ex, q));
             if (path.startsWith("/api/admin/")) {
                 if (admin == null) throw new NotFound("Az admin felület nincs bekapcsolva");
                 Object res;

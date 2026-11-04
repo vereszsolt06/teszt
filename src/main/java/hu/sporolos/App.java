@@ -109,7 +109,9 @@ public final class App {
                     Duration.ofHours(Math.max(refreshHours, 12))));
             System.out.println("[árforrás] Horvátország: a cijene.dev napi archívuma, az első horvát kéréskor töltődik be");
         }
-        WebServer server = new WebServer(markets, storage, catalogSource, adminPassword);
+        WebServer server = new WebServer(markets, storage, catalogSource, adminPassword)
+                .rateLimit(Integer.parseInt(get(cfg, "rate.limit", "RATE_LIMIT", "600")),
+                        Boolean.parseBoolean(get(cfg, "trust.proxy", "TRUST_PROXY", "false")));
         // ha a port foglalt (pl. másik program vagy egy korábban elindított példány), a következő szabadot veszi
         int actual = -1;
         for (int p = port; p < port + 20 && actual < 0; p++) {

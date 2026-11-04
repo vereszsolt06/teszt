@@ -1708,7 +1708,8 @@
   "Túl nagy kérés (legfeljebb 1 MB)": "Request too large (max. 1 MB)",
   "Ismeretlen recept": "Unknown recipe",
   "Az admin felület nincs bekapcsolva": "The admin area is not enabled",
-  "Az akciók kezelése nincs bekapcsolva": "Promotion management is not enabled"
+  "Az akciók kezelése nincs bekapcsolva": "Promotion management is not enabled",
+  "Túl sok kérés – próbáld újra egy perc múlva.": "Too many requests – try again in a minute."
  },
  "patterns": [
   [

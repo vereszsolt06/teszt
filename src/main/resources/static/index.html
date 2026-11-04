@@ -9,6 +9,8 @@
   <meta name="theme-color" content="#14130f" media="(prefers-color-scheme: dark)">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <link rel="preload" href="fonts/bricolage-grotesque.woff" as="font" type="font/woff" crossorigin>
   <link rel="preload" href="fonts/atkinson-hyperlegible-400.woff" as="font" type="font/woff" crossorigin>
   <link rel="stylesheet" href="app.css">
@@ -53,6 +55,7 @@
         <div class="week-actions">
           <button class="primary" id="week-new" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16m0 4v-4h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Új hetet kérek</button>
           <a class="ghost" href="#lista" id="week-to-list">Bevásárlólista →</a>
+          <button class="ghost" id="week-ics" type="button" title="A hét vacsorái a naptáradba (.ics)">📅 Naptárba</button>
         </div>
       </div>
       <div class="week-compare" id="week-compare" aria-label="Ugyanez a hét a többi boltban"></div>
@@ -74,6 +77,7 @@
       </div>
       <div class="list-tools">
         <div class="progress" id="list-progress" aria-live="polite"></div>
+        <label class="check-line inline hide-done-toggle"><input type="checkbox" id="list-hide-done"> <span>Kipipáltak elrejtése</span></label>
         <button class="ghost small" id="list-share" type="button">Megosztás</button>
       </div>
       <section class="extras" aria-labelledby="extras-title">

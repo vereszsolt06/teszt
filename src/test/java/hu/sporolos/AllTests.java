@@ -615,6 +615,34 @@ public final class AllTests {
         eq("Vöröshagyma", in.get("label"), "az eredeti objektum nem változik");
     }
 
+    static void testRateLimit() throws Exception {
+        Path dir = Files.createTempDirectory("sporolos");
+        PriceRepository repo = new PriceRepository(CATALOG, List.of(new DemoPriceProvider(CATALOG, LocalDate.now())),
+                new PriceHistory(new FileStorage(dir), 28), new PromoStore(dir.resolve("akciok"), List.of()), Duration.ofHours(1));
+        WebServer server = new WebServer(repo, new FileStorage(dir)).rateLimit(5, false);
+        int port = server.start("127.0.0.1", 0);
+        try {
+            HttpClient c = HttpClient.newHttpClient();
+            String base = "http://127.0.0.1:" + port;
+            int ok = 0, limited = 0;
+            String retry = null, body = null;
+            for (int i = 0; i < 8; i++) {
+                HttpResponse<String> r = c.send(HttpRequest.newBuilder(URI.create(base + "/api/markets?lang=en")).build(),
+                        HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+                if (r.statusCode() == 200) ok++;
+                if (r.statusCode() == 429) { limited++; retry = r.headers().firstValue("Retry-After").orElse(null); body = r.body(); }
+            }
+            // percváltáskor egy újabb ablak indulhat: legalább 5 átmegy, és a többi korlátozott
+            check(ok >= 5 && limited >= 1 && ok + limited == 8, "5 kérés/perc után 429 (" + ok + " ok, " + limited + " korlátozva)");
+            check(retry != null && Integer.parseInt(retry) >= 1, "Retry-After fejléc");
+            check(body.contains("Too many requests"), "angol üzenet");
+            get(c, base + "/app.js", 200); // a statikus fájlokat nem korlátozza
+            get(c, base + "/healthz", 200);
+        } finally {
+            server.stop();
+        }
+    }
+
     static void testWebServerLanguageAndCaching() throws Exception {
         Path dir = Files.createTempDirectory("sporolos");
         PriceRepository repo = new PriceRepository(CATALOG, List.of(new DemoPriceProvider(CATALOG, LocalDate.now())),
