@@ -349,4 +349,5 @@ I18N.de = {
   "A recept linkje a vágólapra került.": "Rezept-Link kopiert.",
   "🖨 Nyomtatás": "🖨 Drucken",
   "Értesítések": "Hinweise",
+  "Valami nem sikerült. Ha nem működik rendesen, frissítsd az oldalt.": "Etwas ist schiefgelaufen. Wenn etwas nicht richtig funktioniert, lade die Seite neu.",
 };

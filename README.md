@@ -87,7 +87,59 @@ Parancssorból (`-Dport=9000`), környezeti változóval (`PORT=9000`) vagy egy 
 | `cijene.url` | `CIJENE_URL` | `https://api.cijene.dev/v0/list` | a horvát napi archívumok listája |
 | `cijene.file` | `CIJENE_FILE` | – | kézzel letöltött horvát napi archívum (ZIP); ha meg van adva, nem tölt le |
 | `rate.limit` | `RATE_LIMIT` | `600` | API-kérés / perc / IP-cím (0 = nincs korlát); túllépéskor 429 `Retry-After`-rel |
-| `trust.proxy` | `TRUST_PROXY` | `false` | reverse proxy / terheléselosztó mögött a kliens címe az `X-Forwarded-For`-ból (csak ha a proxy állítja be) |
+| `trust.proxy` | `TRUST_PROXY` | `false` | reverse proxy / terheléselosztó mögött a kliens címe az `X-Forwarded-For`-ból, a HTTPS az `X-Forwarded-Proto`-ból (csak ha a proxy állítja be) |
+| `max.concurrent` | `MAX_CONCURRENT` | `64` | egyszerre feldolgozott API-kérések; a többi legfeljebb 5 s-ig vár, aztán 503 + `Retry-After` |
+| `db.pool.size` | `DB_POOL_SIZE` | `10` | legfeljebb ennyi PostgreSQL-kapcsolat példányonként (a PostgreSQL alapból 100-at enged, az összes példányra) |
+| `log.requests` | `LOG_REQUESTS` | `true` | kérésnapló a kimenetre (idő, státusz, útvonal, ms, kérésazonosító; a profil-azonosító kitakarva) |
+| – | `JAVA_OPTS` | – | Dockerben további JVM-kapcsolók (pl. `-XX:MaxRAMPercentage=60`) |
+
+Hibás érték (pl. `PORT=abc`, `SOURCE=xyz`) esetén az app nem indul el, hanem megmondja, mi a baj (kilépési kód 2). Ha a `PORT` meg van adva, és foglalt, az app nem vált csendben másik portra.
+
+## Éles üzem
+
+Az app egyetlen JAR (vagy Docker-kép), külső függőség nélkül. Élesben így érdemes futtatni:
+
+```
+internet ──HTTPS──▶ reverse proxy (Caddy / nginx / felhős LB) ──HTTP──▶ app :8080 (1…n példány) ──▶ PostgreSQL
+```
+
+**1. TLS a proxyn.** Az app maga nem kezel tanúsítványt; a proxy végzi a HTTPS-t, és az appnak `TRUST_PROXY=true`-t kell kapnia, hogy a kliens IP-címét (kéréskorlát) és a HTTPS-t (HSTS fejléc) a proxytól vegye. Caddyvel (automatikus Let's Encrypt-tanúsítvány):
+
+```
+sporolos.example.com {
+    encode gzip
+    # az admin felület és a metrikák csak belső hálózatról (ajánlott)
+    @kivulrol {
+        path /admin /admin/* /api/admin/* /metrics
+        not remote_ip private_ranges
+    }
+    respond @kivulrol 403
+    reverse_proxy app:8080
+}
+```
+
+nginx-szel ugyanez: `proxy_pass http://app:8080;` mellett `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;` és `proxy_set_header X-Forwarded-Proto $scheme;`.
+
+**2. Beállítások élesben:** `HOST=0.0.0.0`, `DATABASE_URL=postgres://…`, `ADMIN_PASSWORD` (legalább 12 karakter – rövidebbre az app figyelmeztet), `TRUST_PROXY=true`. A többi alapértéke éles üzemre van hangolva.
+
+**3. Mit véd az app maga** (a proxy mögött is):
+- biztonsági fejlécek minden válaszon: szigorú `Content-Security-Policy` (csak saját forrás, nincs inline szkript, keretbe nem tehető), `X-Frame-Options: DENY`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`; HTTPS-proxy mögött `Strict-Transport-Security`; az API-válaszok `Cache-Control: no-store`;
+- kéréskorlát IP-címenként (`RATE_LIMIT`), az admin-belépésre külön (10 próbálkozás / perc / IP), a lejárt admin-munkamenetek takarítása;
+- terhelésszabályozás: egyszerre legfeljebb `MAX_CONCURRENT` API-kérés, PostgreSQL-ből legfeljebb `DB_POOL_SIZE` kapcsolat; túlterhelésnél 503 + `Retry-After` (a kliens újrapróbálhatja), nem omlik össze;
+- bemenet: kéréstörzs legfeljebb 64 KB (admin: 1 MB), JSON legfeljebb 64 szint mélyen (a mélyebb `[[[[…` nem okozhat veremtúlcsordulást), hibás JSON-ra 400; minden hibára (akár `Error`-ra is) érkezik válasz, a kapcsolat nem marad nyitva;
+- időkorlátok a lassan csöpögtetett kérések (slowloris) ellen: kérés beolvasása 30 s, válasz 120 s, üresjárat 30 s;
+- a nem létező útvonalak nem kerülnek memóriába (véletlen URL-ekkel nem tölthető tele), a statikus fájlok egyszer tömörítve, ETag-gel.
+
+**4. Leállás és frissítés.** SIGTERM-re (`docker stop`, Kubernetes) új kérést nem fogad, a futókat legfeljebb 5 s-ig befejezi, lezárja az adatbázis-kapcsolatokat. Az adatbázis-séma induláskor magától frissül (zárral: egyszerre csak egy példány migrál), így a gördülő frissítés (egyesével cserélt példányok) működik. A Docker-kép memóriahibánál kilép (`ExitOnOutOfMemoryError`), az orchestrátor újraindítja.
+
+**5. Skálázás.** PostgreSQL-lel az app állapotmentes: több példány futhat a terheléselosztó mögött, a háztartások adatai közösek. Minden példány maga tölti az árakat (magyar: néhány MB; a horvát archívum feldolgozása 300–500 MB átmenetileg), és maga számolja a heti tervet (≈ 0,1 s / kérés). Kiinduló méret: 1 GB memória, 1–2 vCPU példányonként. Fájlos tárolással (`DATABASE_URL` nélkül) csak egy példány fusson.
+
+**6. Megfigyelés.**
+- `GET /healthz` – él-e (`{"ok":true,"version":…,"uptimeSeconds":…}`); a Docker `HEALTHCHECK` ezt hívja.
+- `GET /metrics` – Prometheus-formátum: kérések útvonal és státuszosztály szerint, válaszidő-összeg és -darabszám, folyamatban lévő kérések, szabad helyek, elutasítások oka szerint (`rate_limit`, `login_limit`, `overload`, `db_busy`), betöltött árak és koruk országonként, demó mód, adatbázis-kapcsolatok, JVM-memória, verzió. Érdemes a proxyn belső hálózatra korlátozni.
+- Napló (stdout): induláskor a verzió és az erőforrások; kérésenként egy sor (`2026-11-04T10:00:00Z 200 GET /api/week?id=***&lang=en 12ms rid=8fadf385b8`); hibánál a kérésazonosítóval (`rid`) együtt a verem. A válasz `X-Request-Id` fejléce ugyanez – egy felhasználói hibajelentés így visszakereshető.
+
+**7. Mentés.** PostgreSQL-nél a `pg_dump` (pl. naponta: `docker compose exec -T db pg_dump -U sporolos sporolos | gzip > mentes-$(date +%F).sql.gz`); fájlos módban a `data/` mappa. Mentendő: a háztartások beállításai, értékelései, heti tervei, pipái, az árelőzmény, a kézi akciók és az adminban szerkesztett receptek. Személyes adat (név, e-mail) nincs; a háztartás-azonosító viszont titok (aki ismeri, látja a listát), ezért a napló kitakarja.
 
 ## Mit tud
 
@@ -329,6 +381,7 @@ src/main/java/hu/sporolos/
   web/   WebServer, ApiMapper    REST API + statikus fájlok (ETag), /healthz
          AdminApi                admin végpontok: belépés, áttekintés, recept- és alapanyag-szerkesztés
          Household               a háztartás beállításai, ellenőrzés, alapértékek
+         RateLimiter, Metrics    kéréskorlát IP-címenként; Prometheus-metrikák (/metrics)
 src/main/resources/
   data/products.json, recipes.json
   markets/hr.json                Horvátország: láncok, illesztési szabályok, magyar → horvát keresőszavak
@@ -349,7 +402,7 @@ Dockerfile, docker-compose.yml   konténer: app + postgres:16
 ./build.sh test        # Windows: build.cmd test
 ```
 
-43 teszt fut le:
+47 teszt fut le:
 - JSON- és xlsx-olvasás, az Árfigyelő-fejléc felismerése, egységátváltás;
 - mind a négy jó ár jel, valamint az elérhetőség hatása;
 - a kiszerelés-modell: tojásdoboz vagy tálca, mérlegelős áru minimum egy darabbal, „ca. 500g”, csak csomagolt liszt, darab ↔ kg (paprika, zsemle), csomós zöldség, tűrés, a nagy kiszerelés határa;
@@ -366,6 +419,7 @@ Dockerfile, docker-compose.yml   konténer: app + postgres:16
 - országok: forint- és eurós pénzformázás (a kérés szála szerint); a horvát névillesztés 31 valódi (a láncok listáiból vett) terméknéven, köztük olyanokon, amelyek *nem* alapanyagok (felvágott, kész étel, csokoládé, állateledel, habfürdő); egy valósághű horvát napi archívum feldolgozása (darabos tojás, mérlegelős csirkemell, akciós ár üres árral, idézőjeles-vesszős név, a drogéria kihagyása, két láncban ugyanaz a vonalkód), majd a teljes app horvát árakkal: 503 „töltődik”, euró, horvát boltok, magyar keresőszó, horvát bolti akció, vissza magyarra;
 - heti terv: a napok dátuma és neve, a hét kezdete, változatosság (jellegzetes alapanyag egyszer, krumpli legfeljebb kétszer), csere-javaslatok (nincsenek már a héten, a hét új ára közel a tényleges árhoz), választás után a többi nap és a kezdőnap marad, maradéknapnál a főzős nap javaslatai;
 - admin: rossz jelszó 401, jó jelszó token; az akció- és a frissítés-végpont token nélkül 401; receptmódosítás mentése, tárolóba írása és azonnali érvényesülése; hibás recept 400; előnézet figyelmeztetéssel; új / ismételt / törölt recept; alapanyag kizáró szóval kevesebb találat; használt alapanyag nem törölhető; visszaállás a beépítettre; az `/admin` oldal kiszolgálása;
+- éles üzem: ellenséges JSON (100 000 szint mély, lezáratlan szöveg, hibás escape, túl nagy szám) → 400, nem veremtúlcsordulás; túl nagy törzs; biztonsági fejlécek (CSP, X-Frame-Options, nosniff, Referrer-Policy, kérésazonosító), HSTS csak HTTPS-proxy mögött, API `no-store`; 300 véletlen URL után sem nő a statikus gyorsítótár; előre tömörített `app.js` kibontva helyes; admin-belépés: 14 párhuzamos próbálkozásból legalább 4 → 429; metrikák (útvonal, státusz, elutasítás oka, árak betöltve); terhelésszabályozás: egy lassan feltöltött kérés mellett a következő 503 + `Retry-After`, utána újra működik; a napló kitakarja a profil-azonosítót;
 - német: minden recept / lépés / alapanyag, mértékek (dl → ml), keresés („milch” → tej), napnév;
 - horvát: minden recept / lépés / alapanyag, háromalakú többes szám (1, 3, 5, 12, 21), európai számformátum, a dl marad; keresés nyelvek között (angol → magyar, horvát → magyar, kifejezés egyben, alapanyagnév visszafelé, horvát boltban „coffee” → kava, „kava” marad); kéréskorlát (429, `Retry-After`, angol üzenet, a statikus fájlokat és a `/healthz`-t nem korlátozza);
 - többnyelvűség: nyelvfelismerés (`?lang=`, `Accept-Language`), minden recept, lépés és alapanyag angol fordítása megvan, a generált mondatok (akció-indoklás, mérlegelős mennyiség, forint és euró, dkg → g, dl → ml, egyes/többes szám, fűszerlista), a terméknév változatlan, az azonosítók és a szűrőkulcsok maradnak, a pipák kulcsa nyelvfüggetlen; a webszerveren angol recept és hibaüzenet, a magyar válasz egy angol kérés után is magyar, `/healthz`, ETag és 304;

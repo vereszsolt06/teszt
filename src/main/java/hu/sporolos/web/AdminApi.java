@@ -51,6 +51,8 @@ final class AdminApi {
     private final CatalogSource source;
     private final byte[] passwordHash;
     private final Map<String, Instant> tokens = new ConcurrentHashMap<>();
+    /** Egyszerre ennyi érvényes admin-munkamenet lehet (a belépést IP-címenként a webszerver is korlátozza). */
+    static final int MAX_TOKENS = 1000;
     private final SecureRandom rnd = new SecureRandom();
 
     private Runnable afterCatalogChange = () -> { };
@@ -83,7 +85,11 @@ final class AdminApi {
         byte[] t = new byte[24];
         rnd.nextBytes(t);
         String token = HexFormat.of().formatHex(t);
-        tokens.put(token, Instant.now().plusSeconds(TOKEN_TTL_SECONDS));
+        // a lejárt tokeneket itt takarítjuk (különben minden belépés egy örökre megmaradó bejegyzés lenne)
+        Instant now = Instant.now();
+        tokens.values().removeIf(exp -> exp.isBefore(now));
+        if (tokens.size() >= MAX_TOKENS) tokens.clear(); // végső biztosíték: mindenki újra belép
+        tokens.put(token, now.plusSeconds(TOKEN_TTL_SECONDS));
         return Map.of("token", token);
     }
 

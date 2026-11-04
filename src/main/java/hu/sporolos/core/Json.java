@@ -28,11 +28,26 @@ public final class Json {
         return v;
     }
 
+    /**
+     * Ennél mélyebb egymásba ágyazást nem fogadunk el: a rekurzív olvasó különben egy „[[[[…” kéréstől
+     * StackOverflowError-ral állna le (ami nem Exception, így a kérés válasz nélkül maradna).
+     */
+    static final int MAX_DEPTH = 64;
+
     private static final class Parser {
         final String s;
         int pos;
+        int depth;
 
         Parser(String s) { this.s = s; }
+
+        IllegalArgumentException error(String what) {
+            return new IllegalArgumentException(what + ", pozíció: " + pos);
+        }
+
+        void enter() {
+            if (++depth > MAX_DEPTH) throw error("Túl mélyen egymásba ágyazott JSON");
+        }
 
         void skipWs() {
             while (pos < s.length() && Character.isWhitespace(s.charAt(pos))) pos++;
@@ -63,10 +78,11 @@ public final class Json {
         }
 
         Map<String, Object> object() {
+            enter();
             Map<String, Object> m = new LinkedHashMap<>();
             pos++; // {
             skipWs();
-            if (peek() == '}') { pos++; return m; }
+            if (peek() == '}') { pos++; depth--; return m; }
             while (true) {
                 skipWs();
                 String key = string();
@@ -78,23 +94,24 @@ public final class Json {
                 skipWs();
                 char c = peek();
                 pos++;
-                if (c == '}') return m;
+                if (c == '}') { depth--; return m; }
                 if (c != ',') throw new IllegalArgumentException("',' vagy '}' hiányzik, pozíció: " + pos);
             }
         }
 
         List<Object> array() {
+            enter();
             List<Object> l = new ArrayList<>();
             pos++; // [
             skipWs();
-            if (peek() == ']') { pos++; return l; }
+            if (peek() == ']') { pos++; depth--; return l; }
             while (true) {
                 skipWs();
                 l.add(value());
                 skipWs();
                 char c = peek();
                 pos++;
-                if (c == ']') return l;
+                if (c == ']') { depth--; return l; }
                 if (c != ',') throw new IllegalArgumentException("',' vagy ']' hiányzik, pozíció: " + pos);
             }
         }
@@ -104,9 +121,11 @@ public final class Json {
             pos++;
             StringBuilder sb = new StringBuilder();
             while (true) {
+                if (pos >= s.length()) throw error("Lezáratlan szöveg a JSON-ban");
                 char c = s.charAt(pos++);
                 if (c == '"') return sb.toString();
                 if (c == '\\') {
+                    if (pos >= s.length()) throw error("Lezáratlan szöveg a JSON-ban");
                     char e = s.charAt(pos++);
                     switch (e) {
                         case '"', '\\', '/' -> sb.append(e);
@@ -116,6 +135,7 @@ public final class Json {
                         case 'r' -> sb.append('\r');
                         case 't' -> sb.append('\t');
                         case 'u' -> {
+                            if (pos + 4 > s.length()) throw error("Hibás \\u escape");
                             sb.append((char) Integer.parseInt(s.substring(pos, pos + 4), 16));
                             pos += 4;
                         }
@@ -132,7 +152,11 @@ public final class Json {
             while (pos < s.length() && "+-0123456789.eE".indexOf(s.charAt(pos)) >= 0) pos++;
             String n = s.substring(start, pos);
             if (n.isEmpty()) throw new IllegalArgumentException("Váratlan karakter, pozíció: " + start);
-            if (n.contains(".") || n.contains("e") || n.contains("E")) return Double.parseDouble(n);
+            if (n.contains(".") || n.contains("e") || n.contains("E")) {
+                double d = Double.parseDouble(n);
+                if (Double.isInfinite(d)) throw error("Túl nagy szám");
+                return d;
+            }
             return Long.parseLong(n);
         }
     }

@@ -363,4 +363,5 @@ I18N.en = {
   "A recept linkje a vágólapra került.": "Recipe link copied.",
   "🖨 Nyomtatás": "🖨 Print",
   "Értesítések": "Notifications",
+  "Valami nem sikerült. Ha nem működik rendesen, frissítsd az oldalt.": "Something went wrong. If things don't work properly, reload the page.",
 };

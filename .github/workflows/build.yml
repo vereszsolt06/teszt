@@ -25,6 +25,10 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
+      - name: A böngészős JavaScript szintaxisa
+        run: for f in src/main/resources/static/*.js src/main/resources/static/lang/*.js; do node --check "$f"; done
+      - name: A nyelvi fájlok érvényes JSON-ok
+        run: for f in src/main/resources/i18n/*.json src/main/resources/markets/*.json src/main/resources/data/*.json; do python3 -m json.tool "$f" > /dev/null; done
       - name: Fordítás és tesztek (PostgreSQL-lel együtt)
         env:
           PG_TEST_URL: postgres://teszt:teszt-jelszo@127.0.0.1:5432/teszt
@@ -41,15 +45,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Docker-kép építése
-        run: docker build -t sporolos-konyha .
+        run: docker build --build-arg VERSION=${GITHUB_SHA::7} -t sporolos-konyha .
       - name: docker compose – indul és válaszol
         run: |
-          docker compose up -d --build
+          VERSION=${GITHUB_SHA::7} docker compose up -d --build
           for i in $(seq 1 60); do curl -fs http://127.0.0.1:8080/api/status >/dev/null && break; sleep 2; done
+          curl -fs http://127.0.0.1:8080/healthz; echo
+          curl -fs http://127.0.0.1:8080/metrics | grep sporolos_prices_loaded
+          curl -fsI http://127.0.0.1:8080/ | grep -i content-security-policy
           curl -fs http://127.0.0.1:8080/api/status | head -c 300; echo
           curl -fs -X POST -H 'Content-Type: application/json' -d '{"store":"lidl","onboarded":true}' http://127.0.0.1:8080/api/profile | tee profile.json
           docker compose logs app | tail -20
           docker compose exec -T db psql -U sporolos -d sporolos -c "select count(*) as haztartas from household"
+          # szabályos leállás SIGTERM-re
+          docker compose stop app
+          docker compose logs app | grep "Leállt"
       - name: Leállítás
         if: always()
         run: docker compose down

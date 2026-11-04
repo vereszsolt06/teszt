@@ -2105,6 +2105,23 @@ async function afterProfile() {
   if (state.view !== "het" && state.view !== "lista") loadWeek().catch((e) => toast(e.message));
 }
 
+/**
+ * Váratlan hiba (programhiba, kezeletlen Promise): a felhasználó egy rövid üzenetet kap ahelyett, hogy egy némán
+ * megakadt oldalt látna – legfeljebb 10 másodpercenként egyet, és csak a saját szkriptjeink hibáira (a böngésző-
+ * bővítményekéire nem). A részletek a konzolban maradnak.
+ */
+let lastCrashToast = 0;
+function reportUnexpected(err, source) {
+  if (source && !String(source).startsWith(location.origin)) return;
+  if (err && err.offline) return; // az offline állapotot külön jelezzük
+  const now = Date.now();
+  if (now - lastCrashToast < 10000) return;
+  lastCrashToast = now;
+  try { toast(t("Valami nem sikerült. Ha nem működik rendesen, frissítsd az oldalt.")); } catch (e) { /* a toast sem elérhető */ }
+}
+window.addEventListener("error", (e) => reportUnexpected(e.error, e.filename));
+window.addEventListener("unhandledrejection", (e) => reportUnexpected(e.reason, location.origin));
+
 /** Offline jelzés a fejléc alatt; újra online állapotban a sorban álló pipák felmennek. */
 function bindConnectivity() {
   const show = () => {

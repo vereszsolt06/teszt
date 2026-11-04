@@ -13,9 +13,11 @@ find src/main/java -name '*.java' > target/sources.txt
 javac -encoding UTF-8 --release 21 -d target/classes @target/sources.txt
 cp -r src/main/resources/. target/classes/
 
-printf 'Main-Class: hu.sporolos.App\n' > target/manifest.txt
+# verzió: a VERSION változóból (Docker build-arg), különben git-ből, különben a mai dátum
+VERSION="${VERSION:-$(git describe --tags --always --dirty 2>/dev/null || date +%Y%m%d)}"
+printf 'Main-Class: hu.sporolos.App\nImplementation-Title: Sporolos Konyha\nImplementation-Version: %s\n' "$VERSION" > target/manifest.txt
 jar cfm target/sporolos-konyha.jar target/manifest.txt -C target/classes .
-echo "Kész: target/sporolos-konyha.jar"
+echo "Kész: target/sporolos-konyha.jar ($VERSION)"
 
 case "$1" in
   test)

@@ -627,6 +627,140 @@ public final class AllTests {
         eq("Vöröshagyma", in.get("label"), "az eredeti objektum nem változik");
     }
 
+    static void testJsonRejectsHostileInput() {
+        String deep = "[".repeat(100_000) + "]".repeat(100_000);
+        try {
+            Json.parse(deep);
+            check(false, "mély JSON-t elutasít");
+        } catch (IllegalArgumentException e) {
+            check(e.getMessage().contains("mélyen"), "mély JSON → IllegalArgumentException (nem StackOverflowError)");
+        }
+        String ok = "[".repeat(60) + "]".repeat(60);
+        Json.parse(ok); // 60 szint még belefér
+        for (String bad : List.of("\"lezáratlan", "{\"a\":\"x\\", "\"\\u12\"", "1e999", "[1,2", "{\"a\" 1}")) {
+            try {
+                Json.parse(bad);
+                check(false, "hibás JSON elfogadva: " + bad);
+            } catch (IllegalArgumentException e) {
+                // jó: 400-as hiba lesz belőle, nem 500
+            }
+        }
+    }
+
+    static void testProductionHardening() throws Exception {
+        Path dir = Files.createTempDirectory("sporolos");
+        PriceRepository repo = new PriceRepository(CATALOG, List.of(new DemoPriceProvider(CATALOG, LocalDate.now())),
+                new PriceHistory(new FileStorage(dir), 28), new PromoStore(dir.resolve("akciok"), List.of()), Duration.ofHours(1));
+        WebServer server = new WebServer(repo, new FileStorage(dir), null, "titkos-jelszo").rateLimit(0, true);
+        int port = server.start("127.0.0.1", 0);
+        try {
+            HttpClient c = HttpClient.newHttpClient();
+            String base = "http://127.0.0.1:" + port;
+            // 1. mély / hibás / túl nagy törzs: 400, a szerver válaszol és tovább működik
+            String deep = send(c, "POST", base + "/api/profile", "[".repeat(200_000), 400);
+            check(deep.contains("error"), "mély JSON → 400");
+            send(c, "POST", base + "/api/profile", "{\"people\":\"lezáratlan", 400);
+            send(c, "POST", base + "/api/profile", "{\"x\":\"" + "a".repeat(70_000) + "\"}", 400);
+            Map<String, Object> prof = Json.obj(Json.parse(send(c, "POST", base + "/api/profile", "{\"onboarded\":true}", 200)));
+            check(prof.get("id") != null, "utána is működik");
+
+            // 2. biztonsági fejlécek (statikus és API), API nem gyorsítótárazható
+            HttpResponse<String> page = c.send(HttpRequest.newBuilder(URI.create(base + "/")).build(), HttpResponse.BodyHandlers.ofString());
+            var h = page.headers();
+            check(h.firstValue("Content-Security-Policy").orElse("").contains("frame-ancestors 'none'"), "CSP");
+            eq("DENY", h.firstValue("X-Frame-Options").orElse(""), "X-Frame-Options");
+            eq("nosniff", h.firstValue("X-Content-Type-Options").orElse(""), "nosniff");
+            eq("same-origin", h.firstValue("Referrer-Policy").orElse(""), "Referrer-Policy");
+            check(h.firstValue("X-Request-Id").orElse("").length() >= 6, "kérésazonosító");
+            check(h.firstValue("Strict-Transport-Security").isEmpty(), "HTTP-n nincs HSTS");
+            HttpResponse<String> api = c.send(HttpRequest.newBuilder(URI.create(base + "/api/markets"))
+                    .header("X-Forwarded-Proto", "https").build(), HttpResponse.BodyHandlers.ofString());
+            eq("no-store", api.headers().firstValue("Cache-Control").orElse(""), "API: no-store");
+            check(api.headers().firstValue("Strict-Transport-Security").isPresent(), "HTTPS-proxy mögött HSTS");
+
+            // 3. véletlen URL-ek nem töltik a memóriát; a statikus szöveg előre tömörítve jön
+            for (int i = 0; i < 300; i++) get(c, base + "/nincs-ilyen-" + i + ".js", 404);
+            check(WebServer.staticCacheSize() < 100, "a hiányzó útvonalak nincsenek a gyorsítótárban: " + WebServer.staticCacheSize());
+            HttpResponse<byte[]> gz = c.send(HttpRequest.newBuilder(URI.create(base + "/app.js")).header("Accept-Encoding", "gzip").build(),
+                    HttpResponse.BodyHandlers.ofByteArray());
+            eq("gzip", gz.headers().firstValue("Content-Encoding").orElse(""), "gzip");
+            String js = new String(new java.util.zip.GZIPInputStream(new ByteArrayInputStream(gz.body())).readAllBytes(), StandardCharsets.UTF_8);
+            check(js.contains("function ft("), "a tömörített app.js kibontva helyes");
+
+            // 4. admin-belépés: IP-címenként percenként legfeljebb 10 próbálkozás (párhuzamosan is)
+            List<java.util.concurrent.CompletableFuture<HttpResponse<String>>> tries = new ArrayList<>();
+            for (int i = 0; i < 14; i++) {
+                tries.add(c.sendAsync(HttpRequest.newBuilder(URI.create(base + "/api/admin/login"))
+                        .POST(HttpRequest.BodyPublishers.ofString("{\"password\":\"rossz" + i + "\"}")).build(), HttpResponse.BodyHandlers.ofString()));
+            }
+            long limited = tries.stream().map(java.util.concurrent.CompletableFuture::join).filter(r -> r.statusCode() == 429).count();
+            check(limited >= 4, "a 10. utáni próbálkozások 429-et kapnak: " + limited);
+
+            // 5. metrikák
+            check(get(c, base + "/metrics", 200).contains("sporolos_prices_loaded{market=\"hu\"} 0"), "még nincs ár betöltve");
+            get(c, base + "/api/status", 200);
+            String metrics = get(c, base + "/metrics", 200);
+            check(metrics.contains("sporolos_http_requests_total{route=\"/api/profile\",status=\"2xx\"}"), "kérésszámláló");
+            check(metrics.contains("sporolos_http_requests_total{route=\"/api/profile\",status=\"4xx\"}"), "hibaszámláló");
+            check(metrics.contains("sporolos_http_rejected_total{reason=\"login_limit\"}"), "elutasítás oka");
+            check(metrics.contains("sporolos_prices_loaded{market=\"hu\"} 1"), "árak betöltve");
+            check(!metrics.contains("nincs-ilyen"), "véletlen URL nem lesz metrika-címke");
+        } finally {
+            server.stop();
+        }
+    }
+
+    static void testBackpressure() throws Exception {
+        Path dir = Files.createTempDirectory("sporolos");
+        PriceRepository repo = new PriceRepository(CATALOG, List.of(new DemoPriceProvider(CATALOG, LocalDate.now())),
+                new PriceHistory(new FileStorage(dir), 28), new PromoStore(dir.resolve("akciok"), List.of()), Duration.ofHours(1));
+        WebServer server = new WebServer(repo, new FileStorage(dir)).maxConcurrent(1).queueWait(300);
+        int port = server.start("127.0.0.1", 0);
+        try {
+            HttpClient c = HttpClient.newHttpClient();
+            String base = "http://127.0.0.1:" + port;
+            // az egyetlen helyet egy lassan feltöltött kéréstörzs foglalja (a szerver a beolvasás alatt dolgozik rajta)
+            var slow = new java.util.concurrent.Flow.Publisher<java.nio.ByteBuffer>() {
+                @Override
+                public void subscribe(java.util.concurrent.Flow.Subscriber<? super java.nio.ByteBuffer> s) {
+                    s.onSubscribe(new java.util.concurrent.Flow.Subscription() {
+                        int sent;
+                        @Override public void request(long n) {
+                            new Thread(() -> {
+                                try {
+                                    Thread.sleep(sent == 0 ? 0 : 900);
+                                } catch (InterruptedException ignored) { }
+                                if (sent++ == 0) s.onNext(java.nio.ByteBuffer.wrap("{\"onboarded\":".getBytes(StandardCharsets.UTF_8)));
+                                else { s.onNext(java.nio.ByteBuffer.wrap("true}".getBytes(StandardCharsets.UTF_8))); s.onComplete(); }
+                            }).start();
+                        }
+                        @Override public void cancel() { }
+                    });
+                }
+            };
+            var first = c.sendAsync(HttpRequest.newBuilder(URI.create(base + "/api/profile"))
+                    .POST(HttpRequest.BodyPublishers.fromPublisher(slow)).build(), HttpResponse.BodyHandlers.ofString());
+            Thread.sleep(250);
+            HttpResponse<String> second = c.send(HttpRequest.newBuilder(URI.create(base + "/api/markets")).build(), HttpResponse.BodyHandlers.ofString());
+            eq(503, second.statusCode(), "foglalt szervernél 503");
+            check(second.headers().firstValue("Retry-After").isPresent(), "Retry-After");
+            eq(200, first.join().statusCode(), "a lassú kérés is befejeződik");
+            get(c, base + "/api/markets", 200); // a hely felszabadult
+            get(c, base + "/app.js", 200);      // a statikus fájlokat nem korlátozza
+        } finally {
+            server.stop();
+        }
+    }
+
+    static void testLogRedaction() {
+        eq("/api/week?id=***&lang=en", WebServer.redactForTest("/api/week?id=abcdefghjk23456789mn&lang=en"), "profil-azonosító kitakarva");
+        eq("/api/extras?id=***&n=3", WebServer.redactForTest("/api/extras?id=x&n=3"), "több paraméter");
+        eq("/api/check?lang=hu&id=***", WebServer.redactForTest("/api/check?lang=hu&id=abc"), "nem az első paraméter");
+        eq("/api/recipe?id=paprikas-csirke&store=aldi", WebServer.redactForTest("/api/recipe?id=paprikas-csirke&store=aldi"), "a receptazonosító nem titok");
+        eq("/api/status", WebServer.redactForTest("/api/status"), "paraméter nélkül");
+        eq("/api/search?q=tej&lang=hu", WebServer.redactForTest("/api/search?q=tej&lang=hu"), "más paraméter marad");
+    }
+
     static void testRateLimit() throws Exception {
         Path dir = Files.createTempDirectory("sporolos");
         PriceRepository repo = new PriceRepository(CATALOG, List.of(new DemoPriceProvider(CATALOG, LocalDate.now())),
@@ -676,7 +810,10 @@ public final class AllTests {
             String deals = get(c, base + "/api/deals?store=lidl", 200);
             check(!deals.contains("cheaper"), "a magyar akció-indoklás magyar maradt");
 
-            eq("{\"ok\":true,\"markets\":[\"hu\"]}", get(c, base + "/healthz", 200), "állapot-végpont");
+            Map<String, Object> health = Json.obj(Json.parse(get(c, base + "/healthz", 200)));
+            eq(true, health.get("ok"), "állapot-végpont");
+            eq(List.of("hu"), health.get("markets"), "piacok");
+            check(health.containsKey("version") && health.containsKey("uptimeSeconds"), "verzió és üzemidő");
             HttpResponse<String> js = c.send(HttpRequest.newBuilder(URI.create(base + "/app.js")).build(), HttpResponse.BodyHandlers.ofString());
             String etag = js.headers().firstValue("ETag").orElse("");
             check(!etag.isEmpty(), "ETag a statikus fájlon");

@@ -15,7 +15,11 @@ dir /s /b src\main\java\*.java > target\sources.txt
 javac -encoding UTF-8 --release 21 -d target\classes @target\sources.txt || exit /b 1
 xcopy /e /i /q /y src\main\resources target\classes >nul
 
+if "%VERSION%"=="" for /f %%v in ('git describe --tags --always --dirty 2^>nul') do set VERSION=%%v
+if "%VERSION%"=="" set VERSION=dev
 echo Main-Class: hu.sporolos.App> target\manifest.txt
+echo Implementation-Title: Sporolos Konyha>> target\manifest.txt
+echo Implementation-Version: %VERSION%>> target\manifest.txt
 jar cfm target\sporolos-konyha.jar target\manifest.txt -C target\classes . || exit /b 1
 echo Kesz: target\sporolos-konyha.jar
 

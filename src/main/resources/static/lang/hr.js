@@ -349,4 +349,5 @@ I18N.hr = {
   "A recept linkje a vágólapra került.": "Poveznica recepta je kopirana.",
   "🖨 Nyomtatás": "🖨 Ispis",
   "Értesítések": "Obavijesti",
+  "Valami nem sikerült. Ha nem működik rendesen, frissítsd az oldalt.": "Nešto nije uspjelo. Ako ne radi kako treba, osvježi stranicu.",
 };

@@ -99,15 +99,34 @@ public final class PgStorage implements Storage {
 
     private final String url;
     private final Deque<PgClient> pool = new ArrayDeque<>();
-    private static final int MAX_IDLE = 4;
+    /**
+     * Egyszerre legfeljebb ennyi kapcsolat lehet nyitva. A webszerver kérésenként virtuális szálat indít, ezért a
+     * párhuzamos kérések száma nem korlátozza a kapcsolatokat – a PostgreSQL alapból 100-at enged, és több
+     * app-példány osztozik rajta. Aki nem kap kapcsolatot {@link #ACQUIRE_TIMEOUT_MS} alatt, hibát kap (503).
+     */
+    private final java.util.concurrent.Semaphore permits;
+    private final int maxIdle;
+    static final long ACQUIRE_TIMEOUT_MS = 10_000;
 
-    private PgStorage(String url) {
+    /** Nincs szabad adatbázis-kapcsolat: a szerver túlterhelt (a webszerver 503-mal válaszol). */
+    public static final class Busy extends IOException {
+        Busy() { super("Az adatbázis most túlterhelt – próbáld újra pár másodperc múlva."); }
+    }
+
+    private PgStorage(String url, int poolSize) {
         this.url = url;
+        this.permits = new java.util.concurrent.Semaphore(Math.max(1, poolSize), true);
+        this.maxIdle = Math.max(1, poolSize);
     }
 
     /** Kapcsolódik (indításkor a DB-konténer lassabb lehet: néhányszor újrapróbálja), és frissíti a sémát. */
     public static PgStorage open(String url, int attempts) throws IOException {
-        PgStorage s = new PgStorage(url);
+        return open(url, attempts, 10);
+    }
+
+    /** Mint {@link #open(String, int)}, legfeljebb {@code poolSize} egyidejű kapcsolattal. */
+    public static PgStorage open(String url, int attempts, int poolSize) throws IOException {
+        PgStorage s = new PgStorage(url, poolSize);
         IOException last = null;
         for (int i = 0; i < Math.max(1, attempts); i++) {
             try {
@@ -161,21 +180,31 @@ public final class PgStorage implements Storage {
     }
 
     private <T> T with(Work<T> w) throws IOException {
-        PgClient c;
-        synchronized (pool) {
-            c = pool.pollFirst();
-        }
-        if (c == null) c = PgClient.connect(url);
         try {
-            T r = w.run(c);
-            release(c);
-            return r;
-        } catch (PgClient.PgException e) {
-            release(c);
-            throw e;
-        } catch (IOException | RuntimeException e) {
-            c.close();
-            throw e;
+            if (!permits.tryAcquire(ACQUIRE_TIMEOUT_MS, java.util.concurrent.TimeUnit.MILLISECONDS)) throw new Busy();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new java.io.InterruptedIOException("Megszakítva");
+        }
+        try {
+            PgClient c;
+            synchronized (pool) {
+                c = pool.pollFirst();
+            }
+            if (c == null) c = PgClient.connect(url);
+            try {
+                T r = w.run(c);
+                release(c);
+                return r;
+            } catch (PgClient.PgException e) {
+                release(c);
+                throw e;
+            } catch (IOException | RuntimeException e) {
+                c.close();
+                throw e;
+            }
+        } finally {
+            permits.release();
         }
     }
 
@@ -185,12 +214,21 @@ public final class PgStorage implements Storage {
             return;
         }
         synchronized (pool) {
-            if (pool.size() < MAX_IDLE) {
+            if (pool.size() < maxIdle) {
                 pool.addFirst(c);
                 return;
             }
         }
         c.close();
+    }
+
+    /** Diagnosztika (/metrics): a szabad kapcsolat-engedélyek és az üresjáratban várakozó kapcsolatok száma. */
+    public int availablePermits() { return permits.availablePermits(); }
+
+    public int idleConnections() {
+        synchronized (pool) {
+            return pool.size();
+        }
     }
 
     private static void rollback(PgClient c) {

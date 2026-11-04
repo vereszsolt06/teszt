@@ -13,13 +13,19 @@ public final class Lang {
     /** A támogatott nyelvek, a felület nyelvválasztójának sorrendjében. */
     public static final List<String> SUPPORTED = List.of(HU, EN, HR, DE);
 
-    private static final ThreadLocal<String> CURRENT = ThreadLocal.withInitial(() -> HU);
+    private static final ThreadLocal<String> CURRENT = new ThreadLocal<>();
 
     private Lang() {}
 
-    public static String current() { return CURRENT.get(); }
+    public static String current() {
+        String l = CURRENT.get();
+        return l == null ? HU : l;
+    }
 
-    public static boolean english() { return EN.equals(CURRENT.get()); }
+    /** Be van-e állítva a szál nyelve (a kérés feldolgozása közben igen). */
+    public static boolean isSet() { return CURRENT.get() != null; }
+
+    public static boolean english() { return EN.equals(current()); }
 
     public static void set(String lang) { CURRENT.set(normalize(lang)); }
 

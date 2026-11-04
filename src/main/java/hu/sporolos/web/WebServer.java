@@ -78,7 +78,17 @@ import java.util.zip.GZIPOutputStream;
  */
 public final class WebServer {
 
+    /** Kéréstörzs-korlát: a nyilvános végpontok kis JSON-t várnak, az admin (import, akciók) nagyobbat is. */
     private static final int MAX_BODY = 1_000_000;
+    private static final int MAX_PUBLIC_BODY = 64 * 1024;
+
+    /**
+     * Content-Security-Policy: csak a saját forrásokból tölt (nincs inline szkript, eval, külső betű vagy CDN), a
+     * stílusok a CSSOM-on át állíthatók (az nem esik a CSP alá), keretbe nem tehető (clickjacking ellen).
+     */
+    static final String CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
+            + "font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; "
+            + "base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
 
     private final Markets markets;
     private final Storage storage;
@@ -147,27 +157,86 @@ public final class WebServer {
     }
 
     public int start(String host, int port) throws IOException {
+        applyServerTimeouts();
         server = HttpServer.create(new InetSocketAddress(host, port), 0);
-        server.createContext("/api/", this::api);
-        server.createContext("/healthz", this::health);
-        server.createContext("/", this::staticFile);
-        // kérésenként egy virtuális szál: a lassú kliensek (mobilnet) nem foglalják le a néhány valódi szálat
+        server.createContext("/api/", guarded(this::api, true));
+        server.createContext("/healthz", guarded(this::health, false));
+        server.createContext("/metrics", guarded(this::metricsEndpoint, false));
+        server.createContext("/", guarded(this::staticFile, false));
+        // kérésenként egy virtuális szál: a lassú kliensek (mobilnet) nem foglalják le a néhány valódi szálat;
+        // a párhuzamosan dolgozó API-kérések számát a {@link #inFlight} szemafor korlátozza
         executor = Executors.newVirtualThreadPerTaskExecutor();
         server.setExecutor(executor);
         server.start();
+        startedAt = System.currentTimeMillis();
         return server.getAddress().getPort();
     }
 
+    /** Azonnali leállítás (tesztek). */
     public void stop() {
-        if (server != null) server.stop(0);
+        stop(0);
+    }
+
+    /**
+     * Szabályos leállítás: nem fogad új kapcsolatot, a futó kéréseket legfeljebb {@code drainSeconds} másodpercig
+     * hagyja befejeződni (SIGTERM esetén – Docker, Kubernetes – a shutdown hook hívja).
+     */
+    public void stop(int drainSeconds) {
+        if (server != null) server.stop(Math.max(0, drainSeconds));
         if (executor != null) executor.shutdownNow();
+    }
+
+    /**
+     * A JDK webszerver időkorlátai (ha a rendszertulajdonságokban nincs más megadva): egy lassan csöpögtetett
+     * kérés (slowloris) ne tarthasson nyitva kapcsolatot a végtelenségig. A beállítást a JDK az első szerver
+     * létrehozásakor olvassa be.
+     */
+    static void applyServerTimeouts() {
+        System.getProperties().putIfAbsent("sun.net.httpserver.maxReqTime", "30");     // kérés beolvasása, mp
+        System.getProperties().putIfAbsent("sun.net.httpserver.maxRspTime", "120");    // válasz elküldése, mp
+        System.getProperties().putIfAbsent("sun.net.httpserver.idleInterval", "30");   // üresjárati kapcsolat, mp
+        System.getProperties().putIfAbsent("sun.net.httpserver.maxIdleConnections", "500");
     }
 
     /** A kérés közös beállításai. */
     private record Prefs(Set<String> stores, boolean bulk, Set<String> cards) {}
 
     private RateLimiter limiter = new RateLimiter(0);
+    /** Admin-belépés: IP-címenként legfeljebb 10 próbálkozás percenként (jelszótalálgatás ellen). */
+    private final RateLimiter loginLimiter = new RateLimiter(10);
     private boolean trustProxy;
+    /** Egyszerre ennyi API-kérés dolgozhat; a többi legfeljebb {@link #queueWaitMs}-ig vár, aztán 503. */
+    private java.util.concurrent.Semaphore inFlight = new java.util.concurrent.Semaphore(64, true);
+    private int maxConcurrent = 64;
+    private long queueWaitMs = 5_000;
+    private boolean accessLog;
+    private volatile long startedAt = System.currentTimeMillis();
+    private final Metrics metrics = new Metrics();
+
+    /** Legfeljebb ennyi API-kérés fut egyszerre (CPU-igényes heti tervezés, adatbázis-kapcsolatok védelme). */
+    public WebServer maxConcurrent(int n) {
+        this.maxConcurrent = Math.max(1, n);
+        this.inFlight = new java.util.concurrent.Semaphore(this.maxConcurrent, true);
+        return this;
+    }
+
+    /** Meddig várhat egy kérés szabad helyre, mielőtt 503-at kap (alap: 5 s). */
+    public WebServer queueWait(long ms) {
+        this.queueWaitMs = Math.max(0, ms);
+        return this;
+    }
+
+    /** A memóriában tartott statikus fájlok száma (teszthez: véletlen URL-ek nem növelik). */
+    public static int staticCacheSize() { return STATIC.size(); }
+
+    /** Kérésnapló a szabványos kimenetre (a profil-azonosító kitakarva). */
+    public WebServer accessLog(boolean on) {
+        this.accessLog = on;
+        return this;
+    }
+
+    /** A metrikák (/metrics) – teszteknek és diagnosztikának. */
+    Metrics metrics() { return metrics; }
 
     /**
      * Kéréskorlát IP-címenként (percenként; 0 = nincs). {@code trustProxy}: terheléselosztó / reverse proxy mögött
@@ -193,17 +262,52 @@ public final class WebServer {
                 : Lang.fromAcceptLanguage(ex.getRequestHeaders().getFirst("Accept-Language"));
     }
 
+    /** Hibaüzenet JSON-ban, a kérés nyelvén (a Lang már be van állítva, vagy itt állítjuk be). */
+    private static void sendError(HttpExchange ex, int code, String message) throws IOException {
+        boolean own = !Lang.isSet();
+        if (own) Lang.set(requestLang(ex, query(ex.getRequestURI().getRawQuery())));
+        try {
+            send(ex, code, "application/json; charset=utf-8", Json.write(localized(Map.of("error", message))));
+        } finally {
+            if (own) Lang.clear();
+        }
+    }
+
     private void api(HttpExchange ex) throws IOException {
-        if (limiter.enabled() && !limiter.allow(clientKey(ex))) {
+        String client = clientKey(ex);
+        if (limiter.enabled() && !limiter.allow(client)) {
+            metrics.rejected("rate_limit");
             ex.getResponseHeaders().set("Retry-After", String.valueOf(RateLimiter.retryAfterSeconds(System.currentTimeMillis())));
-            Lang.set(requestLang(ex, query(ex.getRequestURI().getRawQuery())));
-            try {
-                send(ex, 429, "application/json; charset=utf-8", Json.write(localized(Map.of("error", "Túl sok kérés – próbáld újra egy perc múlva."))));
-            } finally {
-                Lang.clear();
-            }
+            sendError(ex, 429, "Túl sok kérés – próbáld újra egy perc múlva.");
             return;
         }
+        if (ex.getRequestURI().getPath().equals("/api/admin/login") && !loginLimiter.allow(client)) {
+            metrics.rejected("login_limit");
+            ex.getResponseHeaders().set("Retry-After", String.valueOf(RateLimiter.retryAfterSeconds(System.currentTimeMillis())));
+            sendError(ex, 429, "Túl sok kérés – próbáld újra egy perc múlva.");
+            return;
+        }
+        boolean acquired;
+        try {
+            acquired = inFlight.tryAcquire(queueWaitMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            acquired = false;
+        }
+        if (!acquired) {
+            metrics.rejected("overload");
+            ex.getResponseHeaders().set("Retry-After", "5");
+            sendError(ex, 503, "A szerver most túlterhelt – próbáld újra pár másodperc múlva.");
+            return;
+        }
+        try {
+            apiInner(ex);
+        } finally {
+            inFlight.release();
+        }
+    }
+
+    private void apiInner(HttpExchange ex) throws IOException {
         try {
             String path = ex.getRequestURI().getPath();
             String method = ex.getRequestMethod();
@@ -217,10 +321,10 @@ public final class WebServer {
                 Object res;
                 if (path.equals("/api/admin/login")) {
                     if (!method.equals("POST")) throw new IllegalArgumentException("POST kell");
-                    res = admin.login(readBody(ex));
+                    res = admin.login(readBody(ex, MAX_PUBLIC_BODY));
                 } else {
                     admin.require(ex.getRequestHeaders().getFirst("X-Admin-Token"));
-                    res = admin.handle(path, method, q, method.equals("GET") || method.equals("DELETE") ? "" : readBody(ex));
+                    res = admin.handle(path, method, q, method.equals("GET") || method.equals("DELETE") ? "" : readBody(ex, MAX_BODY));
                 }
                 send(ex, 200, "application/json; charset=utf-8", Json.write(res));
                 return;
@@ -254,21 +358,21 @@ public final class WebServer {
                 case "/api/plan" -> plan(st(), q, prefs(q));
                 case "/api/recipes" -> recipes(st(), q, prefs(q));
                 case "/api/offers" -> offers(st(), q, prefs(q));
-                case "/api/extras" -> extrasEndpoint(method, q, method.equals("POST") ? readBody(ex) : "");
+                case "/api/extras" -> extrasEndpoint(method, q, method.equals("POST") ? readBody(ex, MAX_PUBLIC_BODY) : "");
                 case "/api/promos" -> switch (method) {
-                    case "POST" -> addPromo(readBody(ex), prefs(q));
+                    case "POST" -> addPromo(readBody(ex, MAX_BODY), prefs(q));
                     case "DELETE" -> deletePromo(q, prefs(q));
                     default -> promos(st(), prefs(q));
                 };
                 case "/api/refresh" -> status(repo().reload(), prefs(q));
                 case "/api/profile" -> switch (method) {
-                    case "POST" -> createProfile(readBody(ex));
-                    case "PUT" -> saveProfile(q, readBody(ex));
+                    case "POST" -> createProfile(readBody(ex, MAX_PUBLIC_BODY));
+                    case "PUT" -> saveProfile(q, readBody(ex, MAX_PUBLIC_BODY));
                     default -> profileJson(requireId(q));
                 };
-                case "/api/rate" -> method.equals("DELETE") ? clearRatings(q) : rate(q, readBody(ex));
+                case "/api/rate" -> method.equals("DELETE") ? clearRatings(q) : rate(q, readBody(ex, MAX_PUBLIC_BODY));
                 case "/api/week" -> week(q);
-                case "/api/check" -> check(q, readBody(ex));
+                case "/api/check" -> check(q, readBody(ex, MAX_PUBLIC_BODY));
                 default -> throw new NotFound("Ismeretlen végpont: " + path);
             };
             send(ex, 200, "application/json; charset=utf-8", Json.write(localized(body)));
@@ -288,10 +392,15 @@ public final class WebServer {
             send(ex, 404, "application/json; charset=utf-8", Json.write(localized(Map.of("error", e.getMessage()))));
         } catch (IllegalArgumentException e) {
             send(ex, 400, "application/json; charset=utf-8", Json.write(localized(Map.of("error", e.getMessage()))));
-        } catch (Exception e) {
+        } catch (hu.sporolos.store.PgStorage.Busy e) {
+            metrics.rejected("db_busy");
+            ex.getResponseHeaders().set("Retry-After", "5");
+            send(ex, 503, "application/json; charset=utf-8", Json.write(localized(Map.of("error", e.getMessage()))));
+        } catch (Exception | StackOverflowError e) {
+            System.err.println("[hiba] " + requestId(ex) + " " + ex.getRequestMethod() + " " + redact(ex.getRequestURI()) + ": " + e);
             e.printStackTrace();
             send(ex, 500, "application/json; charset=utf-8",
-                    Json.write(localized(Map.of("error", "Belső hiba: " + e.getClass().getSimpleName()))));
+                    Json.write(localized(Map.of("error", "Belső hiba: " + e.getClass().getSimpleName() + " (" + requestId(ex) + ")"))));
         } finally {
             CUR.remove();
             Market.clear();
@@ -1199,10 +1308,12 @@ public final class WebServer {
 
     // ---------- segédek ----------
 
-    private static String readBody(HttpExchange ex) throws IOException {
+    private static String readBody(HttpExchange ex, int limit) throws IOException {
         try (InputStream in = ex.getRequestBody()) {
-            byte[] data = in.readNBytes(MAX_BODY + 1);
-            if (data.length > MAX_BODY) throw new IllegalArgumentException("Túl nagy kérés (legfeljebb 1 MB)");
+            byte[] data = in.readNBytes(limit + 1);
+            if (data.length > limit) {
+                throw new IllegalArgumentException(limit >= MAX_BODY ? "Túl nagy kérés (legfeljebb 1 MB)" : "Túl nagy kérés (legfeljebb 64 KB)");
+            }
             return new String(data, StandardCharsets.UTF_8);
         }
     }
@@ -1259,9 +1370,14 @@ public final class WebServer {
             send(ex, 400, "text/plain; charset=utf-8", "Hibás útvonal");
             return;
         }
-        StaticEntry f = STATIC.computeIfAbsent(path, WebServer::loadStatic);
+        StaticEntry f = STATIC.get(path);
+        if (f == null) {
+            f = loadStatic(path);
+            // a nem létező útvonalakat nem jegyezzük meg (különben véletlen URL-ekkel a memória teleírható)
+            if (f != StaticEntry.MISSING) STATIC.put(path, f);
+        }
         if (f == StaticEntry.MISSING) {
-            send(ex, 404, "text/plain; charset=utf-8", "Nem található: " + path);
+            send(ex, 404, "text/plain; charset=utf-8", "Nem található");
             return;
         }
         // a betűk nem változnak: egy évig a böngészőben maradhatnak; minden más ETag-gel újraellenőrizve
@@ -1273,12 +1389,23 @@ public final class WebServer {
             ex.close();
             return;
         }
-        sendBytes(ex, 200, contentType(path), f.data());
+        String accept = ex.getRequestHeaders().getFirst("Accept-Encoding");
+        if (f.gzip() != null && accept != null && accept.contains("gzip")) {
+            ex.getResponseHeaders().set("Content-Type", contentType(path));
+            ex.getResponseHeaders().set("Content-Encoding", "gzip");
+            ex.getResponseHeaders().set("Vary", "Accept-Encoding");
+            ex.sendResponseHeaders(200, f.gzip().length);
+            try (OutputStream os = ex.getResponseBody()) {
+                os.write(f.gzip());
+            }
+            return;
+        }
+        sendBytes(ex, 200, contentType(path), f.data(), false);
     }
 
-    /** Egy statikus fájl tartalma és ETag-je (a JAR-ból egyszer olvassuk be). */
-    private record StaticEntry(byte[] data, String etag) {
-        static final StaticEntry MISSING = new StaticEntry(new byte[0], "");
+    /** Egy statikus fájl tartalma, előre tömörített változata (szövegnél) és ETag-je (a JAR-ból egyszer olvassuk be). */
+    private record StaticEntry(byte[] data, byte[] gzip, String etag) {
+        static final StaticEntry MISSING = new StaticEntry(new byte[0], null, "");
     }
 
     private static final Map<String, StaticEntry> STATIC = new java.util.concurrent.ConcurrentHashMap<>();
@@ -1288,7 +1415,10 @@ public final class WebServer {
             if (in == null) return StaticEntry.MISSING;
             byte[] data = in.readAllBytes();
             byte[] h = java.security.MessageDigest.getInstance("SHA-256").digest(data);
-            return new StaticEntry(data, "\"" + java.util.HexFormat.of().formatHex(h, 0, 12) + "\"");
+            String type = contentType(path);
+            boolean textual = type.startsWith("text/") || type.contains("json") || type.contains("javascript") || type.contains("svg");
+            return new StaticEntry(data, textual && data.length > 1024 ? gzip(data) : null,
+                    "\"" + java.util.HexFormat.of().formatHex(h, 0, 12) + "\"");
         } catch (IOException | java.security.NoSuchAlgorithmException e) {
             return StaticEntry.MISSING;
         }
@@ -1299,8 +1429,14 @@ public final class WebServer {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("ok", true);
         m.put("markets", markets.all().stream().map(r -> r.market().id()).toList());
+        m.put("version", VERSION);
+        m.put("uptimeSeconds", (System.currentTimeMillis() - startedAt) / 1000);
+        ex.getResponseHeaders().set("Cache-Control", "no-store");
         send(ex, 200, "application/json; charset=utf-8", Json.write(m));
     }
+
+    /** Az app verziója a JAR manifestjéből (build.sh írja bele), fejlesztés közben „dev”. */
+    public static final String VERSION = java.util.Optional.ofNullable(WebServer.class.getPackage().getImplementationVersion()).orElse("dev");
 
     private static String contentType(String path) {
         if (path.endsWith(".html")) return "text/html; charset=utf-8";
@@ -1318,21 +1454,25 @@ public final class WebServer {
     }
 
     private static void send(HttpExchange ex, int code, String type, String body) throws IOException {
-        sendBytes(ex, code, type, body.getBytes(StandardCharsets.UTF_8));
+        sendBytes(ex, code, type, body.getBytes(StandardCharsets.UTF_8), true);
+    }
+
+    private static byte[] gzip(byte[] data) throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream(Math.max(64, data.length / 4));
+        try (GZIPOutputStream gz = new GZIPOutputStream(bos)) {
+            gz.write(data);
+        }
+        return bos.toByteArray();
     }
 
     /** Válasz küldése; szöveges tartalmat gzip-pel tömörít, ha a böngésző kéri (telefonon sokat számít). */
-    private static void sendBytes(HttpExchange ex, int code, String type, byte[] data) throws IOException {
+    private static void sendBytes(HttpExchange ex, int code, String type, byte[] data, boolean compress) throws IOException {
+        if (ex.getResponseCode() != -1) return; // már válaszoltunk (pl. hiba a küldés után) – ne dobjunk újabb kivételt
         ex.getResponseHeaders().set("Content-Type", type);
-        ex.getResponseHeaders().set("X-Content-Type-Options", "nosniff");
         String accept = ex.getRequestHeaders().getFirst("Accept-Encoding");
         boolean textual = type.startsWith("text/") || type.contains("json") || type.contains("javascript") || type.contains("svg");
-        if (textual && data.length > 1024 && accept != null && accept.contains("gzip")) {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream(data.length / 4);
-            try (GZIPOutputStream gz = new GZIPOutputStream(bos)) {
-                gz.write(data);
-            }
-            data = bos.toByteArray();
+        if (compress && textual && data.length > 1024 && accept != null && accept.contains("gzip")) {
+            data = gzip(data);
             ex.getResponseHeaders().set("Content-Encoding", "gzip");
             ex.getResponseHeaders().set("Vary", "Accept-Encoding");
         }
@@ -1340,6 +1480,119 @@ public final class WebServer {
         try (OutputStream os = ex.getResponseBody()) {
             os.write(data);
         }
+    }
+
+    // ---------- közös védőréteg: kérésazonosító, biztonsági fejlécek, korlátok, napló, metrikák ----------
+
+    private static final String RID = "sporolos.requestId";
+
+    /** A kérés rövid azonosítója (a válasz X-Request-Id fejlécében és a naplóban is). */
+    static String requestId(HttpExchange ex) {
+        Object v = ex.getAttribute(RID);
+        return v == null ? "-" : v.toString();
+    }
+
+    /**
+     * Minden kérés ezen megy át: azonosítót és biztonsági fejléceket kap, mérjük, naplózzuk, és ha a kezelő
+     * bármilyen hibával (akár Error-ral) elszáll, akkor is kap választ – a kapcsolat nem marad nyitva.
+     */
+    private com.sun.net.httpserver.HttpHandler guarded(com.sun.net.httpserver.HttpHandler h, boolean api) {
+        return ex -> {
+            long t0 = System.nanoTime();
+            String rid = Long.toHexString(java.util.concurrent.ThreadLocalRandom.current().nextLong() & 0xffffffffffL);
+            ex.setAttribute(RID, rid);
+            var hd = ex.getResponseHeaders();
+            hd.set("X-Request-Id", rid);
+            hd.set("X-Content-Type-Options", "nosniff");
+            hd.set("X-Frame-Options", "DENY");
+            hd.set("Referrer-Policy", "same-origin");
+            hd.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()");
+            hd.set("Cross-Origin-Opener-Policy", "same-origin");
+            hd.set("Cross-Origin-Resource-Policy", "same-origin");
+            hd.set("Content-Security-Policy", CSP);
+            if (trustProxy && "https".equalsIgnoreCase(ex.getRequestHeaders().getFirst("X-Forwarded-Proto"))) {
+                hd.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+            }
+            // a háztartás adatai (hét, lista, profil) ne kerüljenek közös gyorsítótárba (a service worker a sajátját kezeli)
+            if (api) hd.set("Cache-Control", "no-store");
+            metrics.started();
+            try {
+                h.handle(ex);
+            } catch (Throwable e) {
+                if (!(e instanceof IOException)) {
+                    System.err.println("[hiba] " + rid + " " + ex.getRequestMethod() + " " + redact(ex.getRequestURI()) + ": " + e);
+                    e.printStackTrace();
+                }
+                try {
+                    if (ex.getResponseCode() == -1) sendError(ex, 500, "Belső hiba (" + rid + ")");
+                } catch (Throwable ignored) {
+                    // a kliens közben bonthatta a kapcsolatot
+                }
+                if (e instanceof Error err && !(e instanceof StackOverflowError)) throw err;
+            } finally {
+                long nanos = System.nanoTime() - t0;
+                int code = ex.getResponseCode();
+                metrics.finished(route(ex.getRequestURI().getPath(), api), code, nanos);
+                if (accessLog && (api || code >= 400)) {
+                    System.out.printf("%s %d %s %s %dms rid=%s%n", java.time.Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS),
+                            code, ex.getRequestMethod(), redact(ex.getRequestURI()), nanos / 1_000_000, rid);
+                }
+                ex.close();
+            }
+        };
+    }
+
+    /** Ismert útvonalak (a metrikák címkéi korlátos számúak maradjanak, véletlen URL-ek ne hozzanak létre újat). */
+    private static final Set<String> ROUTES = Set.of("/api/status", "/api/markets", "/api/deals", "/api/suggestions",
+            "/api/recipe", "/api/item", "/api/search", "/api/ingredients", "/api/plan", "/api/recipes", "/api/offers",
+            "/api/extras", "/api/promos", "/api/refresh", "/api/profile", "/api/rate", "/api/week", "/api/check");
+
+    static String route(String path, boolean api) {
+        if (!api) return path.equals("/healthz") || path.equals("/metrics") ? path : "static";
+        if (path.startsWith("/api/admin/")) return "/api/admin";
+        return ROUTES.contains(path) ? path : "/api/other";
+    }
+
+    /** Teszthez: {@link #redact} egy útvonal + lekérdezés szövegre. */
+    public static String redactForTest(String pathAndQuery) {
+        return redact(java.net.URI.create(pathAndQuery));
+    }
+
+    /** A profil-azonosító titok (aki ismeri, látja a háztartás listáját): a naplóban kitakarjuk. */
+    static String redact(java.net.URI uri) {
+        String q = uri.getRawQuery();
+        String path = uri.getRawPath();
+        if (q == null) return path;
+        // csak a háztartáshoz kötött végpontokon titok az id (a recept- és termékazonosító nem az)
+        if (!PROFILE_PATHS.contains(path)) return path + "?" + q;
+        return path + "?" + q.replaceAll("(^|&)id=[^&]*", "$1id=***");
+    }
+
+    private static final Set<String> PROFILE_PATHS = Set.of("/api/week", "/api/profile", "/api/extras", "/api/rate", "/api/check");
+
+    private void metricsEndpoint(HttpExchange ex) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        metrics.write(sb, inFlight.availablePermits(), maxConcurrent, (System.currentTimeMillis() - startedAt) / 1000);
+        for (Markets.Runtime r : markets.all()) {
+            String id = r.market().id();
+            PriceRepository.State s = r.repo().peek();
+            sb.append("sporolos_prices_loaded{market=\"").append(id).append("\"} ").append(s == null ? 0 : 1).append('\n');
+            if (s != null) {
+                sb.append("sporolos_price_items{market=\"").append(id).append("\"} ").append(s.snapshot().entries().size()).append('\n');
+                sb.append("sporolos_price_data_age_seconds{market=\"").append(id).append("\"} ")
+                        .append(java.time.Duration.between(s.loadedAt(), java.time.Instant.now()).toSeconds()).append('\n');
+                sb.append("sporolos_price_demo{market=\"").append(id).append("\"} ").append(s.snapshot().demo() ? 1 : 0).append('\n');
+            }
+        }
+        if (storage instanceof hu.sporolos.store.PgStorage pg) {
+            sb.append("sporolos_db_permits_available ").append(pg.availablePermits()).append('\n');
+            sb.append("sporolos_db_idle_connections ").append(pg.idleConnections()).append('\n');
+        }
+        Runtime rt = Runtime.getRuntime();
+        sb.append("sporolos_jvm_memory_used_bytes ").append(rt.totalMemory() - rt.freeMemory()).append('\n');
+        sb.append("sporolos_jvm_memory_max_bytes ").append(rt.maxMemory()).append('\n');
+        ex.getResponseHeaders().set("Cache-Control", "no-store");
+        send(ex, 200, "text/plain; version=0.0.4; charset=utf-8", sb.toString());
     }
 
     /** 404-es válaszhoz. */

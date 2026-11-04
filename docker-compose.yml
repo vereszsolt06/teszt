@@ -20,8 +20,13 @@ services:
       - "127.0.0.1:5432:5432"
 
   app:
-    build: .
+    build:
+      context: .
+      args:
+        VERSION: ${VERSION:-docker}
     restart: unless-stopped
+    # SIGTERM után a futó kérések befejeződnek (legfeljebb 5 s), aztán leáll
+    stop_grace_period: 15s
     depends_on:
       db:
         condition: service_healthy
@@ -33,6 +38,12 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       # országok: hu,hr (a horvát árak az első horvát kéréskor töltődnek le az app-adatok kötetbe)
       MARKETS: ${MARKETS:-hu,hr}
+      # reverse proxy (Caddy, nginx, felhős terheléselosztó) mögött: true – a kliens IP-je és a HTTPS onnan jön
+      TRUST_PROXY: ${TRUST_PROXY:-false}
+      RATE_LIMIT: ${RATE_LIMIT:-600}
+      MAX_CONCURRENT: ${MAX_CONCURRENT:-64}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
+      LOG_REQUESTS: ${LOG_REQUESTS:-true}
     volumes:
       - app-adatok:/app/data
     ports:
