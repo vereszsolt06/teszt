@@ -126,6 +126,12 @@
     <section class="view" data-view="akciok" aria-labelledby="offers-title" hidden>
       <h1 class="view-title" id="offers-title">Most jó áron</h1>
       <p class="sub" id="offers-sub">A boltjaid kiemelt árai a GVH Árfigyelő mai adataiból és a felvitt bolti akciókból: a legnagyobb megtakarítás elöl. Egy termékre koppintva látod az árát minden láncban, és felteheted a listádra.</p>
+      <section class="watch" id="watch-box" aria-labelledby="watch-title" hidden>
+        <h2 class="watch-title" id="watch-title">Figyelt termékeid</h2>
+        <ul class="watch-list" id="watch-list"></ul>
+        <button class="ghost small watch-more" id="watch-more" type="button" hidden></button>
+      </section>
+      <p class="fineprint watch-tip" id="watch-tip" hidden>Tipp: egy termékre koppintva a ☆ gombbal figyelheted az árát – itt látod majd, és szólunk, ha olcsón kapható.</p>
       <div class="offers-tools">
         <label class="search"><span class="visually-hidden">Keresés az akciók között</span>
           <input type="search" id="offer-q" placeholder="Keresés: csirke, sajt, kávé…" autocomplete="off" enterkeyhint="search"></label>
@@ -276,7 +282,10 @@
     <p class="item-cat" id="item-cat"></p>
     <ul class="offers" id="item-offers"></ul>
     <div id="item-history"></div>
-    <div class="item-actions"><button class="primary" id="item-add" type="button">Felteszem a listámra</button></div>
+    <div class="item-actions">
+      <button class="ghost" id="item-watch" type="button" aria-pressed="false" hidden><span aria-hidden="true">☆</span> Figyelem az árát</button>
+      <button class="primary" id="item-add" type="button">Felteszem a listámra</button>
+    </div>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden><span id="toast-text"></span><button type="button" id="toast-action" hidden></button></div>

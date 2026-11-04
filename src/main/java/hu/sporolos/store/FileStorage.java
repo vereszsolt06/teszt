@@ -150,8 +150,10 @@ public final class FileStorage implements Storage {
         if (!Files.exists(from)) return false;
         if (Files.exists(to)) throw new IOException("Az új azonosító már foglalt");
         Files.move(from, to, StandardCopyOption.ATOMIC_MOVE);
-        Path extrasFrom = docFile("extras-" + fromId), extrasTo = docFile("extras-" + toId);
-        if (Files.exists(extrasFrom)) Files.move(extrasFrom, extrasTo, StandardCopyOption.REPLACE_EXISTING);
+        for (String prefix : HOUSEHOLD_DOCUMENTS) {
+            Path docFrom = docFile(prefix + fromId), docTo = docFile(prefix + toId);
+            if (Files.exists(docFrom)) Files.move(docFrom, docTo, StandardCopyOption.REPLACE_EXISTING);
+        }
         return true;
     }
 
@@ -286,6 +288,18 @@ public final class FileStorage implements Storage {
     @Override
     public synchronized void deleteDocument(String key) throws IOException {
         Files.deleteIfExists(docFile(key));
+    }
+
+    @Override
+    public synchronized String updateDocument(String key, java.util.function.UnaryOperator<String> change) throws IOException {
+        String old = document(key);
+        String next = change.apply(old);
+        if (next == null) {
+            if (old != null) deleteDocument(key);
+        } else if (!next.equals(old)) {
+            saveDocument(key, next);
+        }
+        return next;
     }
 
     @Override

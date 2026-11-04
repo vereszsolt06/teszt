@@ -20,6 +20,8 @@ const state = {
   ingredients: null,
   weekBusy: 0,
   prevDays: [],       // az előző kirajzolás receptjei (az új kártyák animálásához)
+  watch: null,        // /api/watch: a háztartás figyelt termékei a mai árakkal
+  watchOpen: false,   // a figyelt termékek teljes listája látszik
 };
 
 const DEAL_LABEL = {
@@ -84,6 +86,8 @@ function dateAdj(d) {
   return d.toLocaleDateString("hu-HU", { month: "long", day: "numeric" }).replace(/\.$/, "") + "-i";
 }
 const shortDate = (iso) => new Date(iso + "T00:00:00").toLocaleDateString(LOCALE, { month: "short", day: "numeric" });
+/** Terméknév kijelzéshez: a kiszerelés („1 kg”, „500 g”, „6 db”) nem törik el két sorba. */
+const productName = (s) => String(s || "").replace(/(\d) (kg|g|dkg|l|dl|cl|ml|db|pc|kom|Stk|x)(?=$|[\s,.)])/g, `$1${NB}$2`);
 /** Mértékegység a felület nyelvén (db → pc). */
 const unitName = (u) => (u === "db" ? t("db") : u);
 
@@ -320,6 +324,7 @@ function updateSettings(patch, immediate) {
     try {
       state.profile = await api(`/api/profile?id=${state.profile.id}`, jsonOpts("PUT", state.profile.settings));
       state.recipes = null;
+      state.watch = null;
       renderStorePill();
       await loadWeek();
       if (state.view === "receptek") renderBrowse();
@@ -435,7 +440,10 @@ function setView(v) {
     else (v === "het" ? renderWeek : renderList)();
   }
   if (v === "nom") loadDeck().catch((e) => toast(e.message));
-  if (v === "akciok") renderOffers().catch((e) => toast(e.message));
+  if (v === "akciok") {
+    renderOffers().catch((e) => toast(e.message));
+    loadWatch().then(renderWatch).catch(() => renderWatch());
+  }
   if (v === "receptek") renderBrowse().catch((e) => toast(e.message));
   window.scrollTo(0, 0);
 }
@@ -1374,7 +1382,7 @@ async function renderOffers() {
     if (d.type !== "CATEGORY" && d.referencePrice > it.price) prices.appendChild(el("s", null, ft(d.referencePrice)));
     prices.appendChild(el("b", null, ft(it.price)));
     if (d.savingPercent >= 1) prices.appendChild(el("span", "offer-save", `−${Math.round(d.savingPercent)}%`));
-    b.append(top, el("span", "offer-name", it.name),
+    b.append(top, el("span", "offer-name", productName(it.name)),
       el("span", "offer-unit", `${qty(it.quantity, it.unit)} · ${ft(it.unitPrice)}/${unitName(it.unit)}${d.ingredient ? t(" · receptekhez: {what}", { what: d.ingredient.toLowerCase() }) : ""}`),
       prices, el("span", "offer-why", d.reason));
     b.addEventListener("click", () => openItem(it.id));
@@ -1386,12 +1394,14 @@ async function renderOffers() {
 async function openItem(id) {
   let data;
   try {
-    data = await api(`/api/item?id=${encodeURIComponent(id)}${prefQuery()}`);
+    // a figyelés gomb állapotához kell a figyelt termékek listája is (ha még nincs meg)
+    [data] = await Promise.all([api(`/api/item?id=${encodeURIComponent(id)}${prefQuery()}`),
+      state.watch || !state.profile ? null : loadWatch().catch(() => null)]);
   } catch (e) {
     toast(e.message);
     return;
   }
-  $("#item-title").textContent = data.name;
+  $("#item-title").textContent = productName(data.name);
   $("#item-cat").textContent = `${data.category} · ${data.offers.length > 1 ? t("{n} láncban kapható", { n: data.offers.length }) : t("csak egy láncban kapható")}`;
   const ul = $("#item-offers");
   ul.replaceChildren();
@@ -1403,6 +1413,7 @@ async function openItem(id) {
     left.appendChild(el("b", null, o.storeName));
     const shops = o.totalShops ? t("{n} / {total} boltjukban", { n: o.shops, total: o.totalShops }) : (o.shops ? t("{n} boltjukban", { n: o.shops }) : t("saját akció"));
     left.appendChild(el("span", "offer-meta", o.maxPrice > o.price ? `${shops} · ${t("máshol akár {price}", { price: ft(o.maxPrice) })}` : shops));
+    if (!o.mine) left.appendChild(el("span", "offer-meta", t("nem a te boltod")));
     if (o.deal) left.appendChild(el("span", "ing-deal", DEAL_LABEL[o.deal.type]));
     const right = el("div", "offer-price");
     right.appendChild(el("b", null, ft(o.price)));
@@ -1412,12 +1423,134 @@ async function openItem(id) {
     ul.appendChild(li);
   }
   renderHistory(data.history || []);
+  const watchBtn = $("#item-watch");
+  watchBtn.hidden = !state.profile || !state.watch;
+  const paintWatch = () => {
+    const on = isWatched(data.id);
+    watchBtn.replaceChildren(el("span", null, on ? "★" : "☆", { "aria-hidden": "true" }), ` ${t("Figyelem az árát")}`);
+    watchBtn.setAttribute("aria-pressed", String(on));
+  };
+  paintWatch();
+  watchBtn.onclick = async () => {
+    const on = !isWatched(data.id);
+    try {
+      await setWatch(data.id, on);
+      paintWatch();
+      toast(on ? t("Figyeled: az Akciók fülön látod, és szólunk, ha olcsón kapható.") : t("Nem figyeled tovább: {name}", { name: data.name }));
+    } catch (e) { toast(e.message); }
+  };
   const add = $("#item-add");
   add.onclick = async () => {
     await addExtra(data.name, data.id);
     $("#item-dialog").close();
   };
   openDialog($("#item-dialog"));
+}
+
+// ---------- figyelt termékek (árfigyelés) ----------
+
+async function loadWatch() {
+  if (!state.profile) return null;
+  state.watch = await api(`/api/watch?id=${state.profile.id}`);
+  return state.watch;
+}
+
+const isWatched = (id) => !!state.watch?.watch.some((w) => w.itemId === id);
+
+async function setWatch(itemId, on) {
+  state.watch = await api(`/api/watch?id=${state.profile.id}`, jsonOpts("POST", { itemId, on }));
+  if (state.view === "akciok") renderWatch();
+}
+
+/** A legutóbb jelzett „most olcsó” termékek: csak arról szólunk, ami azóta lett olcsó. */
+function watchSeen(ids) {
+  let seen = [];
+  try { seen = JSON.parse(local("sporolos.watchCheap") || "[]"); } catch (e) { /* sérült érték */ }
+  if (ids) local("sporolos.watchCheap", JSON.stringify(ids));
+  return Array.isArray(seen) ? seen : [];
+}
+
+const WATCH_FOLDED = 5;
+
+/** Az Akciók fül teteje: a figyelt termékek, elöl a most jó áron kaphatók. */
+function renderWatch() {
+  const list = [...(state.watch?.watch || [])].sort((a, b) => (b.deal ? 1 : 0) - (a.deal ? 1 : 0));
+  $("#watch-box").hidden = !list.length;
+  $("#watch-tip").hidden = !!list.length || !state.profile || !state.watch;
+  watchSeen(list.filter((w) => w.deal).map((w) => w.itemId));
+  const ul = $("#watch-list");
+  ul.replaceChildren();
+  const shown = state.watchOpen ? list : list.slice(0, WATCH_FOLDED);
+  for (const w of shown) {
+    const li = el("li", "watch-item" + (w.deal ? " cheap" : "") + (w.available ? "" : " gone"));
+    const b = el("button", "watch-open", null, { type: "button" });
+    const head = el("span", "watch-head");
+    head.appendChild(el("span", "watch-name", productName(w.name)));
+    const o = w.best;
+    if (o) {
+      const price = el("span", "watch-price");
+      price.appendChild(el("b", null, ft(o.price)));
+      if (w.deal) price.appendChild(el("span", "watch-badge", w.deal.savingPercent >= 1 ? `−${Math.round(w.deal.savingPercent)}%` : t("jó ár")));
+      head.appendChild(price);
+    }
+    b.appendChild(head);
+    if (o) {
+      const meta = el("span", "watch-meta");
+      const st = el("span", "offer-store", o.storeName);
+      st.style.setProperty("--c", storeInfo(o.store)?.color || "var(--line)");
+      meta.append(st, ` ${qty(o.quantity, o.unit)} · ${ft(o.unitPrice)}/${unitName(o.unit)}`);
+      b.appendChild(meta);
+      const why = w.deal ? w.deal.reason : !o.mine ? t("A boltjaidban nem kapható – ez a legolcsóbb ára máshol.") : t("Most nincs jó áron – szólunk, ha olcsóbb lesz.");
+      b.appendChild(el("span", "watch-why", why));
+      const change = w.startPrice ? (o.price - w.startPrice) / w.startPrice : 0;
+      if (Math.abs(change) >= 0.01) {
+        b.appendChild(el("span", "watch-change" + (change < 0 ? " down" : " up"),
+          t("Mióta figyeled: {change}", { change: `${change < 0 ? "−" : "+"}${Math.round(Math.abs(change) * 100)}% (${ft(w.startPrice)} → ${ft(o.price)})` })));
+      }
+    } else {
+      b.appendChild(el("span", "watch-why", t("Ma egyik boltban sem kapható.")));
+    }
+    b.addEventListener("click", () => openItem(w.itemId));
+    const off = el("button", "watch-off", "★", { type: "button", "aria-label": t("Figyelés vége: {name}", { name: w.name }), title: t("Figyelés vége") });
+    off.addEventListener("click", async () => {
+      try {
+        await setWatch(w.itemId, false);
+        toast(t("Nem figyeled tovább: {name}", { name: w.name }), {
+          label: t("Visszavonás"),
+          run: () => setWatch(w.itemId, true).catch((e) => toast(e.message)),
+        });
+      } catch (e) { toast(e.message); }
+    });
+    li.append(b, off);
+    ul.appendChild(li);
+  }
+  const more = $("#watch-more");
+  more.hidden = list.length <= WATCH_FOLDED;
+  more.textContent = state.watchOpen ? t("Kevesebb") : t("Mind a(z) {n} figyelt termék", { n: list.length });
+  more.setAttribute("aria-expanded", String(state.watchOpen));
+  more.onclick = () => { state.watchOpen = !state.watchOpen; renderWatch(); };
+}
+
+/**
+ * Indításkor: ha egy figyelt termék azóta lett jó áron, hogy legutóbb láttad, egy üzenet szól róla
+ * (gombbal az Akciók fülre). Ugyanazért a termékért csak egyszer, amíg olcsó marad.
+ */
+async function checkWatch() {
+  const w = await loadWatch();
+  if (!w) return;
+  const cheap = w.watch.filter((x) => x.deal);
+  const seen = watchSeen(cheap.map((x) => x.itemId));
+  const fresh = cheap.filter((x) => !seen.includes(x.itemId));
+  if (!fresh.length || state.view === "akciok") {
+    if (state.view === "akciok") renderWatch();
+    return;
+  }
+  const go = { label: t("Megnézem"), run: () => { location.hash = "#akciok"; } };
+  if (fresh.length === 1) {
+    toast(t("Most jó áron: {name} – {price} ({store})", { name: fresh[0].name, price: ft(fresh[0].best.price), store: fresh[0].best.storeName }), go);
+  } else {
+    toast(t("{n} figyelt terméked most jó áron kapható", { n: fresh.length }), go);
+  }
 }
 
 /** Az elmúlt hetek ára lánconként (ha van már előzmény): kis vonaldiagram és összegzés. */
@@ -2200,6 +2333,8 @@ async function afterProfile() {
   if (!VIEWS.includes(h) && !h.startsWith("recept=")) history.replaceState(null, "", "#het");
   route();
   if (state.view !== "het" && state.view !== "lista") loadWeek().catch((e) => toast(e.message));
+  // a figyelt termékek ellenőrzése nem késlelteti az első kirajzolást (és nem takarja el az induló üzeneteket)
+  setTimeout(() => checkWatch().catch(() => { /* offline vagy nincs tárhely: majd legközelebb */ }), 2500);
 }
 
 /**

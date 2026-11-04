@@ -829,6 +829,116 @@ public final class AllTests {
         }
     }
 
+    static void testPriceWatchList() throws Exception {
+        Path dir = Files.createTempDirectory("sporolos");
+        PriceRepository repo = new PriceRepository(CATALOG, List.of(new DemoPriceProvider(CATALOG, LocalDate.now())),
+                new PriceHistory(new FileStorage(dir), 28), new PromoStore(dir.resolve("akciok"), List.of()), Duration.ofHours(1));
+        WebServer server = new WebServer(repo, new FileStorage(dir));
+        int port = server.start("127.0.0.1", 0);
+        try {
+            HttpClient c = HttpClient.newHttpClient();
+            String base = "http://127.0.0.1:" + port;
+            String id = String.valueOf(Json.obj(Json.parse(send(c, "POST", base + "/api/profile",
+                    "{\"onboarded\":true,\"stores\":[\"lidl\",\"aldi\"]}", 200))).get("id"));
+            eq(0, Json.arr(Json.obj(Json.parse(get(c, base + "/api/watch?id=" + id, 200))).get("watch")).size(), "kezdetben üres");
+
+            // egy kiemelt ár: a figyelt listában a háztartás boltjainak legjobb ára és a jó ár indoklása látszik
+            Map<String, Object> top = Json.obj(Json.arr(Json.parse(get(c, base + "/api/offers?limit=1&store=lidl", 200))).get(0));
+            String itemId = Json.str(Json.obj(top.get("item")).get("id"));
+            String on = "{\"itemId\":\"" + itemId + "\",\"on\":true}";
+            Map<String, Object> res = Json.obj(Json.parse(send(c, "POST", base + "/api/watch?id=" + id, on, 200)));
+            List<Object> list = Json.arr(res.get("watch"));
+            eq(1, list.size(), "egy figyelt termék");
+            Map<String, Object> w = Json.obj(list.get(0));
+            eq(itemId, w.get("itemId"), "a figyelt termék azonosítója");
+            eq(true, w.get("available"), "kapható");
+            Map<String, Object> best = Json.obj(w.get("best"));
+            double min = Double.MAX_VALUE;
+            for (Object o : Json.arr(Json.obj(Json.parse(get(c, base + "/api/item?id=" + itemId, 200))).get("offers"))) {
+                Map<String, Object> offer = Json.obj(o);
+                if (Set.of("lidl", "aldi").contains(Json.str(offer.get("store")))) min = Math.min(min, Json.num(offer.get("price"), 0));
+            }
+            eq(min, Json.num(best.get("price"), -1), "a háztartás boltjainak legjobb ára");
+            eq(Json.num(best.get("price"), -1), Json.num(w.get("startPrice"), -2), "a figyelés kezdetén mért ár");
+            check(w.get("deal") != null && !Json.str(Json.obj(w.get("deal")).get("reason")).isBlank(), "a kiemelt ár indoklással");
+            eq(1.0, Json.num(res.get("cheap"), -1), "egy termék most jó áron");
+
+            // ugyanaz még egyszer: nem duplikálódik; ismeretlen termék, hibás kérés, nem támogatott metódus
+            eq(1, Json.arr(Json.obj(Json.parse(send(c, "POST", base + "/api/watch?id=" + id, on, 200))).get("watch")).size(), "nincs duplikátum");
+            send(c, "POST", base + "/api/watch?id=" + id, "{\"itemId\":\"nincs-ilyen\",\"on\":true}", 404);
+            send(c, "POST", base + "/api/watch?id=" + id, "{\"on\":true}", 400);
+            send(c, "DELETE", base + "/api/watch?id=" + id, "", 405);
+            get(c, base + "/api/watch?id=abc", 404);
+            get(c, base + "/api/watch?id=%2E%2E", 400);
+            String err = send(c, "POST", base + "/api/watch?id=" + id + "&lang=en", "{\"itemId\":\"nincs-ilyen\",\"on\":true}", 404);
+            check(err.contains("No such product"), "a hibaüzenet a felület nyelvén: " + err);
+
+            // egyszerre érkező kérések (pl. két eszközről): egyik változtatás sem vész el; legfeljebb 40 termék
+            List<String> items = new ArrayList<>(new java.util.TreeSet<>(repo.get().byItem().keySet()));
+            items.remove(itemId);
+            List<java.util.concurrent.CompletableFuture<HttpResponse<String>>> parallel = new ArrayList<>();
+            for (int i = 0; i < WebServer.MAX_WATCH - 1; i++) {
+                parallel.add(c.sendAsync(HttpRequest.newBuilder(URI.create(base + "/api/watch?id=" + id))
+                        .POST(HttpRequest.BodyPublishers.ofString("{\"itemId\":\"" + items.get(i) + "\",\"on\":true}"))
+                        .header("Content-Type", "application/json").build(), HttpResponse.BodyHandlers.ofString()));
+            }
+            for (var f : parallel) eq(200, f.get().statusCode(), "párhuzamos figyelés");
+            eq(WebServer.MAX_WATCH, Json.arr(Json.obj(Json.parse(get(c, base + "/api/watch?id=" + id, 200))).get("watch")).size(),
+                    "mind a 40 megmaradt (nincs elveszett írás)");
+            send(c, "POST", base + "/api/watch?id=" + id, "{\"itemId\":\"" + items.get(WebServer.MAX_WATCH) + "\",\"on\":true}", 400);
+
+            // a link visszavonásakor a figyelt termékek is átköltöznek; kikapcsolás
+            String fresh = String.valueOf(Json.obj(Json.parse(send(c, "POST", base + "/api/profile/rotate?id=" + id, "", 200))).get("id"));
+            Map<String, Object> moved = Json.obj(Json.parse(get(c, base + "/api/watch?id=" + fresh, 200)));
+            eq(WebServer.MAX_WATCH, Json.arr(moved.get("watch")).size(), "a figyelt termékek átköltöztek");
+            get(c, base + "/api/watch?id=" + id, 404);
+            Map<String, Object> off = Json.obj(Json.parse(send(c, "POST", base + "/api/watch?id=" + fresh,
+                    "{\"itemId\":\"" + itemId + "\",\"on\":false}", 200)));
+            check(Json.arr(off.get("watch")).stream().noneMatch(x -> itemId.equals(Json.obj(x).get("itemId"))), "kikapcsolva");
+            eq(WebServer.MAX_WATCH - 1, Json.arr(off.get("watch")).size(), "a többi marad");
+        } finally {
+            server.stop();
+            deleteTree(dir);
+        }
+    }
+
+    /**
+     * A felület minden szövege – az app.js t("…") hívásai és az index.html feliratai – megvan minden nyelvi fájlban
+     * (ami hiányzik, az a felületen magyarul jelenne meg).
+     */
+    static void testClientTextsTranslatedInEveryLanguage() throws IOException {
+        Set<String> keys = new java.util.TreeSet<>();
+        java.util.regex.Pattern call = java.util.regex.Pattern.compile("\\bt\\(\\s*\"((?:[^\"\\\\]|\\\\.)*)\"");
+        java.util.regex.Pattern template = java.util.regex.Pattern.compile("\\bt\\(\\s*`([^`$]*)`");
+        for (String f : List.of("/static/app.js", "/static/i18n.js")) {
+            String src = resource(f);
+            var m = call.matcher(src);
+            while (m.find()) keys.add(Json.str(Json.parse("\"" + m.group(1) + "\"")));
+            var tm = template.matcher(src);
+            while (tm.find()) keys.add(tm.group(1));
+        }
+        String html = resource("/static/index.html").replaceAll("(?s)<script.*?</script>", "").replaceAll("(?s)<style.*?</style>", "");
+        var text = java.util.regex.Pattern.compile(">([^<>]+)<").matcher(html);
+        while (text.find()) {
+            String k = text.group(1).replaceAll("\\s+", " ").trim();
+            if (k.codePoints().anyMatch(Character::isLetter)) keys.add(k);
+        }
+        var attr = java.util.regex.Pattern.compile("(?:placeholder|aria-label|title)=\"([^\"]+)\"").matcher(html);
+        while (attr.find()) if (attr.group(1).codePoints().anyMatch(Character::isLetter)) keys.add(attr.group(1));
+        var desc = java.util.regex.Pattern.compile("<meta name=\"description\" content=\"([^\"]+)\"").matcher(html);
+        if (desc.find()) keys.add(desc.group(1));
+        check(keys.size() > 300, "a felület szövegei megtalálhatók (" + keys.size() + ")");
+        check(keys.contains("Figyelem az árát") && keys.contains("Most jó áron"), "app.js és index.html szövegei is");
+        var entry = java.util.regex.Pattern.compile("(?m)^\\s*(\"(?:[^\"\\\\]|\\\\.)*\")\\s*:");
+        for (String lang : List.of("en", "hr", "de")) {
+            Set<String> dict = new java.util.HashSet<>();
+            var e = entry.matcher(resource("/static/lang/" + lang + ".js"));
+            while (e.find()) dict.add(Json.str(Json.parse(e.group(1))));
+            List<String> missing = keys.stream().filter(k -> !dict.contains(k)).toList();
+            check(missing.isEmpty(), lang + ": hiányzó fordítás (" + missing.size() + "): " + missing);
+        }
+    }
+
     static void testLogRedaction() {
         eq("/api/week?id=***&lang=en", WebServer.redactForTest("/api/week?id=abcdefghjk23456789mn&lang=en"), "profil-azonosító kitakarva");
         eq("/api/extras?id=***&n=3", WebServer.redactForTest("/api/extras?id=x&n=3"), "több paraméter");
@@ -1230,6 +1340,7 @@ public final class AllTests {
         // a közös link visszavonása: minden adat új azonosítóra kerül, a régi megszűnik
         st.rate(id, "lecso", true);
         st.saveDocument("extras-" + id, "[{\"name\":\"Kávé\"}]");
+        st.saveDocument("watch-" + id, "[{\"itemId\":\"123\",\"market\":\"hu\"}]");
         String moved = id + "uj";
         check(st.moveHousehold(id, moved), "áthelyezve");
         check(st.profile(id) == null, "a régi azonosító megszűnt");
@@ -1238,6 +1349,36 @@ public final class AllTests {
         eq(List.of("a", "b"), st.week(moved).get("ids"), "a hét átkerült");
         eq(Set.of("Rizs"), st.checked(moved, "k2"), "a pipák átkerültek");
         check(st.document("extras-" + id) == null && st.document("extras-" + moved) != null, "a saját tételek átkerültek");
+        check(st.document("watch-" + id) == null && st.document("watch-" + moved).contains("123"), "a figyelt termékek átkerültek");
+        // atomi dokumentum-módosítás: egyszerre 24 szálból hozzáfűzve egyik sem vész el (PostgreSQL-nél a tanácsadó zár)
+        String counter = "watch-" + moved + "-proba";
+        List<Thread> threads = new ArrayList<>();
+        java.util.concurrent.atomic.AtomicInteger errors = new java.util.concurrent.atomic.AtomicInteger();
+        for (int i = 0; i < 24; i++) {
+            int k = i;
+            threads.add(Thread.ofVirtual().start(() -> {
+                try {
+                    st.updateDocument(counter, old -> {
+                        List<Object> l = old == null ? new ArrayList<>() : new ArrayList<>(Json.arr(Json.parse(old)));
+                        l.add(k);
+                        return Json.write(l);
+                    });
+                } catch (IOException | RuntimeException e) {
+                    errors.incrementAndGet();
+                }
+            }));
+        }
+        for (Thread t : threads) t.join();
+        eq(0, errors.get(), "nincs hiba a párhuzamos módosításban");
+        eq(24, Json.arr(Json.parse(st.document(counter))).size(), "mind a 24 módosítás megmaradt");
+        try {
+            st.updateDocument(counter, old -> { throw new IllegalArgumentException("elutasítva"); });
+            check(false, "az elutasított módosítás kivételt dob");
+        } catch (IllegalArgumentException e) {
+            eq("elutasítva", e.getMessage(), "a változtatás kivétele továbbmegy");
+        }
+        eq(24, Json.arr(Json.parse(st.document(counter))).size(), "elutasított módosításnál nincs írás");
+        check(st.updateDocument(counter, old -> null) == null && st.document(counter) == null, "null: törlés");
         check(!st.moveHousehold(id, id + "x"), "nem létező háztartás");
         id = moved;
         LocalDate d = LocalDate.of(2020, 1, 1).plusDays(System.nanoTime() % 2000);

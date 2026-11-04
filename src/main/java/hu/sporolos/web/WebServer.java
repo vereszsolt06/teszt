@@ -31,6 +31,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -144,7 +145,7 @@ public final class WebServer {
     /** Melyik ország árait kéri a kérés: a háztartás-profil országa, különben a „market” paraméter. */
     private Markets.Runtime resolveMarket(String path, Map<String, String> q) {
         boolean profileBased = path.equals("/api/week") || path.equals("/api/extras") || path.equals("/api/rate")
-                || path.equals("/api/check") || path.equals("/api/profile");
+                || path.equals("/api/check") || path.equals("/api/profile") || path.equals("/api/watch");
         if (profileBased && storage != null && Ids.valid(q.get("id"))) {
             try {
                 Map<String, Object> prof = storage.profile(q.get("id"));
@@ -349,8 +350,9 @@ public final class WebServer {
             boolean isPromos = path.equals("/api/promos");
             boolean writes = path.equals("/api/rate") || path.equals("/api/check");
             boolean isExtras = path.equals("/api/extras");
+            boolean isWatch = path.equals("/api/watch");
             boolean allowed = method.equals("GET") && !isRefresh && !writes
-                    || method.equals("POST") && (isRefresh || isPromos || writes || path.equals("/api/profile") || path.equals("/api/profile/rotate"))
+                    || method.equals("POST") && (isRefresh || isPromos || writes || isWatch || path.equals("/api/profile") || path.equals("/api/profile/rotate"))
                     || method.equals("PUT") && path.equals("/api/profile")
                     || method.equals("DELETE") && (isPromos || path.equals("/api/rate") || isExtras)
                     || method.equals("POST") && isExtras;
@@ -375,6 +377,7 @@ public final class WebServer {
                 case "/api/recipes" -> recipes(st(), q, prefs(q));
                 case "/api/offers" -> offers(st(), q, prefs(q));
                 case "/api/extras" -> extrasEndpoint(method, q, method.equals("POST") ? readBody(ex, MAX_PUBLIC_BODY) : "");
+                case "/api/watch" -> watchEndpoint(method, q, method.equals("POST") ? readBody(ex, MAX_PUBLIC_BODY) : "");
                 case "/api/promos" -> switch (method) {
                     case "POST" -> addPromo(readBody(ex, MAX_BODY), prefs(q));
                     case "DELETE" -> deletePromo(q, prefs(q));
@@ -626,33 +629,139 @@ public final class WebServer {
     // ---------- saját tételek a bevásárlólistán ----------
 
     private List<Map<String, Object>> extras(String id) throws IOException {
-        String doc = requireStorage().document("extras-" + id);
-        List<Map<String, Object>> out = new ArrayList<>();
-        if (doc != null) for (Object o : Json.arr(Json.parse(doc))) out.add(Json.obj(o));
-        return out;
+        return docList(requireStorage().document("extras-" + id));
     }
 
     private Object extrasEndpoint(String method, Map<String, String> q, String body) throws IOException {
         String id = requireId(q);
         Household.load(requireStorage(), id, markets);
-        List<Map<String, Object>> list = extras(id);
+        if (method.equals("GET")) return Map.of("extras", extras(id));
+        Map<String, Object> in = method.equals("POST") ? Json.obj(Json.parse(body)) : Map.of();
+        int n = method.equals("DELETE") ? intParam(q, "n", -1, -1, 100) : -1;
+        // a kiválasztott termék csak akkor kerül mellé, ha ismert – ezt még a módosítás (és a tároló zárja) előtt nézzük meg
+        String itemId = in.get("itemId") == null ? null : Json.str(in.get("itemId"));
+        boolean knownItem = itemId != null && st().byItem().containsKey(itemId);
+        List<Map<String, Object>> result = new ArrayList<>();
+        requireStorage().updateDocument("extras-" + id, old -> {
+            List<Map<String, Object>> list = docList(old);
+            changeExtras(list, method, in, n, knownItem ? itemId : null);
+            result.addAll(list);
+            return Json.write(list);
+        });
+        return Map.of("extras", result);
+    }
+
+    /** A saját tételek listájának módosítása (a tároló zárja alatt fut). */
+    private static void changeExtras(List<Map<String, Object>> list, String method, Map<String, Object> in, int n, String itemId) {
         if (method.equals("POST")) {
-            Map<String, Object> in = Json.obj(Json.parse(body));
             String name = in.get("name") == null ? null : Json.str(in.get("name")).trim();
             if (name == null || name.isEmpty() || name.length() > 120) throw new IllegalArgumentException("Adj meg egy tételt");
             if (list.size() >= 60) throw new IllegalArgumentException("Legfeljebb 60 saját tétel lehet");
             Map<String, Object> e = new LinkedHashMap<>();
             e.put("name", name);
-            String itemId = in.get("itemId") == null ? null : Json.str(in.get("itemId"));
-            if (itemId != null && st().byItem().containsKey(itemId)) e.put("itemId", itemId);
+            if (itemId != null) e.put("itemId", itemId);
             list.add(e);
         } else if (method.equals("DELETE")) {
-            int n = intParam(q, "n", -1, -1, 100);
             if (n < 0 || n >= list.size()) throw new IllegalArgumentException("Nincs ilyen tétel");
             list.remove(n);
         }
-        if (!method.equals("GET")) storage.saveDocument("extras-" + id, Json.write(list));
-        return Map.of("extras", list);
+    }
+
+    /** Egy JSON-tömb dokumentum (pl. saját tételek, figyelt termékek) módosítható listaként; null → üres. */
+    private static List<Map<String, Object>> docList(String doc) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        if (doc != null) for (Object o : Json.arr(Json.parse(doc))) out.add(new LinkedHashMap<>(Json.obj(o)));
+        return out;
+    }
+
+    // ---------- figyelt termékek (árfigyelés) ----------
+
+    public static final int MAX_WATCH = 40;
+
+    private List<Map<String, Object>> watchList(String id) throws IOException {
+        return docList(requireStorage().document("watch-" + id));
+    }
+
+    /**
+     * A háztartás figyelt termékei (országonként külön lista): mindegyiknek a háztartás boltjaiban mért mai
+     * legjobb ára, és ha ez jó ár (bolti akció, a szokásosnál vagy a többi láncnál olcsóbb), az indoklás.
+     * POST {itemId, on}: a figyelés be- vagy kikapcsolása – a válasz mindig a friss lista.
+     */
+    private Object watchEndpoint(String method, Map<String, String> q, String body) throws IOException {
+        String id = requireId(q);
+        Household h = Household.load(requireStorage(), id, markets);
+        PriceRepository.State s = st();
+        var a = s.analysis(h.cards());
+        String market = rt().market().id();
+        List<Map<String, Object>> list;
+        if (method.equals("POST")) {
+            Map<String, Object> in = Json.obj(Json.parse(body));
+            String itemId = in.get("itemId") == null ? null : Json.str(in.get("itemId"));
+            if (itemId == null || itemId.isBlank() || itemId.length() > 120) throw new IllegalArgumentException("Hibás termék");
+            boolean on = !Boolean.FALSE.equals(in.get("on"));
+            List<Map<String, Object>> changed = new ArrayList<>();
+            requireStorage().updateDocument("watch-" + id, old -> {
+                List<Map<String, Object>> l = docList(old);
+                boolean watched = l.stream().anyMatch(w -> itemId.equals(w.get("itemId")) && market.equals(w.get("market")));
+                if (on && !watched) {
+                    PriceEntry best = bestOffer(a, itemId, h.stores());
+                    if (best == null) throw new NotFound("Nincs ilyen termék: " + itemId);
+                    if (l.size() >= MAX_WATCH) throw new IllegalArgumentException("Legfeljebb 40 terméket figyelhetsz");
+                    Map<String, Object> w = new LinkedHashMap<>();
+                    w.put("itemId", itemId);
+                    w.put("market", market);
+                    w.put("name", best.productName());
+                    w.put("startPrice", best.price());
+                    w.put("since", s.snapshot().date().toString());
+                    l.add(0, w);
+                } else if (!on && watched) {
+                    l.removeIf(w -> itemId.equals(w.get("itemId")) && market.equals(w.get("market")));
+                }
+                changed.addAll(l);
+                return Json.write(l);
+            });
+            list = changed;
+        } else {
+            list = watchList(id);
+        }
+        List<Object> out = new ArrayList<>();
+        int cheap = 0;
+        for (Map<String, Object> w : list) {
+            if (!market.equals(w.get("market"))) continue;
+            String itemId = Json.str(w.get("itemId"));
+            PriceEntry best = bestOffer(a, itemId, h.stores());
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("itemId", itemId);
+            m.put("name", best != null ? best.productName() : w.get("name"));
+            m.put("available", best != null);
+            m.put("since", w.get("since"));
+            if (best != null) {
+                Map<String, Object> o = ApiMapper.entry(best);
+                o.put("storeName", storeName(s, best.storeId()));
+                o.put("mine", h.stores().isEmpty() || h.stores().contains(best.storeId()));
+                m.put("best", o);
+                Deal d = a.deals().dealFor(best);
+                m.put("deal", ApiMapper.dealSummary(d));
+                if (d != null) cheap++;
+                if (w.get("startPrice") instanceof Number n) m.put("startPrice", n.doubleValue());
+            }
+            out.add(m);
+        }
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("date", s.snapshot().date().toString());
+        res.put("cheap", cheap);
+        res.put("watch", out);
+        return res;
+    }
+
+    /** Egy termék legolcsóbb ajánlata a háztartás boltjaiban; ha ott nem kapható, bárhol (null: sehol sincs). */
+    private static PriceEntry bestOffer(PriceRepository.Analysis a, String itemId, Collection<String> stores) {
+        PriceEntry mine = null, any = null;
+        for (PriceEntry e : a.byItem().getOrDefault(itemId, List.of())) {
+            if (any == null || e.price() < any.price()) any = e;
+            if ((stores.isEmpty() || stores.contains(e.storeId())) && (mine == null || e.price() < mine.price())) mine = e;
+        }
+        return mine != null ? mine : any;
     }
 
     /**
@@ -1574,7 +1683,8 @@ public final class WebServer {
     /** Ismert útvonalak (a metrikák címkéi korlátos számúak maradjanak, véletlen URL-ek ne hozzanak létre újat). */
     private static final Set<String> ROUTES = Set.of("/api/status", "/api/markets", "/api/deals", "/api/suggestions",
             "/api/recipe", "/api/item", "/api/search", "/api/ingredients", "/api/plan", "/api/recipes", "/api/offers",
-            "/api/extras", "/api/promos", "/api/refresh", "/api/profile", "/api/profile/rotate", "/api/rate", "/api/week", "/api/check");
+            "/api/extras", "/api/promos", "/api/refresh", "/api/profile", "/api/profile/rotate", "/api/rate", "/api/week", "/api/check",
+            "/api/watch");
 
     static String route(String path, boolean api) {
         if (!api) return path.equals("/healthz") || path.equals("/metrics") ? path : "static";
@@ -1597,7 +1707,8 @@ public final class WebServer {
         return path + "?" + q.replaceAll("(^|&)id=[^&]*", "$1id=***");
     }
 
-    private static final Set<String> PROFILE_PATHS = Set.of("/api/week", "/api/profile", "/api/profile/rotate", "/api/extras", "/api/rate", "/api/check");
+    private static final Set<String> PROFILE_PATHS = Set.of("/api/week", "/api/profile", "/api/profile/rotate", "/api/extras",
+            "/api/rate", "/api/check", "/api/watch");
 
     private void metricsEndpoint(HttpExchange ex) throws IOException {
         StringBuilder sb = new StringBuilder();

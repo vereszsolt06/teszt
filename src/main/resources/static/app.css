@@ -499,7 +499,10 @@ dialog::backdrop { background: rgb(15 12 5 / 0.5); }
 .offers { list-style: none; margin: 0; padding: 0; }
 .offers li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
 .offers li.current { background: color-mix(in srgb, var(--tag) 20%, transparent); margin: 0 -8px; padding: 10px 8px; border-radius: 8px; }
-.offers li.not-mine { opacity: 0.55; }
+/* a háztartás boltjain kívüli láncok: halványabb ár és név, de olvasható kontraszttal (átlátszóság helyett) */
+.offers li.not-mine b { color: var(--muted); }
+/* sötétben a sárga kiemelés halványabb, hogy a szürke és a piros szöveg is olvasható maradjon rajta (≥ 4,5:1) */
+@media (prefers-color-scheme: dark) { .offers li.current { background: color-mix(in srgb, var(--tag) 12%, transparent); } }
 .offers li > div { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
 .offer-price { align-items: flex-end !important; text-align: right; }
 .offer-meta { font-size: 0.8rem; color: var(--muted); }
@@ -617,6 +620,33 @@ dialog::backdrop { background: rgb(15 12 5 / 0.5); }
 .offer-save { margin-left: auto; background: var(--red); color: var(--on-accent); font-weight: 800; font-size: 0.8rem; padding: 1px 7px; border-radius: 4px; }
 .offer-why { font-size: 0.78rem; color: var(--muted); }
 
+/* ---------- figyelt termékek ---------- */
+.watch { background: var(--paper); border-radius: 16px; padding: 12px 14px 10px; margin: 14px 0 0; box-shadow: var(--shadow); }
+.watch-title { font-size: 1.05rem; margin: 2px 0 6px; }
+.watch-list { list-style: none; margin: 0; padding: 0; }
+.watch-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 4px; border-top: 1px dashed var(--line); }
+.watch-item:first-child { border-top: 0; }
+.watch-open { display: flex; flex-direction: column; gap: 2px; min-width: 0; text-align: left; border: 0; background: none; padding: 9px 2px; border-radius: var(--radius-sm); }
+.watch-open:hover .watch-name { text-decoration: underline; }
+.watch-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.watch-name { font-weight: 700; line-height: 1.25; min-width: 0; overflow-wrap: anywhere; }
+.watch-price { display: flex; align-items: baseline; gap: 6px; flex: none; }
+.watch-price b { font-family: var(--display); font-size: 1.15rem; }
+.watch-badge { background: var(--red); color: var(--on-accent); font-weight: 800; font-size: 0.76rem; padding: 1px 6px; border-radius: 4px; }
+.watch-item.cheap .watch-name::before { content: "🔥 "; }
+.watch-item.gone .watch-name { color: var(--muted); }
+.watch-meta { font-size: 0.8rem; color: var(--muted); }
+.watch-why { font-size: 0.8rem; color: var(--muted); }
+.watch-item.cheap .watch-why { color: var(--leaf); font-weight: 700; }
+.watch-change { font-size: 0.78rem; font-weight: 700; }
+.watch-change.down { color: var(--leaf); }
+.watch-change.up { color: var(--red); }
+.watch-off { border: 0; background: none; color: var(--tag-ink); font-size: 1.25rem; line-height: 1; padding: 10px 6px; min-width: 44px; min-height: 44px; border-radius: var(--radius-sm); }
+@media (prefers-color-scheme: dark) { .watch-off { color: var(--tag); } }
+.watch-off:hover { color: var(--red); }
+.watch-more { margin-top: 4px; }
+.watch-tip { margin-top: 12px; }
+
 /* ---------- saját tételek ---------- */
 .extras { background: var(--paper); border-radius: 16px; padding: 4px 18px 12px; margin: 14px 0 0; box-shadow: var(--shadow); }
 .extras .section-title { margin: 14px 0 0; font-size: 1.05rem; }
@@ -638,7 +668,8 @@ dialog::backdrop { background: rgb(15 12 5 / 0.5); }
 .hist-txt { display: flex; flex-direction: column; }
 .spark { width: 160px; height: 34px; flex: none; }
 .spark path { fill: none; stroke: var(--leaf); stroke-width: 2; stroke-linejoin: round; }
-.item-actions { display: flex; justify-content: flex-end; margin-top: 14px; }
+.item-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+#item-watch[aria-pressed="true"] { border-color: var(--tag-ink); background: var(--tag); color: var(--tag-ink); }
 
 /* fejléc keskeny kijelzőn: a márkanév rövidül, a gombok mindig elférnek */
 .brand { min-width: 0; flex: 1 1 auto; }

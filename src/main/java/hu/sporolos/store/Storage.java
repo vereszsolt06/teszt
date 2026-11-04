@@ -75,7 +75,19 @@ public interface Storage extends AutoCloseable {
     void deleteDocument(String key) throws IOException;
 
     /**
-     * A háztartás minden adata (beállítások, értékelések, hét, pipák, saját tételek) átkerül egy új azonosítóra,
+     * Egy dokumentum atomi módosítása (olvasás → változtatás → írás): {@code change} a jelenlegi szövegből (vagy
+     * null-ból) az újat adja, null esetén a dokumentum törlődik. Két egyidejű módosítás nem írja felül egymást –
+     * PostgreSQL-lel több app-példány között sem. Ha {@code change} kivételt dob, nincs írás, és a kivétel továbbmegy.
+     *
+     * @return az új szöveg (vagy null)
+     */
+    String updateDocument(String key, java.util.function.UnaryOperator<String> change) throws IOException;
+
+    /** A háztartáshoz tartozó dokumentumok kulcs-előtagjai („extras-” + azonosító): ezek is költöznek az azonosítóval. */
+    List<String> HOUSEHOLD_DOCUMENTS = List.of("extras-", "watch-");
+
+    /**
+     * A háztartás minden adata (beállítások, értékelések, hét, pipák, saját tételek, figyelt termékek) átkerül egy új azonosítóra,
      * a régi megszűnik – a közös link „visszavonása”: aki a régi linket ismeri, többé nem éri el a háztartást.
      *
      * @return false, ha nincs ilyen (régi) háztartás

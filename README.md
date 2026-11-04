@@ -146,6 +146,7 @@ docker compose -f docker-compose.prod.yml up -d --build
 - **Nom vagy nem:** kártyás lapozó (húzás, gombok, ← / →). A *Nom* receptek előnyt kapnak a tervben, a *Nem* receptek kimaradnak. Kedvencek listája.
 - **Akciók:** a boltjaid összes kiemelt ára egy rácsban, a legnagyobb megtakarítás elöl, kereséssel („sajt”, „csirke”) és boltszűrővel; alapból csak a receptekhez használható termékek, egy pipával minden élelmiszer. Kártyánként: ár, kiszerelés, egységár, mennyivel olcsóbb a többi láncnál, és miért jó ár.
 - **Termékablak:** bármelyik termékre koppintva látod az árát minden láncban (hány boltjukban kapható, mennyivel drágább), az **elmúlt 8 hét árát** egy kis grafikonon („most a 8 hét legolcsóbb ára” / „szokásos ár” / „drágább a szokásosnál”), és egy gombbal **felteheted a listádra**.
+- **Árfigyelés (figyelt termékek):** a termékablakban a **☆ Figyelem az árát** gombbal bármelyik termék (a kávéd, a mosóporod, a kedvenc sajtod) a figyelt listára kerül. Az **Akciók** fül tetején látod mindegyik mai legjobb árát a boltjaidban, elöl azokat, amelyek **most jó áron** vannak (bolti akció, olcsóbb a szokásosnál vagy a többi láncnál – az indoklással), és hogy mennyit változott az ár, mióta figyeled. Ha egy figyelt termék azóta lett olcsó, hogy legutóbb megnézted, az app indításkor szól („Most jó áron: … – Megnézem”), de ugyanazért csak egyszer, amíg olcsó marad. A lista a háztartásé (a közös linken mindenki ugyanazt látja), országonként külön, legfeljebb 40 termék; a ★ gombbal egy koppintással kivehető, visszavonással.
 - **Saját tételek a listán:** amire a vacsorákon kívül szükség van (kávé, banán, mosogatószer). Ha a javaslatok közül választod, az ára beleszámít a lista összegébe *és a boltválasztásba*; más láncban a legolcsóbb hasonló termékkel számol („hasonló: …”), mert a sajátmárkás termékek láncról láncra mások. Szabad szöveggel is felvehető, akkor ár nélkül.
 - **Receptek:** „Ma kifizetődő” (az eredeti ötlet: ami ma a boltodban jó áron összevásárolható), és mind a 170 recept a háztartásod létszámára árazva („1 807 Ft · 2 adag”), kalóriával; szűrés fehérjedús / könnyed / laktató / diéta / gyors / airfryer / kedvencek szerint, rendezés ár, „ma a legjobb ár”, idő, fehérje, kalória szerint.
 - **Bolt** a fejlécben: **automatikus** (ahol a heted a legolcsóbb) vagy egy rögzített lánc. **Két bolt:** ha bekapcsolod, és legalább ~300 Ft-ot (vagy a hét 4%-át) spórolsz vele, a lista két boltra bomlik – minden tétel ott, ahol olcsóbb.
@@ -292,6 +293,7 @@ A PostgreSQL-kapcsolathoz **nincs JDBC-driver**: a `PgClient` a PostgreSQL 3-as 
 | `GET /api/item?id=<vonalkód>` | egy termék ára minden láncban, és az elmúlt 8 hét ára (`history`: pontok, min, max, medián) |
 | `GET /api/offers?q=sajt&store=lidl&ingredients=false&limit=60` | a boltjaid kiemelt árai együtt, megtakarítás szerint (Akciók fül) |
 | `GET` / `POST` / `DELETE /api/extras?id=…[&n=2]` | a háztartás saját listatételei (`{"name", "itemId"}`) |
+| `GET` / `POST /api/watch?id=…` | a háztartás figyelt termékei a mai legjobb árral (`best`), a jó ár indoklásával (`deal`) és a figyelés kezdetén mért árral (`startPrice`); `POST {"itemId", "on"}`: figyelés be / ki |
 | `GET /api/search?q=tej&store=lidl&limit=30` | keresés a termékek között, egységár szerint |
 | `GET /api/ingredients` | a recept-alapanyagok listája (az akció-űrlaphoz) |
 | `GET /api/plan?store=lidl&people=2&dinners=5&budget=15000&diets=vega&equipment=tuzhely,suto&liked=…&disliked=…&keep=a,_,c&exclude=…&seed=3` | heti vacsoraterv közös, osztályonként rendezett bevásárlólistával |
@@ -395,7 +397,7 @@ Dockerfile, docker-compose.yml   konténer: app + postgres:16
 ./build.sh test        # Windows: build.cmd test
 ```
 
-50 teszt fut le:
+52 teszt fut le:
 - JSON- és xlsx-olvasás, az Árfigyelő-fejléc felismerése, egységátváltás;
 - mind a négy jó ár jel, valamint az elérhetőség hatása;
 - a kiszerelés-modell: tojásdoboz vagy tálca, mérlegelős áru minimum egy darabbal, „ca. 500g”, csak csomagolt liszt, darab ↔ kg (paprika, zsemle), csomós zöldség, tűrés, a nagy kiszerelés határa;
@@ -407,6 +409,8 @@ Dockerfile, docker-compose.yml   konténer: app + postgres:16
 - heti terv maradékkal (3 napra főzés, a maradéknapra nincs vásárlás, csak eltartható étel), ugyanaz a hét több boltban, két boltos lista (sosem drágább, kis megtakarításért nem bont);
 - tárolás oda-vissza (profil, értékelés, hét, pipák, árnap, kézi akció, a háztartás áthelyezése új azonosítóra minden adatával) fájlokkal, és – ha a `PG_TEST_URL` meg van adva – PostgreSQL-lel is, párhuzamos írással és SQL-befecskendezési próbával;
 - a közös link visszavonása a webszerveren át: új, 20 karakteres azonosító, a régi 404, a beállítások, a hét és a jelölések megmaradnak, a régi azonosítóval újra nem visszavonható;
+- árfigyelés a webszerveren át: a háztartás boltjainak legjobb ára, a jó ár indoklása, nincs duplikátum, ismeretlen termék 404, legfeljebb 40 termék, a hibaüzenet a felület nyelvén, a link visszavonásakor a figyelt termékek is átköltöznek;
+- a felület minden szövege (az `app.js` `t("…")` hívásai és az `index.html` feliratai, ~370 szöveg) megvan az angol, a horvát és a német szótárban – ami hiányozna, az a felületen magyarul jelenne meg;
 - heti terv javító köre: 6 boltban × 2 létszám × 3 mag × keret nélkül / kerettel átlagosan olcsóbb a mohó tervnél, nem lépi túl gyakrabban a keretet, nincs ismétlés vagy desszert, a megtartott napokhoz nem nyúl;
 - heti terv: nincs ismétlés, változatos fő alapanyag, nincs desszert, a lista összege egyezik, egy termék egy sor, diéta- és eszközszűrő, csere a többi nap megtartásával, keret, más mag más hetet ad;
 - a letöltés, a gyorsítótár és a visszaesés egy helyi HTTP-szerverrel;
@@ -500,13 +504,15 @@ Az app eddig két országban tervezett, de csak magyarul beszélt – ez volt a 
 
 **Németül is.** Horvátország legnagyobb turistacsoportja németajkú, és az EU legnagyobb nyelvi piaca: a felület, mind a 170 recept („Paprikahuhn mit Nockerln”, „Topfenknödel”), az alapanyagok, a generált mondatok és a keresés („Milch” → tej, „Kaffee” → kava) németül is; dkg → g, dl → ml, „am Mittwoch”.
 
-**Akadálymentesség.** Az axe-core átvizsgálás szerint mind a 8 nézet (első indítás, hét, receptlap, lista, akciók, receptek, Nom vagy nem, beállítások) világos és sötét módban is hibátlan: javítva a zöld címkék és gombok kontrasztja (sötét módban sötét szöveg a világos zöld / piros alapon), az adagár-kiemelés, a hét H1 címsora, és a figyelmeztető sávok feliratos régióban vannak.
+**Akadálymentesség.** Az axe-core átvizsgálás szerint mind a 8 nézet (első indítás, hét, receptlap, lista, akciók, receptek, Nom vagy nem, beállítások) világos és sötét módban is hibátlan: javítva a zöld címkék és gombok kontrasztja (sötét módban sötét szöveg a világos zöld / piros alapon), az adagár-kiemelés, a hét H1 címsora, és a figyelmeztető sávok feliratos régióban vannak. A termékablak is átvizsgálva (az árfigyelés gombjával és a figyelt listával együtt): a nem a háztartás boltjaihoz tartozó láncok sorai eddig 55%-os átlátszósággal halványodtak (2,2:1 kontraszt), most halványabb színnel és „nem a te boltod” felirattal olvashatók; sötét módban a kiemelt sor sárgája halványabb, hogy a szürke és a piros szöveg is olvasható legyen rajta.
 
 **Horvátul is.** A horvát piac mellé horvát felület: mind a 170 recept, az alapanyagok és a generált mondatok. A horvát háromféle többes számot ismer (1 porcija · 2 porcije · 5 porcija; 1 glavica · 3 glavice · 5 glavica) – a kliensben az `Intl.PluralRules`, a szerveren a mértékegységek `[egy, néhány, sok]` alakja dönt; a napok tárgyesetben („za srijedu”). A számformátum európai marad (12,49 €), a dkg grammra vált, a dl marad. Nyelvenként egy `options` blokk szabja meg (`numbers`, `metric`).
 
 **Keresés a saját nyelveden.** Minden nyelvi fájlnak van egy keresési szótára (`search`: helyi szó → magyar), és az alapanyagnevek visszafelé is működnek. A keresőszó útja: a felület nyelve → magyar → a piac nyelve. Így egy angol felhasználó a magyar boltban a „milk”-re tejet, a horvátban a „coffee”-ra *kava*-t talál; a horvát szó a horvát boltban változatlan marad.
 
 **Megvan otthon:** a bevásárlólista minden során egy házikó-gomb: amit már otthon tartasz (rizs, tojás, a múlt heti tészta), azt egy koppintással kiveheted a vásárlásból – átkerül az „Otthon megvan” részbe, a pénztári összeg és a haladás („3 / 21 a kosárban”) nélküle számol, a megosztott és a nyomtatott listán sem szerepel. A jelölés a közös pipák mellé kerül (`have:` előtaggal), így a háztartás minden eszközén látszik, offline is működik, és visszavonható.
+
+**Árfigyelés:** amit rendszeresen veszel, de nem receptalapanyag (kávé, mosószer, a kedvenc joghurt), azt a ☆ gombbal figyelheted: az Akciók fül tetején a mai legjobb ára látszik a boltjaidban, és az app indításkor szól, ha valamelyik azóta lett jó áron, hogy legutóbb láttad. A háztartás közös listája (`watch-<azonosító>` dokumentum), a link visszavonásakor átköltözik; a figyelés kezdetén mért árhoz képest a változás is látszik („Mióta figyeled: −12%”).
 
 **Használat közben:** a Receptek keresője a **hozzávalókban is** keres, több szóval („cukkini”, „csirke rizs” → amiben mindkettő van – mit főzzek abból, ami otthon van); a receptlapon **🔗 Megosztás** (link, amit a másik a saját nyelvén és boltja áraival lát); asztali gépen **🖨 Nyomtatás**: két hasábos, papírra szabott lista. A Receptek listája az elkészítés nélkül jön (a receptlap külön kéri): 129 KB helyett 85 KB. A lista tetején **„Kipipáltak elrejtése”** (a boltban csak az marad látható, ami még hiányzik; eszközönként megjegyzi); a hét tetején **📅 Naptárba**: a vacsorák `.ics` fájlban (18:30–19:30, adagár, recept-link), a Google / Apple / Outlook naptár megnyitáskor felveszi. **Telepíthető:** 192/512 px-es és maszkolható PNG ikon, Apple touch icon, gyorsindítás (Lista, Hét); ahol a böngésző engedi, a Beállításokban „Telepítés a kezdőképernyőre” gomb, iPhone-on útmutató.
 

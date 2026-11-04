@@ -270,7 +270,9 @@ public final class PgStorage implements Storage {
             c.query("UPDATE recipe_rating SET household_id = $2 WHERE household_id = $1", fromId, toId);
             c.query("UPDATE saved_week SET household_id = $2 WHERE household_id = $1", fromId, toId);
             c.query("UPDATE checked_item SET household_id = $2 WHERE household_id = $1", fromId, toId);
-            c.query("UPDATE app_document SET key = $2 WHERE key = $1", "extras-" + fromId, "extras-" + toId);
+            for (String prefix : HOUSEHOLD_DOCUMENTS) {
+                c.query("UPDATE app_document SET key = $2 WHERE key = $1", prefix + fromId, prefix + toId);
+            }
             c.query("DELETE FROM household WHERE id = $1", fromId);
             return true;
         });
@@ -478,6 +480,35 @@ public final class PgStorage implements Storage {
     @Override
     public void deleteDocument(String key) throws IOException {
         with(c -> c.query("DELETE FROM app_document WHERE key = $1", key));
+    }
+
+    @Override
+    public String updateDocument(String key, java.util.function.UnaryOperator<String> change) throws IOException {
+        RuntimeException[] rejected = new RuntimeException[1];
+        String result = tx(c -> {
+            // a zár a kulcsé, nem a soré: az első két egyidejű írást is sorba állítja (amikor még nincs sor);
+            // a tranzakció végén magától feloldódik
+            c.query("SELECT pg_advisory_xact_lock(hashtext($1))", key);
+            var rows = c.query("SELECT body FROM app_document WHERE key = $1", key).rows();
+            String old = rows.isEmpty() ? null : rows.get(0)[0];
+            String next;
+            try {
+                next = change.apply(old);
+            } catch (RuntimeException e) {
+                rejected[0] = e; // elutasított változtatás (pl. hibás kérés): nincs írás, a kapcsolat ép marad
+                return null;
+            }
+            if (next == null) {
+                if (old != null) c.query("DELETE FROM app_document WHERE key = $1", key);
+            } else if (!next.equals(old)) {
+                c.query("""
+                        INSERT INTO app_document(key, body) VALUES ($1, $2)
+                        ON CONFLICT (key) DO UPDATE SET body = excluded.body, updated_at = now()""", key, next);
+            }
+            return next;
+        });
+        if (rejected[0] != null) throw rejected[0];
+        return result;
     }
 
     @Override

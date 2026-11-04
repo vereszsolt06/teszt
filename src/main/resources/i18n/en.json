@@ -1702,6 +1702,8 @@
   "Hiányzó vagy érvénytelen profil-azonosító": "Missing or invalid profile ID",
   "Nincs ilyen háztartás-profil": "No such household profile",
   "Hibás tétel": "Invalid item",
+  "Hibás termék": "Invalid product",
+  "Legfeljebb 40 terméket figyelhetsz": "You can watch at most 40 products",
   "Hibás nap": "Invalid day",
   "Ez a hét utolsó vacsorája": "This is the last dinner of the week",
   "A profilok tárolása nincs bekapcsolva": "Profile storage is not enabled",
