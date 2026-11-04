@@ -756,3 +756,24 @@ dialog::backdrop { background: rgb(15 12 5 / 0.5); }
   .lang-switch { gap: 4px; }
   .lang-switch button { padding: 5px 9px; font-size: 0.82rem; }
 }
+
+/* ---------- keskeny telefon: hosszú nevek, csere-választó, párbeszédablakok ---------- */
+/* a hosszú összetett szavak (uborkasalátával, Buchstabennudeln) elválasztva törnek, végső esetben bárhol – sosem lógnak ki */
+.card-name, .mini-name, .dinner-name, .swap-name, .rs-title, .nom-card h2, .offer-name, .buy-name, .ing-name, .liked-open span {
+  overflow-wrap: anywhere; hyphens: auto;
+}
+.card-head > :not(.ricon) { min-width: 0; }
+@media (max-width: 480px) {
+  .sheet, .item-dialog { padding: 18px 16px; width: calc(100vw - 16px); max-height: calc(100vh - 16px); }
+  /* csere: ikon balra, mellette a név teljes szélességben, alatta az árváltozás */
+  .swap-opt { grid-template-columns: 40px minmax(0, 1fr); grid-template-areas: "icon info" "icon delta"; column-gap: 10px; row-gap: 8px; align-items: start; padding: 10px; }
+  .swap-opt > .ricon { grid-area: icon; width: 40px; height: 40px; font-size: 1.3rem; border-radius: 12px; }
+  .swap-info { grid-area: info; }
+  .swap-delta { grid-area: delta; justify-self: start; }
+  .row-head .ghost { white-space: normal; text-align: center; }
+  /* receptrács két hasábban: kisebb ikon, több hely a névnek */
+  .cards .ricon { width: 34px; height: 34px; font-size: 1.15rem; border-radius: 10px; }
+  .cards .card-body { padding: 12px 12px 4px; }
+  .cards .card-head { gap: 8px; align-items: flex-start; }
+  .cards .card-name { font-size: 0.98rem; }
+}
