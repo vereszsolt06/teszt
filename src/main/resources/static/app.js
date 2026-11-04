@@ -665,29 +665,33 @@ function renderList() {
   const split = w.split;
   const forWhom = t("{dinners} vacsora, {people} főre", { dinners: w.days.length, people: w.people, n: w.people });
   $("#list-sub").textContent = split ? `${split.stores.map((x) => x.name).join(" + ")} · ${forWhom}` : `${w.storeName} · ${forWhom}`;
-  $("#list-total").textContent = ft((split ? split.checkout : w.checkoutTotal) + (w.extrasTotal || 0));
   const checked = new Set(w.checked || []);
+  const have = haveKeys(w);
+  // ami otthon megvan, azt nem kell megvenni: a pénztári összegből is kimarad
+  const haveItems = listItems(w).filter((i) => have.has(itemKey(i)));
+  const haveCost = haveItems.reduce((sum, i) => sum + (i.checkoutCost || 0), 0);
+  $("#list-total").textContent = ft((split ? split.checkout : w.checkoutTotal) + (w.extrasTotal || 0) - haveCost);
+  $("#list-have-note").textContent = haveCost > 0 ? t("{price} értékű már megvan otthon – nem számoltuk bele.", { price: ft(haveCost) }) : "";
   const root = $("#aisles");
   root.replaceChildren();
   const groups = split ? split.groups : [{ name: null, aisles: w.aisles }];
-  let total = 0, done = 0;
   for (const g of groups) {
     if (g.name) {
       const h = el("h2", "store-head");
-      h.append(el("span", null, g.name), el("b", null, ft(g.checkout)));
+      const gHave = g.aisles.flatMap((a) => a.items).filter((i) => !i.staple && have.has(itemKey(i))).reduce((sum, i) => sum + i.checkoutCost, 0);
+      h.append(el("span", null, g.name), el("b", null, ft(g.checkout - gHave)));
       root.appendChild(h);
     }
     const staples = [];
     for (const a of g.aisles) {
-      const items = a.items.filter((i) => !i.staple);
+      const items = a.items.filter((i) => !i.staple && !have.has(itemKey(i)));
       staples.push(...a.items.filter((i) => i.staple));
       if (!items.length) continue;
       root.appendChild(aisleSection(a.aisle, items, checked));
-      total += items.length;
-      done += items.filter((i) => checked.has(itemKey(i))).length;
     }
-    if (staples.length) root.appendChild(aisleSection(t("Ha nincs otthon"), staples, checked));
+    if (staples.length) root.appendChild(aisleSection(t("Ha nincs otthon"), staples, checked, true));
   }
+  if (haveItems.length) root.appendChild(haveSection(haveItems));
   if (w.pantry.length) root.appendChild(el("p", "pantry", t("Fűszerek a kamrából: {list}.", { list: w.pantry.join(", ") })));
   renderExtras(w, checked);
   updateProgress();
@@ -697,7 +701,38 @@ function renderList() {
 /** A lista-tétel kulcsa a közös pipákhoz: az eredeti (magyar) név, hogy minden nyelven ugyanaz legyen. */
 const itemKey = (i) => i.labelKey || i.label;
 
-function aisleSection(title, items, checked) {
+/** A „megvan otthon” jelölések kulcsai (a közös pipák között, „have:” előtaggal – minden eszközön látszik). */
+const HAVE = "have:";
+const haveKeys = (w) => new Set((w.checked || []).filter((k) => k.startsWith(HAVE)).map((k) => k.slice(HAVE.length)));
+
+const HOUSE_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/></svg>';
+
+function haveButton(key, on, label) {
+  const b = el("button", "have-btn", null, { type: "button", "aria-pressed": String(on),
+    "aria-label": t(on ? "{name}: mégis kell" : "{name}: megvan otthon", { name: label }), title: t(on ? "Mégis kell" : "Megvan otthon") });
+  b.innerHTML = HOUSE_SVG;
+  b.addEventListener("click", () => toggleHave(key, !on));
+  return b;
+}
+
+/** Az otthon meglévő tételek: nem kell megvenni, a végösszegben sincsenek; egy koppintással visszatehetők. */
+function haveSection(items) {
+  const sec = el("section", "aisle have");
+  sec.appendChild(el("h2", null, t("Otthon megvan")));
+  const ul = el("ul", "buy");
+  for (const i of items) {
+    const li = el("li", "is-have");
+    const label = el("div", "buy-label");
+    label.append(el("span", "buy-name", i.item ? i.item.name : i.label), el("span", "buy-qty", i.buyText));
+    li.append(el("span", "have-mark", "✓", { "aria-hidden": "true" }), label, el("span", "buy-price", ft(i.checkoutCost)),
+      haveButton(itemKey(i), true, i.item ? i.item.name : i.label));
+    ul.appendChild(li);
+  }
+  sec.appendChild(ul);
+  return sec;
+}
+
+function aisleSection(title, items, checked, staples) {
   const sec = el("section", "aisle");
   sec.appendChild(el("h2", null, title));
   const ul = el("ul", "buy");
@@ -715,6 +750,8 @@ function aisleSection(title, items, checked) {
       el("span", "buy-use", `${i.usedIn.join(", ")}${i.leftover ? ` · ${t("marad {amount}", { amount: i.leftover })}` : ""}`));
     const price = el("span", "buy-price", ft(i.checkoutCost));
     li.append(cb, label, price);
+    // a kamraáru („ha nincs otthon”) eleve nincs az összegben; a többinél jelölhető, hogy megvan
+    if (!staples) li.appendChild(haveButton(key, false, i.item ? i.item.name : i.label));
     if (i.deal) li.appendChild(el("span", i.deal.type === "PROMO" ? "buy-deal promo" : "buy-deal", DEAL_LABEL[i.deal.type]));
     ul.appendChild(li);
   }
@@ -731,14 +768,20 @@ async function shareList() {
     lines.push("", `== ${g.name} ==`);
     for (const a of g.aisles) {
       lines.push(a.aisle.toUpperCase());
-      for (const i of a.items) lines.push(`☐ ${i.item ? i.item.name : i.label} – ${i.buyText} – ${ft(i.checkoutCost)}${i.staple ? t(" (ha nincs otthon)") : ""}`);
+      for (const i of a.items) {
+        if (!i.staple && haveKeys(w).has(itemKey(i))) continue;
+        lines.push(`☐ ${i.item ? i.item.name : i.label} – ${i.buyText} – ${ft(i.checkoutCost)}${i.staple ? t(" (ha nincs otthon)") : ""}`);
+      }
     }
   }
   if (w.extras?.length) {
     lines.push("", t("SAJÁT TÉTELEK"));
     for (const x of w.extras) lines.push(`☐ ${x.name}${x.price != null ? ` – ${ft(x.price)} (${x.storeName})` : ""}`);
   }
-  lines.push("", t("Összesen kb. {price}", { price: ft((w.split ? w.split.checkout : w.checkoutTotal) + (w.extrasTotal || 0)) }), "", t("Vacsorák:"),
+  const haveList = listItems(w).filter((i) => haveKeys(w).has(itemKey(i)));
+  if (haveList.length) lines.push("", t("Otthon megvan: {list}", { list: haveList.map((i) => i.item ? i.item.name : i.label).join(", ") }));
+  const haveCost = haveList.reduce((sum, i) => sum + (i.checkoutCost || 0), 0);
+  lines.push("", t("Összesen kb. {price}", { price: ft((w.split ? w.split.checkout : w.checkoutTotal) + (w.extrasTotal || 0) - haveCost) }), "", t("Vacsorák:"),
     ...w.days.map((d) => `${d.label}: ${d.leftoverOf >= 0 ? t("maradék – ") : ""}${d.suggestion.recipe.name}`));
   const text = lines.join("\n");
   try {
@@ -1946,7 +1989,13 @@ async function toggleCheck(key, on, li) {
     setTimeout(() => li.classList.remove("just-done"), 900);
     if (navigator.vibrate) try { navigator.vibrate(12); } catch (e) { /* nem támogatott */ }
   }
-  const c = { id: state.profile.id, key: state.week.listKey, item: key, on };
+  await sendCheck(key, on);
+  updateProgress();
+}
+
+/** Egy pipa / jelölés a közös listára; offline sorba áll, és visszatéréskor felmegy. */
+async function sendCheck(item, on) {
+  const c = { id: state.profile.id, key: state.week.listKey, item, on };
   try {
     const r = await api(`/api/check?id=${c.id}`, jsonOpts("POST", { key: c.key, item: c.item, on: c.on }));
     state.week.checked = r.checked;
@@ -1954,21 +2003,37 @@ async function toggleCheck(key, on, li) {
     if (!e.offline) { toast(e.message); return; }
     queueCheck(c);
     const set = new Set(state.week.checked || []);
-    if (on) set.add(key); else set.delete(key);
+    if (on) set.add(item); else set.delete(item);
     state.week.checked = [...set];
   }
-  updateProgress();
+}
+
+/** „Megvan otthon”: azonnal átkerül (és az összeg is változik), aztán megy a közös listára. */
+async function toggleHave(key, on) {
+  const set = new Set(state.week.checked || []);
+  if (on) set.add(HAVE + key); else set.delete(HAVE + key);
+  state.week.checked = [...set];
+  renderList();
+  await sendCheck(HAVE + key, on);
+  renderList();
+  if (on) toast(t("Megvan otthon – kivettük a vásárlásból."), { label: t("Visszavonás"), run: () => toggleHave(key, false) });
 }
 
 function listItems(w) {
   return (w.split ? w.split.groups.flatMap((g) => g.aisles) : w.aisles).flatMap((a) => a.items).filter((x) => !x.staple);
 }
 
+/** A ténylegesen megveendő tételek (a kamraáru és az otthon meglévők nélkül) – a haladáshoz. */
+function toBuy(w) {
+  const have = haveKeys(w);
+  return listItems(w).filter((x) => !have.has(itemKey(x)));
+}
+
 let celebrated = "";
 function updateProgress() {
   const w = state.week;
   const checked = new Set(w.checked || []);
-  const items = listItems(w).map(itemKey).concat((w.extras || []).map((x) => `extra:${x.name}`));
+  const items = toBuy(w).map(itemKey).concat((w.extras || []).map((x) => `extra:${x.name}`));
   const done = items.filter((k) => checked.has(k)).length;
   const box = $("#list-progress");
   box.replaceChildren(el("span", "progress-text", done === items.length && items.length ? t("Minden a kosárban 🎉") : t("{done} / {n} a kosárban", { done, n: items.length })));
