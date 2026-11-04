@@ -30,6 +30,8 @@ import hu.sporolos.market.MarketDef;
 import hu.sporolos.market.Markets;
 import hu.sporolos.market.NameRules;
 import hu.sporolos.data.CijeneArchiveProvider;
+import hu.sporolos.i18n.Lang;
+import hu.sporolos.i18n.Translator;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -539,6 +541,87 @@ public final class AllTests {
     }
 
     // ---------- teljes rendszer ----------
+
+    // ---------- többnyelvűség ----------
+
+    static void testLangNegotiation() {
+        eq("en", Lang.normalize("en-GB"), "en-GB → en");
+        eq("hu", Lang.normalize("HU"), "nagybetűs");
+        eq("hu", Lang.normalize("xx"), "ismeretlen → magyar");
+        eq("hu", Lang.fromAcceptLanguage(null), "fejléc nélkül magyar");
+        eq("hu", Lang.fromAcceptLanguage("hu-HU,hu;q=0.9,en;q=0.8"), "magyar böngésző");
+        eq("en", Lang.fromAcceptLanguage("de-DE,de;q=0.9,en;q=0.7"), "német böngésző → az első támogatott (angol)");
+        eq("en", Lang.fromAcceptLanguage("fr-FR"), "nem támogatott nyelv → angol");
+    }
+
+    static void testEnglishCoversEveryRecipeAndIngredient() {
+        Translator en = Translator.forLang("en");
+        check(en != null && Translator.forLang("hu") == null, "angolra van fordító, magyarra nincs");
+        for (var r : CATALOG.recipes()) {
+            check(en.knows(r.name()), "angol receptnév: " + r.name());
+            for (String step : r.steps()) check(en.knows(step), "angol lépés: " + r.id() + ": " + step);
+        }
+        for (var p : CATALOG.products().values()) check(en.knows(p.name()), "angol alapanyagnév: " + p.name());
+    }
+
+    static void testEnglishGeneratedTexts() {
+        Translator en = Translator.forLang("en");
+        eq("94 g", en.text("9,4 dkg", true), "dkg → g");
+        eq("150 ml", en.text("1,5 dl", true), "dl → ml");
+        eq("1.2 kg", en.text("120 dkg", true), "nagy dkg → kg");
+        eq("2 heads", en.text("2 fej", true), "többes szám");
+        eq("1 clove", en.text("1 gerezd", true), "egyes szám");
+        eq("½ jar", en.text("fél üveg", true), "fél");
+        eq("approx. 425 g (≈ 4 pcs)", en.text("kb. 425 g (≈ 4 db)", true), "mérlegelős");
+        eq("1,099\u00a0Ft / 500 g · 2,198\u00a0Ft/kg", en.text("1\u00a0099\u00a0Ft / 500 g · 2\u00a0198\u00a0Ft/kg", true), "forint");
+        eq("€12.49/pc", en.text("12,49\u00a0€/db", true), "euró elöl, tizedespont");
+        eq("37% cheaper than at the other 5 chains (1,079\u00a0Ft)", en.text("37%-kal olcsóbb, mint a többi 5 láncban (1\u00a0079\u00a0Ft)", true), "akció-indoklás");
+        eq("Paprika, salt, pepper", en.text("Pirospaprika, só, bors", false), "fűszerlista szavanként");
+        eq("Sajátmárkás tej 1,5 l", en.text("Sajátmárkás tej 1,5 l", false), "terméknév változatlan");
+        // a fa: azonosítók maradnak, a label mellé az eredeti kulcs kerül
+        Map<String, Object> in = new HashMap<>(Map.of("id", "voroshagyma", "label", "Vöröshagyma", "tags", List.of("vega"), "amount", "2 fej"));
+        Map<String, Object> out = Json.obj(en.apply(in));
+        eq("voroshagyma", out.get("id"), "id változatlan");
+        eq("Onions", out.get("label"), "label lefordítva");
+        eq("Vöröshagyma", out.get("labelKey"), "a pipák kulcsa nyelvfüggetlen");
+        eq(List.of("vega"), out.get("tags"), "szűrőkulcs változatlan");
+        eq("Vöröshagyma", in.get("label"), "az eredeti objektum nem változik");
+    }
+
+    static void testWebServerLanguageAndCaching() throws Exception {
+        Path dir = Files.createTempDirectory("sporolos");
+        PriceRepository repo = new PriceRepository(CATALOG, List.of(new DemoPriceProvider(CATALOG, LocalDate.now())),
+                new PriceHistory(new FileStorage(dir), 28), new PromoStore(dir.resolve("akciok"), List.of()), Duration.ofHours(1));
+        WebServer server = new WebServer(repo, new FileStorage(dir));
+        int port = server.start("127.0.0.1", 0);
+        try {
+            HttpClient c = HttpClient.newHttpClient();
+            String base = "http://127.0.0.1:" + port;
+            Map<String, Object> hu = Json.obj(Json.parse(get(c, base + "/api/recipe?id=paprikas-csirke&store=lidl", 200)));
+            eq("Paprikás csirke nokedlivel", Json.obj(hu.get("recipe")).get("name"), "alapból magyar");
+            Map<String, Object> en = Json.obj(Json.parse(get(c, base + "/api/recipe?id=paprikas-csirke&store=lidl&lang=en", 200)));
+            eq("Chicken paprikash with nokedli dumplings", Json.obj(en.get("recipe")).get("name"), "?lang=en → angol");
+            HttpResponse<String> r = c.send(HttpRequest.newBuilder(URI.create(base + "/api/recipe?id=nincsilyen&store=lidl"))
+                    .header("Accept-Language", "en-US,en;q=0.9").build(), HttpResponse.BodyHandlers.ofString());
+            eq(404, r.statusCode(), "ismeretlen recept");
+            check(r.body().contains("No such recipe: nincsilyen"), "angol böngészőnek angol hibaüzenet (Accept-Language)");
+            // a magyar válasz nem szennyeződik az angol kérés után (a gyorsítótárazott elemzés magyar marad)
+            String deals = get(c, base + "/api/deals?store=lidl", 200);
+            check(!deals.contains("cheaper"), "a magyar akció-indoklás magyar maradt");
+
+            eq("{\"ok\":true,\"markets\":[\"hu\"]}", get(c, base + "/healthz", 200), "állapot-végpont");
+            HttpResponse<String> js = c.send(HttpRequest.newBuilder(URI.create(base + "/app.js")).build(), HttpResponse.BodyHandlers.ofString());
+            String etag = js.headers().firstValue("ETag").orElse("");
+            check(!etag.isEmpty(), "ETag a statikus fájlon");
+            HttpResponse<String> again = c.send(HttpRequest.newBuilder(URI.create(base + "/app.js")).header("If-None-Match", etag).build(),
+                    HttpResponse.BodyHandlers.ofString());
+            eq(304, again.statusCode(), "változatlan fájlra 304");
+            get(c, base + "/sw.js", 200);
+            get(c, base + "/i18n.js", 200);
+        } finally {
+            server.stop();
+        }
+    }
 
     static void testWebServerEndToEnd() throws Exception {
         Path dir = Files.createTempDirectory("sporolos");

@@ -6,7 +6,9 @@ Heti vacsoratervező a boltok napi árai alapján – Magyarországon a **GVH Á
 
 Megmaradt az eredeti ötlet is: a **Receptek** fülön az látszik, mit érdemes ma főzni abból, ami a boltodban épp kiemelkedően jó áron van, a nem kedvelt láncok kizárhatók, és a kiszerelést (darab / kiló, háztartási vagy nagy csomag) gondosan kezeli. Az [ajanlatok.hu](https://www.ajanlatok.hu/), a SmartKosár és a Shoppy mintájára (lásd a [végén](#mit-vettünk-át-az-ajanlatokhu-tól-a-smartkosártól-és-a-shoppytól)) az **Akciók** fülön az összes boltod jó árai egy helyen kereshetők, a listára **saját tételek** (kávé, banán…) is felvehetők, és ezek is beleszámítanak abba, melyik bolt a legolcsóbb. A recepteket, az alapanyagokat, a bolti akciókat és az árfrissítést egy jelszóval védett **admin felületen** (`/admin`) lehet kezelni.
 
-**Ebben a körben** (lásd [Más országok](#más-országok-van-máshol-is-nyilvános-bolti-áradat) és [Ami élvezhetőbb lett](#ami-élvezhetőbb-lett)): megnéztem, mely országokban van a GVH Árfigyelőhöz hasonló nyilvános bolti áradat (kevesebb, mint amennyinek a NomNom országlistája alapján tűnik), és az app **országfüggetlen** lett: Horvátország a második ország, euróval, a horvát láncokkal. A felület is átalakult: csere-választó a hét ára szerint visszavonással, **főzés mód** lépésenként, a napok dátummal (a hét mától indul), változatosabb hetek, saját betűk, kártyák, animációk.
+**Ebben a körben** ([Világszerte](#világszerte-nyelvek-offline-skálázás)): az app **angolul is** használható – a felület, mind a 170 recept (név és elkészítés), az alapanyagok, a szerver generált mondatai (akció-indoklások, kiszerelések, megjegyzések) –, a nyelvet a böngészőből ismeri fel, és egy koppintással váltható; a háztartás tagjai **különböző nyelven ugyanazt a listát** pipálják. A bevásárlólista **térerő nélkül is működik** (service worker; a boltban tett pipák visszatéréskor felmennek), és a szerver bírja a forgalmat: virtuális szálak, ETag/304 a statikus fájlokra, `/healthz` a terheléselosztóknak és a Dockernek.
+
+**Az előző körben** (lásd [Más országok](#más-országok-van-máshol-is-nyilvános-bolti-áradat) és [Ami élvezhetőbb lett](#ami-élvezhetőbb-lett)): megnéztem, mely országokban van a GVH Árfigyelőhöz hasonló nyilvános bolti áradat (kevesebb, mint amennyinek a NomNom országlistája alapján tűnik), és az app **országfüggetlen** lett: Horvátország a második ország, euróval, a horvát láncokkal. A felület is átalakult: csere-választó a hét ára szerint visszavonással, **főzés mód** lépésenként, a napok dátummal (a hét mától indul), változatosabb hetek, saját betűk, kártyák, animációk.
 
 Java 21, **külső függőség nélkül** (beépített JDK webszerver, saját JSON-, xlsx-, CSV- és PostgreSQL-kliens), egyetlen JAR. Adatbázis nélkül fájlokba ment; `docker compose up`-pal PostgreSQL-lel fut.
 
@@ -21,6 +23,10 @@ Java 21, **külső függőség nélkül** (beépített JDK webszerver, saját JS
 <img src="docs/akciok.png" alt="Akciók: a boltjaid jó árai egy helyen, kereséssel" width="640"> <img src="docs/akcio-mobil.png" alt="Termékablak: ár minden láncban, felvétel a listára" width="250">
 
 <img src="docs/recept.png" alt="Receptlap: amit a pénztárnál fizetsz, makrók, hozzávalók a bolti termékkel" width="640"> <img src="docs/receptek.png" alt="Receptek: ma kifizetődő, összes recept" width="640">
+
+**Angolul, offline:** az első indítás a böngésző nyelvén szól (fent nyelvválasztó), a heti terv, a receptlap és a lista angolul; a lista térerő nélkül is megnyílik és pipálható.
+
+<img src="docs/en-elso-inditas-mobil.png" alt="First run in English, with the language switch" width="250"> <img src="docs/en-het-mobil.png" alt="The week in English" width="250"> <img src="docs/en-recept-mobil.png" alt="Recipe sheet in English" width="250"> <img src="docs/offline-lista-mobil.png" alt="Shopping list offline, with ticks queued" width="250">
 
 **Admin felület** (`/admin`): áttekintés, receptszerkesztő élő árelőnézettel, alapanyag-szerkesztő az illeszkedő bolti termékekkel.
 
@@ -314,13 +320,18 @@ src/main/java/hu/sporolos/
          PgStorage, PgClient     PostgreSQL: séma, kapcsolatkészlet, saját wire-protokoll kliens
          Ids                     profil-azonosítók
   model/ Models                  rekordok (PriceEntry, Deal, Recipe, Suggestion…)
-  web/   WebServer, ApiMapper    REST API + statikus fájlok
+  i18n/  Lang                    a kérés nyelve (?lang=, különben Accept-Language)
+         Translator              a válaszok fordítása a határon (resources/i18n/{nyelv}.json)
+  web/   WebServer, ApiMapper    REST API + statikus fájlok (ETag), /healthz
          AdminApi                admin végpontok: belépés, áttekintés, recept- és alapanyag-szerkesztés
          Household               a háztartás beállításai, ellenőrzés, alapértékek
 src/main/resources/
   data/products.json, recipes.json
   markets/hr.json                Horvátország: láncok, illesztési szabályok, magyar → horvát keresőszavak
+  i18n/en.json                   angol: receptek, alapanyagok, kifejezések, mértékegységek, mondatminták
   static/index.html, app.css, app.js, favicon.svg, manifest.webmanifest
+         i18n.js                 a felület nyelve: felismerés, t(), szótár, nyelvválasztó
+         sw.js                   service worker: offline hét, lista és receptek
          admin.html, admin.css, admin.js
          fonts/                  Bricolage Grotesque, Atkinson Hyperlegible (SIL OFL, latin + latin-ext részhalmaz)
 src/test/java/hu/sporolos/AllTests.java
@@ -333,7 +344,7 @@ Dockerfile, docker-compose.yml   konténer: app + postgres:16
 ./build.sh test        # Windows: build.cmd test
 ```
 
-35 teszt fut le:
+39 teszt fut le:
 - JSON- és xlsx-olvasás, az Árfigyelő-fejléc felismerése, egységátváltás;
 - mind a négy jó ár jel, valamint az elérhetőség hatása;
 - a kiszerelés-modell: tojásdoboz vagy tálca, mérlegelős áru minimum egy darabbal, „ca. 500g”, csak csomagolt liszt, darab ↔ kg (paprika, zsemle), csomós zöldség, tűrés, a nagy kiszerelés határa;
@@ -350,6 +361,7 @@ Dockerfile, docker-compose.yml   konténer: app + postgres:16
 - országok: forint- és eurós pénzformázás (a kérés szála szerint); a horvát névillesztés 31 valódi (a láncok listáiból vett) terméknéven, köztük olyanokon, amelyek *nem* alapanyagok (felvágott, kész étel, csokoládé, állateledel, habfürdő); egy valósághű horvát napi archívum feldolgozása (darabos tojás, mérlegelős csirkemell, akciós ár üres árral, idézőjeles-vesszős név, a drogéria kihagyása, két láncban ugyanaz a vonalkód), majd a teljes app horvát árakkal: 503 „töltődik”, euró, horvát boltok, magyar keresőszó, horvát bolti akció, vissza magyarra;
 - heti terv: a napok dátuma és neve, a hét kezdete, változatosság (jellegzetes alapanyag egyszer, krumpli legfeljebb kétszer), csere-javaslatok (nincsenek már a héten, a hét új ára közel a tényleges árhoz), választás után a többi nap és a kezdőnap marad, maradéknapnál a főzős nap javaslatai;
 - admin: rossz jelszó 401, jó jelszó token; az akció- és a frissítés-végpont token nélkül 401; receptmódosítás mentése, tárolóba írása és azonnali érvényesülése; hibás recept 400; előnézet figyelmeztetéssel; új / ismételt / törölt recept; alapanyag kizáró szóval kevesebb találat; használt alapanyag nem törölhető; visszaállás a beépítettre; az `/admin` oldal kiszolgálása;
+- többnyelvűség: nyelvfelismerés (`?lang=`, `Accept-Language`), minden recept, lépés és alapanyag angol fordítása megvan, a generált mondatok (akció-indoklás, mérlegelős mennyiség, forint és euró, dkg → g, dl → ml, egyes/többes szám, fűszerlista), a terméknév változatlan, az azonosítók és a szűrőkulcsok maradnak, a pipák kulcsa nyelvfüggetlen; a webszerveren angol recept és hibaüzenet, a magyar válasz egy angol kérés után is magyar, `/healthz`, ETag és 304;
 - végponttól végpontig teszt, ami elindítja a webszervert, és végighívja az összes API-t: boltszűrő, akciók felvitele / importja / törlése, háztartás-profil létrehozása, mentett hét, csere, konkrét recept egy napra, kipipálás, értékelés, boltváltás, automatikus bolt (a legolcsóbbat választja), „holnapra is főzök” / „inkább mást főzök”, kétnaponta főzés, a mennyiségek adagszámhoz igazítása, az Akciók végpont szűrése, saját tételek felvétele / törlése és beszámítása a boltválasztásba.
 
 A GitHub Actions a teszteket egy PostgreSQL 16 szolgáltatással együtt futtatja, utána felépíti a Docker-képet, elindítja a `docker compose`-t, és ellenőrzi, hogy az app válaszol, és a profil az adatbázisba kerül.
@@ -412,7 +424,31 @@ Ezeket kérdezés nélkül döntöttem el; bármelyik könnyen módosítható.
 - A NomNom Planner ötletét és felépítését vettem át (lásd lent), a szövegeit, fotóit és márkáját nem.
 - Az ár „hasonló termék” cseréje a saját tételeknél kategória + egység + kb. kiszerelés alapján megy; nagyon eltérő minőségű termékeket is párba állíthat.
 - Az árelőzmény csak attól a naptól gyűlik, amikor az app először fut; a GVH régebbi napi fájljait nem tölti le.
+- **Nyelvek:** magyar és angol. Az admin felület magyar maradt. Az angol recept-mennyiségek a magyar mértékegységekből számolódnak (dkg → g); a „bögre/cup” típusú amerikai mértékek nincsenek.
+- **Offline:** az első látogatás után működik (a service workernek egyszer be kell töltődnie); offline a csere és az új hét nem kérhető, a pipák viszont igen.
 - Ötletek: lánc-specifikus akció-letöltők külön feedként, árriasztás (ha egy kedvenc termék olcsó lesz), reggeli/ebéd tervezése is.
+
+## Világszerte: nyelvek, offline, skálázás
+
+Az app eddig két országban tervezett, de csak magyarul beszélt – ez volt a legnagyobb akadály, hogy bárki más használja (egy horvát vagy egy Magyarországon élő külföldi, egy Horvátországban nyaraló német). A legtöbbet hozó lépések, sorrendben:
+
+**1. Angol nyelv, végig.** Nem csak a gombok: mind a 170 recept neve és elkészítése, a 106 alapanyag, a fűszerlisták, a bolti osztályok, a napnevek, a diéta- és hangulatcímkék, az akciók indoklása („37% cheaper than at the other 5 chains”), a kiszerelések („approx. 425 g (≈ 4 pcs)”), a terv megjegyzései és a hibaüzenetek is.
+- **A szerver magyarul számol, a határon fordít** (`i18n/Translator`). Az elemzések (akciók, rangsorok) gyorsítótárazva vannak; ha nyelvenként számolnánk, a memória és az idő is többszöröződne, és egy angol kérés „beszennyezhetné” a magyar választ. Ehelyett a kész JSON-fát fordítjuk: pontos egyezés (recept, lépés, alapanyag, kifejezés), vesszős fűszerlista szavanként, és a generált mondatokra sorban a minták (`resources/i18n/en.json`).
+- **Helyi mértékek és számok:** angolul `dkg → g`, `dl → ml`, egyes/többes szám („1 clove”, „2 heads”, „½ jar”), tizedespont, ezres vessző, az euró elöl („€12.49”), a forint mögötte („9,477 Ft”). Dátum és nap a böngésző `Intl`-jével.
+- **A terméknevek maradnak**, ahogy a bolt hívja őket (a polcon is így látod).
+- **Közös lista, külön nyelv:** a pipák kulcsa a tétel eredeti neve (`labelKey`), így a párod magyarul, te angolul ugyanazt a listát pipáljátok.
+- **Nyelvfelismerés:** a választott nyelv (eszközönként), különben a böngésző első támogatott nyelve, különben angol. Az API `?lang=` nélkül az `Accept-Language` fejlécet nézi.
+- **Új nyelv** (pl. horvát vagy német): egy `resources/i18n/{nyelv}.json` (a szerkezete az `en.json`-é), egy szótár az `i18n.js`-ben, és a nyelv kódja a `Lang.SUPPORTED`-ban és a `LANGS`-ban. Ami hiányzik, magyarul jelenik meg – fokozatosan is fordítható. A teszt (`testEnglishCoversEveryRecipeAndIngredient`) jelzi, ha egy új recept fordítása hiányzik.
+
+**2. Offline, a boltban is.** A sorok között gyakran nincs térerő – épp akkor, amikor a listát nézed. A service worker (`sw.js`) minden GET-et előbb a hálózatról kér (online mindig friss), a választ eltárolja, és ha nincs hálózat, a legutóbbit adja: a hét, a lista, a receptek offline is megnyílnak. A pipák offline azonnal látszanak, sorba állnak, és amint újra van hálózat, felmennek (egy tétel utolsó állapota számít); a fejléc alatt egy sáv jelzi az offline állapotot. A profil egy másolata az eszközön is megvan, hogy az app offline is elinduljon.
+
+**3. Bírja a forgalmat.**
+- **Virtuális szálak** (Java 21) a 4 szálas fix pool helyett: a lassú mobilos kliensek nem foglalják le a szervert.
+- **ETag + 304** a statikus fájlokra (a JAR-ból egyszer olvasva, memóriában), a betűk egy évig a böngészőben maradnak; gzip eddig is volt.
+- **`/healthz`** (`{"ok":true,"markets":[…]}`) a terheléselosztóknak, Kubernetesnek; a Dockerfile `HEALTHCHECK`-je is ezt hívja (curl nélkül).
+- A szerver állapotmentes a PostgreSQL-lel (`DATABASE_URL`): több példány futhat egy terheléselosztó mögött; az árakat mindegyik maga tölti.
+
+**Ami ezután a legtöbbet hozná** (a [Más országok](#más-országok-van-máshol-is-nyilvános-bolti-áradat) táblázat alapján): horvát felület (a horvát piac mellé), **Szerbia** a nyílt adat portál CSV-jéből, majd ahol nincs bolti áradat, ott az Open Prices / Eurostat-átlagárak jól jelölt becslésként – a NomNom is így csinálja.
 
 ## Mit tanultunk a NomNom Plannerből?
 

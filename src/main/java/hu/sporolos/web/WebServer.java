@@ -8,6 +8,8 @@ import hu.sporolos.core.PriceRepository;
 import hu.sporolos.core.PromoMerger;
 import hu.sporolos.data.Catalog;
 import hu.sporolos.data.Promo;
+import hu.sporolos.i18n.Lang;
+import hu.sporolos.i18n.Translator;
 import hu.sporolos.market.Market;
 import hu.sporolos.market.Markets;
 import hu.sporolos.data.PromoStore;
@@ -147,8 +149,10 @@ public final class WebServer {
     public int start(String host, int port) throws IOException {
         server = HttpServer.create(new InetSocketAddress(host, port), 0);
         server.createContext("/api/", this::api);
+        server.createContext("/healthz", this::health);
         server.createContext("/", this::staticFile);
-        executor = Executors.newFixedThreadPool(4);
+        // kérésenként egy virtuális szál: a lassú kliensek (mobilnet) nem foglalják le a néhány valódi szálat
+        executor = Executors.newVirtualThreadPerTaskExecutor();
         server.setExecutor(executor);
         server.start();
         return server.getAddress().getPort();
@@ -170,6 +174,9 @@ public final class WebServer {
             Markets.Runtime runtime = path.startsWith("/api/admin/") ? markets.hungary() : resolveMarket(path, q);
             CUR.set(runtime);
             Market.set(runtime.market());
+            String lang = q.containsKey("lang") ? Lang.normalize(q.get("lang"))
+                    : Lang.fromAcceptLanguage(ex.getRequestHeaders().getFirst("Accept-Language"));
+            Lang.set(lang);
             if (path.startsWith("/api/admin/")) {
                 if (admin == null) throw new NotFound("Az admin felület nincs bekapcsolva");
                 Object res;
@@ -229,7 +236,7 @@ public final class WebServer {
                 case "/api/check" -> check(q, readBody(ex));
                 default -> throw new NotFound("Ismeretlen végpont: " + path);
             };
-            send(ex, 200, "application/json; charset=utf-8", Json.write(body));
+            send(ex, 200, "application/json; charset=utf-8", Json.write(localized(body)));
         } catch (Markets.Loading e) {
             Markets.Runtime r = e.runtime();
             Map<String, Object> m = new LinkedHashMap<>();
@@ -239,21 +246,28 @@ public final class WebServer {
             m.put("market", marketJson(r));
             m.put("progress", Math.round(r.progress() * 1000) / 1000.0);
             m.put("phase", r.phase());
-            send(ex, 503, "application/json; charset=utf-8", Json.write(m));
+            send(ex, 503, "application/json; charset=utf-8", Json.write(localized(m)));
         } catch (AdminApi.Unauthorized e) {
-            send(ex, 401, "application/json; charset=utf-8", Json.write(Map.of("error", e.getMessage())));
+            send(ex, 401, "application/json; charset=utf-8", Json.write(localized(Map.of("error", e.getMessage()))));
         } catch (NotFound e) {
-            send(ex, 404, "application/json; charset=utf-8", Json.write(Map.of("error", e.getMessage())));
+            send(ex, 404, "application/json; charset=utf-8", Json.write(localized(Map.of("error", e.getMessage()))));
         } catch (IllegalArgumentException e) {
-            send(ex, 400, "application/json; charset=utf-8", Json.write(Map.of("error", e.getMessage())));
+            send(ex, 400, "application/json; charset=utf-8", Json.write(localized(Map.of("error", e.getMessage()))));
         } catch (Exception e) {
             e.printStackTrace();
             send(ex, 500, "application/json; charset=utf-8",
-                    Json.write(Map.of("error", "Belső hiba: " + e.getClass().getSimpleName())));
+                    Json.write(localized(Map.of("error", "Belső hiba: " + e.getClass().getSimpleName()))));
         } finally {
             CUR.remove();
             Market.clear();
+            Lang.clear();
         }
+    }
+
+    /** A válasz a kérés nyelvén (magyarul változatlan). */
+    private static Object localized(Object body) {
+        Translator t = Translator.forLang(Lang.current());
+        return t == null ? body : t.apply(body);
     }
 
     private static Prefs prefs(Map<String, String> q) {
@@ -1197,15 +1211,47 @@ public final class WebServer {
             send(ex, 400, "text/plain; charset=utf-8", "Hibás útvonal");
             return;
         }
-        try (InputStream in = WebServer.class.getResourceAsStream("/static" + path)) {
-            if (in == null) {
-                send(ex, 404, "text/plain; charset=utf-8", "Nem található: " + path);
-                return;
-            }
-            // a betűk nem változnak: egy napig a böngészőben maradhatnak; minden más mindig friss
-            ex.getResponseHeaders().set("Cache-Control", path.startsWith("/fonts/") ? "public, max-age=86400" : "no-cache");
-            sendBytes(ex, 200, contentType(path), in.readAllBytes());
+        StaticEntry f = STATIC.computeIfAbsent(path, WebServer::loadStatic);
+        if (f == StaticEntry.MISSING) {
+            send(ex, 404, "text/plain; charset=utf-8", "Nem található: " + path);
+            return;
         }
+        // a betűk nem változnak: egy évig a böngészőben maradhatnak; minden más ETag-gel újraellenőrizve
+        // (változatlan fájlra 304, üres válasz – telefonon, sok felhasználónál ez a forgalom nagy része)
+        ex.getResponseHeaders().set("Cache-Control", path.startsWith("/fonts/") ? "public, max-age=31536000, immutable" : "no-cache");
+        ex.getResponseHeaders().set("ETag", f.etag());
+        if (f.etag().equals(ex.getRequestHeaders().getFirst("If-None-Match"))) {
+            ex.sendResponseHeaders(304, -1);
+            ex.close();
+            return;
+        }
+        sendBytes(ex, 200, contentType(path), f.data());
+    }
+
+    /** Egy statikus fájl tartalma és ETag-je (a JAR-ból egyszer olvassuk be). */
+    private record StaticEntry(byte[] data, String etag) {
+        static final StaticEntry MISSING = new StaticEntry(new byte[0], "");
+    }
+
+    private static final Map<String, StaticEntry> STATIC = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private static StaticEntry loadStatic(String path) {
+        try (InputStream in = WebServer.class.getResourceAsStream("/static" + path)) {
+            if (in == null) return StaticEntry.MISSING;
+            byte[] data = in.readAllBytes();
+            byte[] h = java.security.MessageDigest.getInstance("SHA-256").digest(data);
+            return new StaticEntry(data, "\"" + java.util.HexFormat.of().formatHex(h, 0, 12) + "\"");
+        } catch (IOException | java.security.NoSuchAlgorithmException e) {
+            return StaticEntry.MISSING;
+        }
+    }
+
+    /** Terheléselosztóknak, konténer-orchestrátoroknak: 200, ha a szerver fut (az árak töltődhetnek még). */
+    private void health(HttpExchange ex) throws IOException {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("ok", true);
+        m.put("markets", markets.all().stream().map(r -> r.market().id()).toList());
+        send(ex, 200, "application/json; charset=utf-8", Json.write(m));
     }
 
     private static String contentType(String path) {
@@ -1214,6 +1260,7 @@ public final class WebServer {
         if (path.endsWith(".js")) return "application/javascript; charset=utf-8";
         if (path.endsWith(".json") || path.endsWith(".webmanifest")) return "application/manifest+json; charset=utf-8";
         if (path.endsWith(".svg")) return "image/svg+xml";
+        if (path.endsWith(".webp")) return "image/webp";
         if (path.endsWith(".png")) return "image/png";
         if (path.endsWith(".ico")) return "image/x-icon";
         if (path.endsWith(".woff")) return "font/woff";

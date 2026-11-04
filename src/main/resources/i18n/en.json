@@ -1,0 +1,1952 @@
+{
+ "_comment": "English translations. The server translates JSON responses at the boundary (hu.sporolos.i18n.Translator): recipes by id (name, steps), ingredients by key, 'phrases' and 'words' by exact text (words: lower-case parts of comma-separated spice lists), 'units' singular/plural for amounts, 'patterns' = ordered regex replacements for generated sentences (deal reasons, notes, amounts). Missing entries fall back to Hungarian.",
+ "recipes": {
+  "paprikas-csirke": {
+   "name": "Chicken paprikash with nokedli dumplings",
+   "steps": [
+    "Finely chop the onion and fry it in oil until translucent, take it off the heat and sprinkle with paprika.",
+    "Add the chicken legs, the diced pepper and tomato, season with salt and braise covered with a little water for about 40 minutes.",
+    "For the nokedli, mix the flour with the eggs, salt and enough water to make a thick dumpling batter, then drop small pieces into boiling salted water.",
+    "Stir the sour cream smooth with a spoonful of flour, add it to the sauce and simmer for another 2–3 minutes."
+   ]
+  },
+  "bolognai": {
+   "name": "Spaghetti Bolognese",
+   "steps": [
+    "Sauté the onion, garlic and grated carrot in oil.",
+    "Add the minced meat and brown it, then pour in the passata, season and cook for 20 minutes.",
+    "Meanwhile cook the spaghetti in salted water.",
+    "Serve the sauce piled on the pasta, sprinkled with grated cheese."
+   ]
+  },
+  "rakott-krumpli": {
+   "name": "Hungarian potato bake",
+   "steps": [
+    "Boil the potatoes in their skins and hard-boil the eggs, then peel and slice both.",
+    "Layer them in a buttered baking dish: potato, egg, sausage, sour cream – finish with potato and sour cream on top.",
+    "Bake in a 200 °C oven for about 35–40 minutes until golden brown."
+   ]
+  },
+  "lecso": {
+   "name": "Lecsó (pepper and tomato stew) with sausage",
+   "steps": [
+    "Sauté the onion in oil and add the sliced sausage.",
+    "Add the pepper cut into strips, after 10 minutes the diced tomato, and season with salt.",
+    "When the vegetables are soft, crack in the eggs and stir until they set. Serve with fresh bread."
+   ]
+  },
+  "rantott-csirke": {
+   "name": "Breaded chicken breast with parsley potatoes",
+   "steps": [
+    "Slice the chicken breast, pound it thin and season with salt.",
+    "Coat in flour, beaten egg and then breadcrumbs, and deep-fry in plenty of oil.",
+    "Boil the potatoes in salted water and toss them with butter and parsley."
+   ]
+  },
+  "csirkes-curry": {
+   "name": "Coconut chicken curry with rice",
+   "steps": [
+    "Cook the rice in twice its volume of salted water until tender.",
+    "Fry the onion and garlic, add the diced chicken and 2 tablespoons of curry powder.",
+    "Add the pepper strips and the coconut milk and simmer for 15 minutes. Serve with rice."
+   ]
+  },
+  "chili-con-carne": {
+   "name": "Chili con carne",
+   "steps": [
+    "Brown the minced meat with the onion and season with chili and ground cumin.",
+    "Pour in the passata, add the drained beans and sweetcorn and cook for 25 minutes.",
+    "Serve with boiled rice or bread."
+   ]
+  },
+  "tortilla": {
+   "name": "Chicken tortilla wraps",
+   "steps": [
+    "Cut the chicken into strips, season and cook through in a frying pan.",
+    "Warm the tortillas in a dry pan and spread them with sour cream.",
+    "Fill with the chicken, sweetcorn, vegetables and grated cheese, and roll up tightly."
+   ]
+  },
+  "rantotta": {
+   "name": "Scrambled eggs with peppers and tomato",
+   "steps": [
+    "Dice the pepper and tomato and soften them in butter for 3 minutes.",
+    "Pour over the beaten, salted eggs and stir over a low heat until creamy. Serve with toast."
+   ]
+  },
+  "palacsinta": {
+   "name": "Jam and cottage cheese crêpes",
+   "steps": [
+    "Whisk the flour, milk, eggs, a pinch of salt and a little oil until smooth, and let it rest for 15 minutes.",
+    "Fry thin crêpes in a hot frying pan.",
+    "Mix the cottage cheese with sugar and lemon zest; fill half of the crêpes with jam and half with the cottage cheese."
+   ]
+  },
+  "turos-csusza": {
+   "name": "Pasta with cottage cheese and crispy bacon",
+   "steps": [
+    "Cook the pasta in salted water.",
+    "Dice the bacon and fry it until crispy.",
+    "Toss the pasta with the rendered fat and top with cottage cheese, sour cream and the crispy bacon."
+   ]
+  },
+  "lencsefozelek": {
+   "name": "Lentil stew with frankfurters",
+   "steps": [
+    "Cook the soaked lentils with a bay leaf until tender.",
+    "Sauté the onion in oil, sprinkle with flour to make a roux and add it to the lentils.",
+    "Season with vinegar and salt and loosen with sour cream. Serve with boiled frankfurters."
+   ]
+  },
+  "zoldborsofozelek": {
+   "name": "Green pea stew with meatballs",
+   "steps": [
+    "Knead the minced meat with the soaked bread roll, egg, grated onion and spices, shape patties and fry them.",
+    "Sweat the peas in a little fat with a pinch of sugar, then cook until tender with a little water.",
+    "Thicken with milk mixed with flour and season with parsley."
+   ]
+  },
+  "spenotfozelek": {
+   "name": "Creamed spinach with fried eggs",
+   "steps": [
+    "Thaw the spinach with garlic and bring it to the boil.",
+    "Thicken with milk mixed with flour and season with salt.",
+    "Serve with fried eggs and potatoes boiled in salted water."
+   ]
+  },
+  "gombapaprikas": {
+   "name": "Mushroom paprikash with dumplings",
+   "steps": [
+    "Sauté the onion, sprinkle with paprika, add the sliced mushrooms and braise them in their own juice until tender.",
+    "Thicken with sour cream.",
+    "Meanwhile make small dumplings from flour, egg and water."
+   ]
+  },
+  "kaposztas-teszta": {
+   "name": "Cabbage pasta",
+   "steps": [
+    "Grate the cabbage, salt it and squeeze it out after 10 minutes.",
+    "Caramelise the sugar in oil, add the cabbage and fry until brown.",
+    "Toss with the cooked pasta and serve with black pepper."
+   ]
+  },
+  "brokkolis-teszta": {
+   "name": "Creamy broccoli and bacon pasta",
+   "steps": [
+    "Cook the pasta and broccoli florets in the same pot of salted water (the broccoli for the last 4 minutes).",
+    "Fry the bacon and garlic, pour in the cream and stir in the grated cheese.",
+    "Toss the drained pasta and broccoli with the sauce."
+   ]
+  },
+  "tonhalas-teszta": {
+   "name": "Tuna and tomato penne",
+   "steps": [
+    "Fry the onion and garlic in oil, pour in the passata and cook for 10 minutes.",
+    "Stir in the drained tuna and season.",
+    "Toss the cooked penne with the sauce."
+   ]
+  },
+  "sult-hal": {
+   "name": "Butter-fried fish fillet with pea rice",
+   "steps": [
+    "Cook the rice together with the peas.",
+    "Season the thawed fish with salt, dust it with flour and fry it in butter for 3–4 minutes on each side.",
+    "Drizzle with lemon juice and serve with the pea rice."
+   ]
+  },
+  "csicseri-curry": {
+   "name": "Chickpea curry with spinach",
+   "steps": [
+    "Fry the onion and season it with curry powder.",
+    "Add the chickpeas, passata and coconut milk and cook for 15 minutes.",
+    "Stir in the spinach and serve with rice."
+   ]
+  },
+  "karaj-zoldseg": {
+   "name": "Tray-baked pork loin with vegetables",
+   "steps": [
+    "Slice the pork loin and season it.",
+    "Cut the vegetables into large pieces, put them in a baking tray, drizzle with oil and lay the meat on top.",
+    "Bake covered at 200 °C for 40 minutes, then uncovered for another 20 minutes."
+   ]
+  },
+  "porkolt": {
+   "name": "Pork pörkölt with pasta and cucumber salad",
+   "steps": [
+    "Sweat plenty of onion in fat until translucent, take it off the heat and sprinkle with paprika.",
+    "Add the diced meat, season with salt and caraway, and braise with a little water for 1.5 hours until tender. Add the pepper and tomato along the way.",
+    "Cook the pasta, slice the cucumber thinly and make a salad with vinegar-and-sugar water."
+   ]
+  },
+  "pizza-tortilla": {
+   "name": "Quick tortilla pizza",
+   "steps": [
+    "Lay the tortillas on baking paper and spread them with seasoned passata.",
+    "Scatter over the sliced mushrooms, sweetcorn and torn mozzarella.",
+    "Bake at 220 °C for 8–10 minutes until crisp."
+   ]
+  },
+  "zabkasa": {
+   "name": "Apple and cinnamon porridge",
+   "steps": [
+    "Bring the oats to the boil with the milk and cook for 4–5 minutes, stirring.",
+    "Grate in one of the apples and season with cinnamon.",
+    "Top with sliced apple and banana."
+   ]
+  },
+  "rizi-bizi-csirke": {
+   "name": "Roast chicken legs with rice and peas",
+   "steps": [
+    "Season the chicken legs and roast at 200 °C for about 45 minutes until crispy.",
+    "Cook the rice with the peas.",
+    "Serve together, drizzled with the roasting juices."
+   ]
+  },
+  "joghurtos-csirke": {
+   "name": "Chicken salad with garlic yoghurt",
+   "steps": [
+    "Season the chicken breast, cook it in a griddle pan and cut it into strips.",
+    "Dice the vegetables.",
+    "Mix the yoghurt with crushed garlic, salt and dill, and toss everything together. Serve with toast."
+   ]
+  },
+  "gulyasleves": {
+   "name": "Goulash soup",
+   "steps": [
+    "Sweat the onion in fat until translucent, take it off the heat and sprinkle with paprika.",
+    "Add the diced meat, season with caraway and crushed garlic, and braise it in its own juice for 1 hour.",
+    "Pour in 2 litres of water and add the sliced carrot, parsley root, pepper and tomato.",
+    "When the meat is almost tender, add the diced potatoes and cook everything until soft."
+   ]
+  },
+  "ujhazi": {
+   "name": "Újházi chicken soup",
+   "steps": [
+    "Put the hen in cold water and simmer it very gently; skim off the foam.",
+    "After two hours add the cleaned vegetables, the onion and the spices.",
+    "When the meat comes off the bone, strain the soup and cook the thin noodles separately. Serve with the meat and vegetables."
+   ]
+  },
+  "halaszle": {
+   "name": "Fisherman's soup (halászlé)",
+   "steps": [
+    "Finely chop the onion, cook it in 1.5 litres of water for 30 minutes, then press it through a sieve.",
+    "Add the salted fish pieces, the pepper, the tomato and plenty of paprika.",
+    "Boil hard for 20 minutes without stirring, just shaking the pot. Serve with fresh bread."
+   ]
+  },
+  "harcsapaprikas": {
+   "name": "Catfish paprikash with cottage cheese pasta",
+   "steps": [
+    "Sauté the onion, sprinkle with paprika and add the pepper, tomato and a little water.",
+    "Lay in the salted catfish pieces and cook for 15 minutes without stirring.",
+    "Thicken with sour cream. Cook the pasta and serve it on the side with cottage cheese."
+   ]
+  },
+  "karfiolleves": {
+   "name": "Creamy cauliflower soup",
+   "steps": [
+    "Cook the cauliflower florets and the sliced carrot and parsley root in 1.5 litres of salted water until tender.",
+    "Stir the sour cream smooth with the flour and a little cold water, then use it to thicken the soup.",
+    "Boil for another 3 minutes and season with nutmeg."
+   ]
+  },
+  "rantott-karfiol": {
+   "name": "Breaded cauliflower with parsley potatoes",
+   "steps": [
+    "Parboil the cauliflower florets in salted water until just tender and let them cool.",
+    "Coat in flour, egg and breadcrumbs and fry in plenty of oil until golden.",
+    "Boil the potatoes and toss them with butter and parsley. Mix the yoghurt with mustard and salt into a sauce."
+   ]
+  },
+  "kelkaposzta-fozelek": {
+   "name": "Savoy cabbage stew with fried sausage",
+   "steps": [
+    "Cut the savoy cabbage into strips, dice the potatoes and cook them in a little salted water with caraway until tender.",
+    "Thicken with milk mixed with flour and crushed garlic and bring to the boil.",
+    "Fry the sausage in a pan and lay it on top of the stew."
+   ]
+  },
+  "repafozelek": {
+   "name": "Creamed carrots with fried eggs",
+   "steps": [
+    "Sweat the sliced carrots in butter with a little sugar, then cook them until tender with a little water.",
+    "Thicken with milk mixed with flour and season with chopped parsley.",
+    "Serve with fried eggs."
+   ]
+  },
+  "krumplifozelek": {
+   "name": "Potato stew with frankfurters",
+   "steps": [
+    "Cook the diced potatoes in salted water with a bay leaf until tender.",
+    "Sauté the onion in fat, make a roux with flour and paprika and add it to the potatoes.",
+    "Season with sour cream and a little vinegar. Serve with boiled frankfurters."
+   ]
+  },
+  "krumplileves": {
+   "name": "Potato soup with sausage",
+   "steps": [
+    "Sauté the onion, sprinkle with paprika and pour in 1.5 litres of water.",
+    "Cook the diced potatoes, carrot, parsley root and sliced sausage in it.",
+    "When everything is soft, thicken with sour cream mixed with flour."
+   ]
+  },
+  "zoldborsoleves": {
+   "name": "Green pea soup",
+   "steps": [
+    "Sweat the sliced carrot and parsley root in butter and add the peas.",
+    "Sprinkle with flour, pour in 1.5 litres of water and cook for 15 minutes.",
+    "Knead the egg with a little flour into a dough and pinch small pieces into the soup."
+   ]
+  },
+  "brassoi": {
+   "name": "Brassó-style pork with fried potatoes",
+   "steps": [
+    "Cut the meat into strips, brown it with the onion in fat, then braise until tender with a little water.",
+    "Dice the potatoes and fry them in oil until crispy.",
+    "Stir the crushed garlic and marjoram into the meat, then toss with the potatoes. Serve with pickled gherkins."
+   ]
+  },
+  "rantott-hus": {
+   "name": "Breaded pork schnitzel with rice",
+   "steps": [
+    "Slice the pork loin, pound it thin and season with salt.",
+    "Coat in flour, beaten egg and then breadcrumbs, and deep-fry in plenty of oil.",
+    "Serve with steamed rice and pickled gherkins."
+   ]
+  },
+  "sult-oldalas": {
+   "name": "Roast spare ribs with onion potatoes",
+   "steps": [
+    "Salt the ribs, brush them with garlic mustard and roast covered with a little water at 160 °C for 1 hour.",
+    "Add the potato wedges and onion and roast uncovered at 200 °C for another 40 minutes until everything is crispy."
+   ]
+  },
+  "hagymas-tarja": {
+   "name": "Pork neck steak with crispy onions and chips",
+   "steps": [
+    "Pound the pork neck slices, season them and fry them in a hot pan for 3–4 minutes on each side.",
+    "Coat the onion rings in flour and fry them in plenty of oil until crispy.",
+    "Cook the chips in the oven or in oil, and make a vinegar salad from the cucumber."
+   ]
+  },
+  "csirkeszarny": {
+   "name": "Crispy roast chicken wings with garlic yoghurt",
+   "steps": [
+    "Toss the wings with oil and spices and put them in a baking tray next to the potato wedges.",
+    "Roast at 220 °C for about 40 minutes until crispy, turning them halfway.",
+    "Mix the yoghurt with crushed garlic and salt into a sauce."
+   ]
+  },
+  "sult-csirke": {
+   "name": "Whole roast chicken on a bed of vegetables",
+   "steps": [
+    "Season the chicken inside and out, put a halved lemon in the cavity and rub the skin with soft butter.",
+    "Put large pieces of potato, carrot and onion in a baking tray and lay the chicken on top.",
+    "Roast at 200 °C for about 80 minutes, basting now and then with the juices."
+   ]
+  },
+  "pulykasalata": {
+   "name": "Grilled turkey breast salad",
+   "steps": [
+    "Slice the turkey breast, season it and cook it through in a hot pan.",
+    "Chop the vegetables and mix them with the sweetcorn.",
+    "Mix the yoghurt with mustard and salt into a dressing and put it on the salad with the meat cut into strips. Serve with bread rolls."
+   ]
+  },
+  "rantott-sajt": {
+   "name": "Fried breaded cheese with chips",
+   "steps": [
+    "Cut the cheese into 1 cm thick slices.",
+    "Coat twice in flour, egg and breadcrumbs so it doesn't leak while frying.",
+    "Fry quickly in plenty of hot oil. Serve with chips and a mustard-yoghurt sauce."
+   ]
+  },
+  "melegszendvics": {
+   "name": "Ham and cheese toasted sandwiches",
+   "steps": [
+    "Butter the slices of bread thinly.",
+    "Top them with the ham, tomato slices and grated cheese.",
+    "Bake in a 200 °C oven for 6–8 minutes, until the cheese melts."
+   ]
+  },
+  "gorog-salata": {
+   "name": "Greek salad",
+   "steps": [
+    "Cut the tomato, cucumber and pepper into chunks and the onion into thin rings.",
+    "Mix, season with salt and pepper and drizzle with olive oil.",
+    "Top with the feta, whole or roughly crumbled, and sprinkle with oregano."
+   ]
+  },
+  "korozott": {
+   "name": "Körözött (paprika cheese spread) with fresh bread",
+   "steps": [
+    "Mash the cottage cheese with the soft butter using a fork.",
+    "Mix in the very finely chopped onion, paprika, caraway and salt.",
+    "Serve with fresh bread and sliced pepper."
+   ]
+  },
+  "sajtos-teszta": {
+   "name": "Pasta with cheese and sour cream",
+   "steps": [
+    "Cook the pasta in salted water, drain it and toss it with the butter.",
+    "Stir in half of the sour cream; when serving, top with the rest of the sour cream and plenty of grated cheese."
+   ]
+  },
+  "almas-pite": {
+   "name": "Apple pie",
+   "steps": [
+    "Rub the flour and cold butter together, add the icing sugar, egg, sour cream and baking powder and quickly knead into a dough. Chill for 30 minutes.",
+    "Grate the apples, squeeze them out and cook them with sugar, cinnamon and lemon juice.",
+    "Roll half of the dough into a baking tin, spread the filling on it, cover with the other half and prick with a fork.",
+    "Bake at 180 °C for about 35 minutes until golden brown."
+   ]
+  },
+  "tojasos-nokedli": {
+   "name": "Egg nokedli with cucumber salad",
+   "steps": [
+    "Mix a dumpling batter from the flour, 3 eggs, salt and water and drop small pieces into boiling salted water.",
+    "Toss the cooked nokedli in oil, pour over the rest of the beaten eggs and stir until set.",
+    "Slice the cucumber thinly, put it in vinegar-and-sugar water and sprinkle with paprika."
+   ]
+  },
+  "rakott-karfiol": {
+   "name": "Cauliflower bake",
+   "steps": [
+    "Cook the cauliflower florets in salted water until half-tender and cook the rice separately.",
+    "Brown the minced meat with the onion, season it and mix it with the rice.",
+    "Layer the cauliflower and meat in a baking dish and top with sour cream mixed with egg and grated cheese.",
+    "Bake at 200 °C for about 30 minutes until golden."
+   ]
+  },
+  "rizses-hus": {
+   "name": "Chicken and vegetable rice",
+   "steps": [
+    "Sauté the onion, add the diced chicken and fry until it turns white.",
+    "Add the rice and diced carrot, stir, then pour in twice the rice's volume of water.",
+    "Cook covered for 18 minutes; stir in the peas and sweetcorn for the last 5 minutes."
+   ]
+  },
+  "gyumolcssalata": {
+   "name": "Fruit salad with yoghurt",
+   "steps": [
+    "Wash and peel the fruit and cut it into bite-sized pieces.",
+    "Drizzle with lemon juice so it doesn't go brown.",
+    "Serve with honey yoghurt."
+   ]
+  },
+  "kakaos-palacsinta": {
+   "name": "Cocoa crêpes",
+   "steps": [
+    "Whisk the flour, milk, eggs, a pinch of salt and a little oil until smooth, and let it rest for 15 minutes.",
+    "Fry thin crêpes in a hot frying pan.",
+    "Mix the cocoa with the icing sugar, sprinkle it over the crêpes and roll them up."
+   ]
+  },
+  "kekszes-kremes": {
+   "name": "Biscuit and cream pots",
+   "steps": [
+    "Whip the cream until stiff, mix the cottage cheese with the icing sugar, then gently fold the two together.",
+    "Layer the crumbled biscuits, the cream and the banana slices in glasses.",
+    "Dust the top with cocoa powder and chill until serving."
+   ]
+  },
+  "carbonara": {
+   "name": "Spaghetti carbonara",
+   "steps": [
+    "Cook the spaghetti in plenty of salted water; set aside a mug of the cooking water.",
+    "Fry the diced bacon in a pan until the fat renders.",
+    "Mix the eggs with the grated cheese and plenty of pepper.",
+    "Toss the drained pasta with the bacon, take it off the heat and stir in the egg and cheese with a little cooking water so it turns creamy, not scrambled."
+   ]
+  },
+  "smash-burger": {
+   "name": "Smash burgers with chips",
+   "steps": [
+    "Cook the chips in the oven or air fryer according to the packet.",
+    "Shape 8 balls from the minced meat and press them thin with a flat utensil in a very hot pan; season with salt and pepper.",
+    "After 1.5 minutes flip them, put the cheese on top and cook for another minute.",
+    "Put two patties, onion, tomato, gherkin and sauce into each halved, toasted bun."
+   ]
+  },
+  "fajitas": {
+   "name": "Chicken fajitas",
+   "steps": [
+    "Cut the chicken breast into thin strips and toss with the spices.",
+    "Cook through in a hot pan in a few minutes, then take it out.",
+    "In the same pan, fry the pepper and onion strips until crisp-tender and return the meat.",
+    "Serve with warm tortillas, sour cream and grated cheese; everyone rolls their own."
+   ]
+  },
+  "citromos-lazac": {
+   "name": "Lemon butter salmon with rice and broccoli",
+   "steps": [
+    "Cook the rice in twice its volume of salted water until tender.",
+    "Steam the broccoli florets or boil them in salted water for 4 minutes.",
+    "Season the salmon with salt and pepper and fry it skin side down for 4 minutes, then 2 minutes on the other side (or 10 minutes at 200 °C in an air fryer).",
+    "Froth the butter in the pan with the lemon juice and dill and spoon it over the fish."
+   ]
+  },
+  "lasagne": {
+   "name": "Lasagne Bolognese",
+   "steps": [
+    "Sauté the onion and grated carrot, add the minced meat, then the passata, and cook for 20 minutes.",
+    "For the béchamel, melt the butter, stir in the flour, then the milk little by little, and cook until thick; season with salt and nutmeg.",
+    "Layer in a baking dish: ragù, lasagne sheet, béchamel – repeat three times and finish with cheese on top.",
+    "Bake in a 180 °C oven for about 40 minutes and let it rest for 10 minutes before slicing."
+   ]
+  },
+  "csirkes-ramen": {
+   "name": "Chicken ramen with egg",
+   "steps": [
+    "Simmer the stock with ginger, garlic and soy sauce for 15 minutes.",
+    "Poach the chicken breast in the stock for 12 minutes, take it out and slice it.",
+    "Boil the eggs for 7 minutes, put them in cold water, then peel and halve them.",
+    "Add the sliced mushrooms, carrot and noodles to the soup; serve in bowls with the chicken and egg."
+   ]
+  },
+  "csirkes-paella": {
+   "name": "Chicken and vegetable paella",
+   "steps": [
+    "Brown the chicken legs all over in a wide pan, then take them out.",
+    "Soften the onion, garlic, pepper and grated tomato in the fat, add the spices and the rice.",
+    "Pour in the stock, return the meat and cook for 20 minutes without stirring.",
+    "Scatter over the peas for the last 5 minutes; serve with lemon wedges."
+   ]
+  },
+  "gombas-rizotto": {
+   "name": "Mushroom risotto",
+   "steps": [
+    "Sweat the onion in half of the butter until translucent, add the sliced mushrooms and fry them in their own juice.",
+    "Add the rice and toast it for 2 minutes, stirring.",
+    "Add the hot stock a ladle at a time, waiting each time until it is absorbed; about 18 minutes.",
+    "Finally stir in the remaining butter and the grated cheese and let it rest for 2 minutes."
+   ]
+  },
+  "souvlaki": {
+   "name": "Chicken souvlaki with tzatziki",
+   "steps": [
+    "Marinate the diced chicken with olive oil, lemon juice, oregano and garlic for 20 minutes.",
+    "Thread onto skewers and cook all over in a griddle pan or the oven.",
+    "For the tzatziki, mix the yoghurt with the grated, squeezed cucumber, garlic and salt.",
+    "Put the meat, tomato, onion and tzatziki into warm tortillas."
+   ]
+  },
+  "halas-taco": {
+   "name": "Crispy fish tacos",
+   "steps": [
+    "Season the fish, fry it for 3 minutes on each side, then flake it with a fork.",
+    "Slice the cabbage thinly and squeeze it with lemon juice and salt.",
+    "Mix the yoghurt with lemon juice and chili into a dressing.",
+    "Fill the tortillas with cabbage, fish, sweetcorn and dressing."
+   ]
+  },
+  "tikka-masala": {
+   "name": "Chicken tikka masala",
+   "steps": [
+    "Marinate the chicken in the yoghurt and half of the spices for 30 minutes, then sear it in a hot pan.",
+    "Soften the onion and garlic, add the remaining spices and the passata and cook for 10 minutes.",
+    "Stir in the cream and the chicken and simmer for another 10 minutes.",
+    "Serve with steamed rice."
+   ]
+  },
+  "chili-sin-carne": {
+   "name": "Chili sin carne (meat-free chili)",
+   "steps": [
+    "Soften the onion and diced pepper and sprinkle over the spices.",
+    "Add the passata, the drained beans and sweetcorn and cook for 20 minutes.",
+    "Serve with rice or bread; sour cream goes well with it too."
+   ]
+  },
+  "turogomboc": {
+   "name": "Cottage cheese dumplings",
+   "steps": [
+    "Work the cottage cheese together with the eggs, flour, salt and lemon zest and chill for 30 minutes.",
+    "Toast the breadcrumbs in butter until golden.",
+    "With wet hands shape dumplings and cook them in gently salted, rapidly boiling water for 10 minutes.",
+    "Roll them in the breadcrumbs and serve with icing sugar and sour cream."
+   ]
+  },
+  "makos-teszta": {
+   "name": "Poppy seed pasta",
+   "steps": [
+    "Cook the pasta in salted water and drain it.",
+    "Toss it with butter, then sprinkle with the poppy seeds mixed with icing sugar."
+   ]
+  },
+  "dios-teszta": {
+   "name": "Walnut pasta",
+   "steps": [
+    "Cook the pasta in salted water and drain it.",
+    "Toss it with butter and sprinkle with the walnuts mixed with icing sugar."
+   ]
+  },
+  "krumplis-teszta": {
+   "name": "Potato pasta",
+   "steps": [
+    "Sweat the onion in oil until translucent and sprinkle with paprika.",
+    "Add the diced potatoes, braise until tender with a little water and mash lightly with a fork.",
+    "Toss with the cooked pasta, season with pepper and serve with pickled gherkins."
+   ]
+  },
+  "bableves": {
+   "name": "Bean soup with sausage",
+   "steps": [
+    "Sauté the onion, sprinkle with paprika and pour in 1.5 litres of water.",
+    "Cook the sliced vegetables, the bay leaf and the sausage in it.",
+    "When the vegetables are soft, add the drained beans and cook for another 10 minutes.",
+    "Thicken with sour cream mixed with flour and season with a little vinegar."
+   ]
+  },
+  "paradicsomleves": {
+   "name": "Tomato soup with alphabet pasta",
+   "steps": [
+    "Toast the flour lightly in the butter, then pour in the passata and 500 ml of water.",
+    "Season with sugar, salt and basil and cook for 10 minutes.",
+    "Cook the pasta separately and add it to the soup."
+   ]
+  },
+  "gombaleves": {
+   "name": "Creamy mushroom soup",
+   "steps": [
+    "Sauté the onion, add the sliced mushrooms and fry them.",
+    "Pour in 1.5 litres of water and cook the sliced carrot and parsley root in it.",
+    "Mix the sour cream with the flour, use it to thicken the soup and season with thyme."
+   ]
+  },
+  "gombas-csirkemell": {
+   "name": "Creamy mushroom chicken with rice",
+   "steps": [
+    "Steam the rice.",
+    "Cut the chicken breast into strips and brown them all over in a hot pan.",
+    "Add the onion and mushrooms and braise for 8 minutes.",
+    "Bring to the boil with the sour cream, season and serve with the rice."
+   ]
+  },
+  "hortobagyi": {
+   "name": "Hortobágy-style stuffed pancakes",
+   "steps": [
+    "Make crêpes from flour, milk and eggs.",
+    "Cook the chicken with the onion and pepper as a stew, then take out the meat and chop it finely.",
+    "Mix the chopped meat with a little of the sauce and sour cream, roll it up in the crêpes and fold in the ends.",
+    "Put them in a baking dish, pour over the sauce boiled with sour cream and bake at 180 °C for 15 minutes."
+   ]
+  },
+  "rakott-kaposzta": {
+   "name": "Layered cabbage bake",
+   "steps": [
+    "Slice the cabbage thinly, salt it and braise it in a little fat until half-tender.",
+    "Brown the minced meat with the onion and season it; cook the rice until half-done and mix it into the meat.",
+    "Layer in a baking dish: cabbage, meat, sliced sausage, sour cream – with cabbage and sour cream on top.",
+    "Bake in a 180 °C oven covered for 40 minutes, then uncovered for another 20."
+   ]
+  },
+  "toltott-paprika": {
+   "name": "Stuffed peppers in tomato sauce",
+   "steps": [
+    "Cut out the cores of the peppers.",
+    "Mix the minced meat with the raw rice, egg and spices and stuff the peppers.",
+    "Bring the passata to the boil with water, sugar and salt, lay in the peppers and cook over a low heat for 50 minutes.",
+    "Serve with potatoes boiled in salted water."
+   ]
+  },
+  "szekelykaposzta": {
+   "name": "Székely goulash (pork and sauerkraut stew)",
+   "steps": [
+    "Soften the onion, sprinkle with paprika, add the diced meat and cook it as a stew.",
+    "When the meat is half-tender, add the thinly sliced cabbage and the caraway and braise together until soft.",
+    "Thicken with sour cream mixed with flour and serve with dill."
+   ]
+  },
+  "csirke-zoldsegagyon": {
+   "name": "Spiced chicken breast on a bed of vegetables",
+   "steps": [
+    "Cut the potatoes and vegetables into large pieces and toss them with oil and spices.",
+    "Rub the chicken breast with the spices.",
+    "Roast the vegetables in a tray at 200 °C for 20 minutes, then put the meat on top and roast for another 20 minutes (in an air fryer at 190 °C in 2 batches)."
+   ]
+  },
+  "airfryer-csirkecomb": {
+   "name": "Crispy chicken legs with chips",
+   "steps": [
+    "Rub the chicken legs with the spices.",
+    "Cook in an air fryer at 190 °C for 25 minutes or in the oven at 200 °C for 40 minutes, turning them halfway.",
+    "Cook the chips according to the packet.",
+    "Serve with garlic yoghurt."
+   ]
+  },
+  "rantott-hal": {
+   "name": "Fried breaded fish with potato salad",
+   "steps": [
+    "Boil the potatoes in their skins, peel and slice them and mix them with the onion, sour cream and mustard into a salad.",
+    "Season the fish with salt and coat it in flour, egg and breadcrumbs.",
+    "Fry both sides until golden in plenty of hot oil.",
+    "Serve with lemon wedges and the salad."
+   ]
+  },
+  "lazacos-teszta": {
+   "name": "Creamy spinach and salmon pasta",
+   "steps": [
+    "Cook the pasta.",
+    "Sear the diced salmon all over in a pan and take it out.",
+    "Thaw the spinach over the garlic, pour in the cream and season with lemon juice.",
+    "Return the fish and toss everything with the pasta."
+   ]
+  },
+  "tonhalsalata": {
+   "name": "Tuna salad with beans and sweetcorn",
+   "steps": [
+    "Drain the beans and sweetcorn, and dice the onion and pepper.",
+    "Mix with the drained tuna and season with oil, vinegar and salt.",
+    "Serve with fresh bread."
+   ]
+  },
+  "bundas-kenyer": {
+   "name": "Hungarian eggy bread",
+   "steps": [
+    "Beat the eggs with the milk and salt.",
+    "Dip the slices of bread in it and fry both sides in hot oil until golden.",
+    "Rub with garlic and serve with tomatoes."
+   ]
+  },
+  "sonkas-omlett": {
+   "name": "Ham and cheese omelette",
+   "steps": [
+    "Beat the eggs with salt and pepper.",
+    "Fry the diced pepper in butter for a minute and pour in the eggs.",
+    "When the bottom has set, scatter ham and cheese over one half, fold the other half over and cook for another minute."
+   ]
+  },
+  "shakshuka": {
+   "name": "Shakshuka with feta",
+   "steps": [
+    "Soften the onion, garlic and pepper and sprinkle over the spices.",
+    "Add the passata and cook for 10 minutes until thick.",
+    "Make hollows, crack in the eggs and cook covered for 6–8 minutes.",
+    "Serve with crumbled feta and fresh bread."
+   ]
+  },
+  "amerikai-palacsinta": {
+   "name": "Banana pancakes",
+   "steps": [
+    "Mix the flour with the baking powder, sugar and salt, then add the milk, egg and melted butter.",
+    "Fry palm-sized pancakes in a little butter in a small pan; flip them when the top is bubbly.",
+    "Serve with sliced banana, strawberries and honey."
+   ]
+  },
+  "joghurtos-zab": {
+   "name": "Overnight oats with yoghurt and fruit",
+   "steps": [
+    "Mix the oats with the yoghurt and a spoonful of honey and leave them in the fridge overnight.",
+    "In the morning layer them in glasses with sliced banana and strawberries."
+   ]
+  },
+  "rizsfelfujt": {
+   "name": "Baked rice pudding",
+   "steps": [
+    "Cook the rice in the milk with a pinch of salt until thick and let it cool until lukewarm.",
+    "Stir in the butter, egg yolks, half of the sugar and the lemon zest, then gently fold in the egg whites whipped with the rest of the sugar.",
+    "Spread in a buttered baking dish and bake at 180 °C for 30 minutes.",
+    "Serve with jam."
+   ]
+  },
+  "turokrem": {
+   "name": "Fruity cottage cheese cream",
+   "steps": [
+    "Mix the cottage cheese with the yoghurt, icing sugar and lemon zest until creamy.",
+    "Layer it in glasses with the sliced fruit."
+   ]
+  },
+  "kakaos-csiga": {
+   "name": "Puff pastry cocoa swirls",
+   "steps": [
+    "Unroll the pastry, brush it with melted butter and sprinkle with the cocoa mixed with icing sugar.",
+    "Roll it up tightly, cut into 2 cm slices and lay them on a lined baking tray.",
+    "Bake at 200 °C for 15–18 minutes until golden brown."
+   ]
+  },
+  "rakott-teszta": {
+   "name": "Baked ham pasta",
+   "steps": [
+    "Cook the pasta until half-done.",
+    "Mix the sour cream with the eggs, salt and pepper and toss it with the pasta and the diced ham.",
+    "Spread in a baking dish, sprinkle with grated cheese and bake at 190 °C for 25 minutes."
+   ]
+  },
+  "arrabbiata": {
+   "name": "Penne all'arrabbiata",
+   "steps": [
+    "Fry the sliced garlic and chili in the olive oil for a minute.",
+    "Add the passata, season with salt and cook for 10 minutes.",
+    "Toss with the cooked penne and serve with grated cheese."
+   ]
+  },
+  "pestos-teszta": {
+   "name": "Pesto chicken pasta",
+   "steps": [
+    "Cook the pasta.",
+    "Season the chicken strips and cook them through.",
+    "Toss the pasta with the pesto, the chicken and the diced tomato."
+   ]
+  },
+  "csirkes-wok": {
+   "name": "Chicken and broccoli stir-fry",
+   "steps": [
+    "Steam the rice.",
+    "Fry the chicken strips in a very hot pan and take them out.",
+    "Stir-fry the vegetables until crisp-tender and return the meat.",
+    "Season with soy sauce, honey and ginger and thicken with a little cornflour water."
+   ]
+  },
+  "tofus-pad-thai": {
+   "name": "Tofu fried rice noodles (pad thai style)",
+   "steps": [
+    "Soak the rice noodles in hot water according to the packet.",
+    "Fry the diced tofu until crispy and take it out.",
+    "Stir-fry the vegetables, push them aside and scramble the beaten egg next to them.",
+    "Add the noodles, tofu and sauce, toss together and serve with roughly chopped peanuts and lemon."
+   ]
+  },
+  "piritott-rizs": {
+   "name": "Egg fried rice",
+   "steps": [
+    "Cook the rice and let it cool completely (yesterday's rice is best).",
+    "Fry the carrot and peas in a hot pan and add the diced ham.",
+    "Push aside, scramble the beaten egg, then add the rice and fry everything together with soy sauce."
+   ]
+  },
+  "csicseri-salata": {
+   "name": "Mediterranean chickpea salad",
+   "steps": [
+    "Drain the chickpeas and dice the vegetables.",
+    "Mix with olive oil, lemon juice and spices.",
+    "Top with crumbled feta."
+   ]
+  },
+  "kuszkusz-salata": {
+   "name": "Couscous and vegetable salad",
+   "steps": [
+    "Pour hot salted water over the couscous, leave it covered for 5 minutes, then fluff it up with a fork.",
+    "Add the finely chopped vegetables, the lemon juice and the oil.",
+    "Serve with feta and fresh herbs."
+   ]
+  },
+  "sutotokkremleves": {
+   "name": "Creamy pumpkin soup",
+   "steps": [
+    "Sauté the onion, add the diced pumpkin and pour in 1 litre of water.",
+    "Cook until tender, then blend with a stick blender.",
+    "Season with cream, ginger and nutmeg; serve with toast."
+   ]
+  },
+  "brokkolikremleves": {
+   "name": "Cheesy cream of broccoli soup",
+   "steps": [
+    "Soften the onion, add the broccoli and diced potato and pour in 1 litre of water.",
+    "Cook until tender, then purée.",
+    "Stir in the cream and grated cheese and season."
+   ]
+  },
+  "edesburgonya-csirke": {
+   "name": "Roast chicken legs with sweet potatoes",
+   "steps": [
+    "Cut the sweet potatoes into wedges and toss with oil and spices.",
+    "Rub the chicken legs with the spices.",
+    "Roast together at 200 °C for 40 minutes (in an air fryer at 190 °C, in two batches, 25 minutes).",
+    "Serve with garlic yoghurt."
+   ]
+  },
+  "muszaka": {
+   "name": "Aubergine and potato bake (moussaka)",
+   "steps": [
+    "Slice the aubergine and potatoes, salt them, brush with oil and pre-bake them in the oven.",
+    "Cook the minced meat with passata, cinnamon and oregano into a thick ragù.",
+    "Make a béchamel from butter, flour and milk and stir in the egg.",
+    "Layer in a baking dish: potato, aubergine, ragù, with béchamel on top; bake at 180 °C for 45 minutes."
+   ]
+  },
+  "zoldbabfozelek": {
+   "name": "Green bean stew with fried eggs",
+   "steps": [
+    "Cook the green beans in a little salted water until tender.",
+    "Thicken with sour cream mixed with flour and milk, and season with garlic, dill and a little vinegar.",
+    "Serve with fried eggs."
+   ]
+  },
+  "karfiolfasirt": {
+   "name": "Cauliflower patties with mashed potatoes",
+   "steps": [
+    "Cook the cauliflower until tender, drain it and mash it with a fork.",
+    "Mix with the egg, grated cheese, soaked bread roll and spices; shape into patties.",
+    "Fry both sides in a little oil until golden.",
+    "Boil the potatoes and mash them with butter and warm milk."
+   ]
+  },
+  "fasirt-pure": {
+   "name": "Meat patties with mashed potatoes",
+   "steps": [
+    "Knead the minced meat with the soaked and squeezed bread roll, egg, grated onion and spices.",
+    "Shape flat patties and fry them in oil for 4–5 minutes on each side.",
+    "Boil the potatoes and mash them with butter and warm milk.",
+    "Serve with pickled gherkins."
+   ]
+  },
+  "paprikas-krumpli": {
+   "name": "Paprika potatoes with sausage",
+   "steps": [
+    "Sauté the onion in fat and sprinkle with paprika.",
+    "Add the diced potatoes, the pepper, tomato, sliced sausage and caraway.",
+    "Pour in just enough water to cover and cook until tender. Serve with pickled gherkins."
+   ]
+  },
+  "nuggets": {
+   "name": "Homemade chicken nuggets with chips",
+   "steps": [
+    "Cut the chicken into bite-sized pieces and season.",
+    "Coat in flour, egg and breadcrumbs and spray with a little oil.",
+    "Cook in an air fryer at 200 °C for 12 minutes or in the oven at 220 °C for 18 minutes, turning halfway.",
+    "Serve with chips and garlic yoghurt."
+   ]
+  },
+  "babgulyas": {
+   "name": "Bean goulash",
+   "steps": [
+    "Soften the onion, sprinkle with paprika, add the diced meat and braise it in its own juice for 1 hour.",
+    "Pour in 1.5 litres of water and add the vegetables and potatoes.",
+    "When everything is soft, stir in the drained beans and cook for another 10 minutes."
+   ]
+  },
+  "marhahusleves": {
+   "name": "Beef broth with thin noodles",
+   "steps": [
+    "Put the meat in cold water and simmer very gently for 2 hours; skim off the foam.",
+    "Add the vegetables, onion and spices and cook for another 45 minutes.",
+    "Strain the broth and cook the noodles separately; serve with the meat and vegetables."
+   ]
+  },
+  "zoldsegleves": {
+   "name": "Spring vegetable soup",
+   "steps": [
+    "Dice the vegetables and sweat them in butter for a few minutes.",
+    "Sprinkle with flour, pour in 1.5 litres of water and cook until tender.",
+    "Serve with chopped parsley."
+   ]
+  },
+  "pogacsa": {
+   "name": "Cheese scones (pogácsa)",
+   "steps": [
+    "Rub the flour and butter together, add the yeast, sour cream, egg yolk, half of the cheese and the salt and knead into a dough.",
+    "Roll it out a finger thick, score the top, brush with egg and sprinkle with the rest of the cheese.",
+    "Cut out rounds and bake at 200 °C for 18–20 minutes."
+   ]
+  },
+  "lekvaros-bukta": {
+   "name": "Jam-filled buns (bukta)",
+   "steps": [
+    "Activate the yeast in the lukewarm, sweetened milk.",
+    "Knead into a soft dough with the flour, egg, melted butter and salt and let it double in size.",
+    "Roll it out, cut into squares, put jam in the middle of each, pinch them closed and line them up in a baking tray.",
+    "Let them rise for another 20 minutes, brush with egg and bake at 180 °C for 25 minutes."
+   ]
+  },
+  "turos-retes": {
+   "name": "Cottage cheese strudel with puff pastry",
+   "steps": [
+    "Mix the cottage cheese with the egg yolk, icing sugar, lemon zest and sour cream.",
+    "Spread it on the pastry sheets and roll them up.",
+    "Brush with egg and bake at 200 °C for 25 minutes until golden brown."
+   ]
+  },
+  "almas-retes": {
+   "name": "Apple and walnut strudel",
+   "steps": [
+    "Grate the apples, squeeze them out and mix them with the sugar, cinnamon and walnuts.",
+    "Spread on the pastry sheets, roll them up and prick the tops.",
+    "Bake at 200 °C for 25 minutes."
+   ]
+  },
+  "bananos-kenyer": {
+   "name": "Walnut banana bread",
+   "steps": [
+    "Mash the bananas with a fork and mix them with the melted butter, sugar and eggs.",
+    "Add the flour, bicarbonate of soda, cinnamon and walnuts and stir just until combined.",
+    "Bake in a lined loaf tin at 175 °C for about 55 minutes."
+   ]
+  },
+  "mezes-mustaros-csirke": {
+   "name": "Honey-mustard chicken legs with potatoes",
+   "steps": [
+    "Mix the mustard with honey, garlic, salt and a little oil and brush it over the chicken legs.",
+    "Cut the potatoes into wedges and the onion into segments and put them in the tray next to the meat.",
+    "Roast at 200 °C for about 45 minutes (in an air fryer at 190 °C for 25 minutes)."
+   ]
+  },
+  "cordon-bleu": {
+   "name": "Chicken cordon bleu with rice",
+   "steps": [
+    "Cut a pocket into the chicken breasts, season with salt and fill with ham and cheese.",
+    "Coat in flour, egg and breadcrumbs.",
+    "Fry over a medium heat in plenty of oil for 5–6 minutes on each side.",
+    "Serve with steamed rice."
+   ]
+  },
+  "karaj-gombamartas": {
+   "name": "Pork chops with mushroom sauce",
+   "steps": [
+    "Pound the pork slices, season them and fry them in a hot pan for 3 minutes on each side, then take them out.",
+    "In the same pan soften the onion and mushrooms, pour in the cream and bring to the boil.",
+    "Return the meat and simmer in the sauce for 5 minutes. Serve with rice."
+   ]
+  },
+  "gyros-tal": {
+   "name": "Gyros plate",
+   "steps": [
+    "Cut the pork neck into thin strips and marinate with the gyros spice for 30 minutes.",
+    "Fry in batches in a hot pan until crispy.",
+    "Mix tzatziki from the yoghurt with grated cucumber and garlic.",
+    "Serve with chips, salad and tzatziki."
+   ]
+  },
+  "pulykaragu": {
+   "name": "Creamy turkey ragout with rice",
+   "steps": [
+    "Brown the diced turkey all over with the onion.",
+    "Add the mushrooms and peas and braise for 10 minutes.",
+    "Bring to the boil with cream and tarragon and serve with rice."
+   ]
+  },
+  "mexikoi-egytal": {
+   "name": "Mexican beef and rice one-pot",
+   "steps": [
+    "Brown the minced meat and season it.",
+    "Add the rice, the passata and 600 ml of water and cook covered for 15 minutes.",
+    "Stir in the beans, sweetcorn and diced pepper and cook for another 5 minutes."
+   ]
+  },
+  "burrito": {
+   "name": "Bean and rice burritos",
+   "steps": [
+    "Cook the rice; braise the beans with the spices and mash them lightly.",
+    "Fill the tortillas with rice, beans, sweetcorn, tomato, cheese and sour cream.",
+    "Roll up tightly and toast both sides in a dry pan."
+   ]
+  },
+  "quesadilla": {
+   "name": "Ham and cheese quesadillas",
+   "steps": [
+    "Scatter grated cheese, ham, sweetcorn and pepper over half of each tortilla and fold over the other half.",
+    "Toast both sides in a dry pan for 2–3 minutes until the cheese melts.",
+    "Cut into wedges and serve with sour cream."
+   ]
+  },
+  "hazi-pizza": {
+   "name": "Homemade ham and mushroom pizza",
+   "steps": [
+    "Knead the flour with yeast, salt, oil and 300 ml of lukewarm water into a smooth dough and let it rise for 1 hour.",
+    "Roll it out onto two baking trays and spread with seasoned passata.",
+    "Top with the ham, mushrooms, sweetcorn and mozzarella.",
+    "Bake in the hottest possible oven (250 °C) for 10–12 minutes."
+   ]
+  },
+  "margherita": {
+   "name": "Pizza Margherita",
+   "steps": [
+    "Knead the flour with yeast, salt, oil and 300 ml of lukewarm water into a smooth dough and let it rise for 1 hour.",
+    "Roll it out thinly, spread with salted passata and top with torn mozzarella and tomato slices.",
+    "Bake at 250 °C for 10–12 minutes and serve with fresh basil."
+   ]
+  },
+  "langos": {
+   "name": "Lángos (fried flatbread) with cheese and sour cream",
+   "steps": [
+    "Knead the boiled, mashed potatoes with the flour, the yeast activated in lukewarm milk and salt into a soft dough, and let it rise for 1 hour.",
+    "With oiled hands stretch out palm-sized rounds.",
+    "Fry both sides in plenty of hot oil until golden.",
+    "Brush with garlic water and serve with sour cream and grated cheese."
+   ]
+  },
+  "hot-dog": {
+   "name": "Homemade hot dogs",
+   "steps": [
+    "Heat the frankfurters in hot water for 5 minutes.",
+    "Slit the buns and warm them in the oven until crispy.",
+    "Fill with the frankfurter, gherkin, onion and sauces."
+   ]
+  },
+  "frittata": {
+   "name": "Potato and sausage frittata",
+   "steps": [
+    "Slice the potatoes thinly and cook them until tender in an ovenproof frying pan.",
+    "Add the sausage and pepper and pour over the seasoned beaten eggs.",
+    "Sprinkle with cheese and bake in a 180 °C oven for 12–15 minutes until set."
+   ]
+  },
+  "spenotos-pite": {
+   "name": "Spinach and feta pie",
+   "steps": [
+    "Thaw the spinach with garlic and let its liquid evaporate.",
+    "Once cool, mix it with the crumbled feta, the eggs and the spices.",
+    "Fill a pastry-lined tin, fold the edges over and bake at 200 °C for 25 minutes."
+   ]
+  },
+  "rakott-brokkoli": {
+   "name": "Broccoli and ham bake",
+   "steps": [
+    "Cook the broccoli and sliced potatoes in salted water until half-tender.",
+    "Layer them in a baking dish with the diced ham.",
+    "Mix the sour cream with the eggs and spices, pour it over and sprinkle with cheese.",
+    "Bake at 190 °C for 25 minutes."
+   ]
+  },
+  "sult-camembert": {
+   "name": "Baked camembert with jam and toast",
+   "steps": [
+    "Score the tops of the camemberts and sprinkle with thyme.",
+    "Bake in an air fryer at 180 °C for 8 minutes or in the oven at 200 °C for 12 minutes.",
+    "Serve with toast, jam and tomatoes."
+   ]
+  },
+  "rantott-parizsi": {
+   "name": "Fried breaded bologna with mashed potatoes",
+   "steps": [
+    "Boil the potatoes and mash them with butter and warm milk.",
+    "Cut the bologna into 1 cm slices and nick the edges.",
+    "Coat in flour, egg and breadcrumbs and fry in hot oil."
+   ]
+  },
+  "voroslencse-dal": {
+   "name": "Red lentil dal with coconut milk",
+   "steps": [
+    "Soften the onion and garlic and sprinkle over the spices.",
+    "Add the lentils, passata, coconut milk and 500 ml of water and cook for 20 minutes until the lentils break down.",
+    "Serve with rice."
+   ]
+  },
+  "csirkes-kuszkusz": {
+   "name": "Chicken and vegetable couscous",
+   "steps": [
+    "Pour hot salted water over the couscous and leave it to stand for 5 minutes.",
+    "Dice the chicken and vegetables, season and fry them.",
+    "Add the drained chickpeas and toss everything with the couscous."
+   ]
+  },
+  "hummusz-tal": {
+   "name": "Hummus plate with vegetables",
+   "steps": [
+    "Blend the chickpeas with the lemon juice, oil, garlic and a little water until creamy.",
+    "Season with salt and cumin.",
+    "Serve with vegetable sticks and bread."
+   ]
+  },
+  "ceklas-tal": {
+   "name": "Roast beetroot and sweet potato with feta",
+   "steps": [
+    "Dice the beetroot and sweet potato and toss with oil, salt and thyme.",
+    "Roast at 200 °C for 35–40 minutes.",
+    "Serve with crumbled feta, walnuts and a little honey."
+   ]
+  },
+  "sutotokos-rizotto": {
+   "name": "Pumpkin risotto",
+   "steps": [
+    "Soften the onion in butter, add the diced pumpkin and the rice.",
+    "Add the stock a ladle at a time, stirring constantly, for about 20 minutes.",
+    "Stir in butter and cheese until creamy."
+   ]
+  },
+  "lazac-edesburgonya": {
+   "name": "Salmon with roast sweet potatoes and broccoli",
+   "steps": [
+    "Cut the sweet potatoes into wedges, season with oil and roast at 200 °C for 20 minutes.",
+    "Add the broccoli and the seasoned salmon and roast for another 12 minutes (10 minutes at 190 °C in an air fryer).",
+    "Serve drizzled with lemon juice."
+   ]
+  },
+  "tonhalas-rakott": {
+   "name": "Tuna pasta bake",
+   "steps": [
+    "Cook the pasta until half-done.",
+    "Mix it with the tuna, sweetcorn and the egg and sour cream mixture.",
+    "Spread in a baking dish, sprinkle with cheese and bake at 190 °C for 25 minutes."
+   ]
+  },
+  "rantott-ponty": {
+   "name": "Fried carp with parsley potatoes",
+   "steps": [
+    "Salt the fish pieces and leave them for 15 minutes.",
+    "Coat in flour, egg and flour again, and fry in plenty of oil.",
+    "Boil the potatoes in salted water and toss them with butter and parsley."
+   ]
+  },
+  "stroganoff": {
+   "name": "Pork Stroganoff with rice",
+   "steps": [
+    "Cut the meat into thin strips, sear quickly all over in a hot pan and take it out.",
+    "Soften the onion and mushrooms, add the mustard and the gherkin strips.",
+    "Bring to the boil with sour cream, return the meat and serve with rice."
+   ]
+  },
+  "tejszines-sonkas-teszta": {
+   "name": "Creamy ham and pea pasta",
+   "steps": [
+    "Cook the pasta, adding the peas to the water for the last 3 minutes.",
+    "Fry the diced ham, pour in the cream and bring to the boil.",
+    "Toss with the pasta and the grated cheese."
+   ]
+  },
+  "mac-and-cheese": {
+   "name": "Mac and cheese",
+   "steps": [
+    "Cook the pasta.",
+    "Toast the flour in the butter, add the milk little by little and cook until thick.",
+    "Stir in the grated cheese and a little mustard, then the pasta."
+   ]
+  },
+  "rakott-burgonya-sajtos": {
+   "name": "Creamy cheese potato gratin",
+   "steps": [
+    "Slice the potatoes thinly.",
+    "Layer them in a buttered baking dish rubbed with garlic, seasoning each layer.",
+    "Pour over the cream, sprinkle with cheese and bake at 180 °C for about 50 minutes."
+   ]
+  },
+  "krumplisalata-virsli": {
+   "name": "Potato salad with frankfurters",
+   "steps": [
+    "Boil the potatoes in their skins and hard-boil the eggs, then slice them.",
+    "Boil or fry the frankfurters and slice them.",
+    "Mix everything with a dressing of yoghurt, mustard and vinegar."
+   ]
+  },
+  "csirkes-tesztasalata": {
+   "name": "Chicken pasta salad",
+   "steps": [
+    "Cook the pasta and peas and rinse them with cold water.",
+    "Cook the chicken breast and dice it.",
+    "Toss everything with the dill-mustard yoghurt and chill until serving."
+   ]
+  },
+  "paraszt-reggeli": {
+   "name": "Farmer's breakfast",
+   "steps": [
+    "Fry the diced potatoes in a little fat until crispy.",
+    "Add the onion and sausage, then pour over the beaten eggs and scramble.",
+    "Serve with bread."
+   ]
+  },
+  "makos-guba": {
+   "name": "Poppy seed bread pudding (mákos guba)",
+   "steps": [
+    "Slice the bread rolls and drizzle them with warm milk sweetened with sugar and vanilla.",
+    "Sprinkle each layer with poppy seeds mixed with icing sugar.",
+    "Dot with butter and bake at 180 °C for 15 minutes."
+   ]
+  },
+  "lebbencsleves": {
+   "name": "Lebbencs soup (pasta and potato soup)",
+   "steps": [
+    "Fry the bacon and toast the pasta in its fat.",
+    "Add the onion, sprinkle with paprika and pour in 1.5 litres of water.",
+    "Cook the potatoes, pepper and tomato in it."
+   ]
+  },
+  "fokhagymakremleves": {
+   "name": "Cream of garlic soup with croutons",
+   "steps": [
+    "Soften the garlic in butter, add the diced potatoes and pour in 1 litre of water.",
+    "Cook until tender, purée and stir in the cream until smooth.",
+    "Serve with cheesy croutons."
+   ]
+  },
+  "sutotokos-curry": {
+   "name": "Pumpkin chicken curry",
+   "steps": [
+    "Soften the onion, add the curry powder and the diced chicken.",
+    "Add the diced pumpkin and the coconut milk and cook for 20 minutes.",
+    "Serve with rice."
+   ]
+  },
+  "szezamos-csirke": {
+   "name": "Sesame honey chicken with rice",
+   "steps": [
+    "Coat the diced chicken in flour and fry it in hot oil until crispy.",
+    "Bring the soy sauce to the boil with honey and garlic and toss the chicken in it.",
+    "Sprinkle with sesame seeds and serve with steamed rice and broccoli."
+   ]
+  },
+  "csirke-uborkasalata": {
+   "name": "Grilled chicken breast with creamy cucumber salad",
+   "steps": [
+    "Season the chicken breast and cook it in a griddle pan for 5–6 minutes on each side.",
+    "Slice the cucumber thinly, salt it, squeeze it out and mix with sour cream, garlic and a little vinegar.",
+    "Serve with boiled potatoes."
+   ]
+  },
+  "kremes-spenotos-csirke": {
+   "name": "Creamy spinach chicken with rice",
+   "steps": [
+    "Season the chicken breast, cook it through and take it out.",
+    "In the same pan thaw the spinach over the garlic and pour in the cream.",
+    "Return the meat, bring to the boil and serve with rice."
+   ]
+  },
+  "risi-bisi-sonkas": {
+   "name": "Rice and peas with ham (risi e bisi)",
+   "steps": [
+    "Toss the rice in butter and cook it until tender in twice its volume of salted water.",
+    "Add the peas and diced ham for the last 5 minutes.",
+    "Serve with grated cheese and parsley."
+   ]
+  },
+  "caprese-csirke": {
+   "name": "Baked chicken with tomato and mozzarella",
+   "steps": [
+    "Cut the potatoes into wedges, season with oil and pre-roast at 200 °C for 15 minutes.",
+    "Season the chicken breasts, put them next to the potatoes and layer the tomato and mozzarella slices on top.",
+    "Roast for another 20 minutes (15 minutes at 190 °C in an air fryer)."
+   ]
+  },
+  "csirkeporkolt": {
+   "name": "Chicken pörkölt with nokedli",
+   "steps": [
+    "Sweat the onion in fat until translucent, take it off the heat and sprinkle with paprika.",
+    "Add the chicken, pepper and tomato, season with salt and braise with a little water for 40 minutes.",
+    "Make nokedli from flour, eggs and water. Serve with pickled gherkins."
+   ]
+  },
+  "marhaporkolt": {
+   "name": "Beef pörkölt with boiled potatoes",
+   "steps": [
+    "Slowly sweat plenty of onion in fat until translucent and sprinkle with paprika.",
+    "Add the diced meat, season and braise with a little water for 2–2.5 hours until tender.",
+    "Boil the potatoes in salted water; serve with pickled gherkins."
+   ]
+  },
+  "tocsni": {
+   "name": "Potato pancakes with cheese and sour cream",
+   "steps": [
+    "Grate the potatoes and squeeze them out.",
+    "Mix with the egg, flour, crushed garlic and spices.",
+    "Fry thin pancakes in hot oil.",
+    "Serve with sour cream and grated cheese."
+   ]
+  },
+  "zoldseges-tojasos-teszta": {
+   "name": "Vegetable and egg fried noodles",
+   "steps": [
+    "Cook the pasta.",
+    "Stir-fry the vegetables and shredded cabbage in a hot pan.",
+    "Push aside, scramble the beaten egg, then add the pasta and soy sauce and fry everything together."
+   ]
+  },
+  "lencsefasirt": {
+   "name": "Lentil patties with yoghurt sauce",
+   "steps": [
+    "Cook the lentils until tender, drain and mash them with a fork.",
+    "Mix with the grated onion, egg, breadcrumbs and spices; shape into patties.",
+    "Fry both sides in a little oil.",
+    "Serve with boiled potatoes and garlic yoghurt."
+   ]
+  },
+  "tejfoles-csirkecomb-tepsis": {
+   "name": "Tray-baked chicken legs in sour cream",
+   "steps": [
+    "Slice the potatoes and put them in the bottom of a baking tray with the onion.",
+    "Lay the seasoned chicken legs on top.",
+    "Mix the sour cream with garlic, pour it into the tray and bake at 190 °C for 50 minutes."
+   ]
+  },
+  "csirkemell-rizs-zoldseg": {
+   "name": "Steamed chicken and vegetable bowl",
+   "steps": [
+    "Steam the rice.",
+    "Steam the vegetables or cook them in a little salted water until crisp-tender.",
+    "Season the chicken breast, cook it in a griddle pan and slice it."
+   ]
+  },
+  "kolbaszos-babos-egytal": {
+   "name": "Sausage and bean one-pot",
+   "steps": [
+    "Fry the onion, pepper and sliced sausage.",
+    "Add the beans and passata, season and cook for 20 minutes.",
+    "Serve with fresh bread."
+   ]
+  },
+  "parizsi-tojasrantotta": {
+   "name": "Scrambled eggs with bologna on toast",
+   "steps": [
+    "Soften the onion in butter and add the diced bologna.",
+    "Pour over the beaten eggs and stir until creamy.",
+    "Serve with toast."
+   ]
+  },
+  "gyumolcsos-palacsinta-eper": {
+   "name": "Strawberry and cottage cheese crêpes",
+   "steps": [
+    "Mix a crêpe batter from flour, milk and eggs and fry thin crêpes.",
+    "Mix the cottage cheese with icing sugar.",
+    "Fill the crêpes with the cottage cheese cream and sliced strawberries."
+   ]
+  },
+  "almas-zabos-morzsa": {
+   "name": "Apple and oat crumble",
+   "steps": [
+    "Dice the apples, toss them with cinnamon and lemon juice and put them in a baking dish.",
+    "Rub the oats, flour, sugar and cold butter into crumbs and scatter over the apples.",
+    "Bake at 180 °C for 30 minutes until the top is golden brown."
+   ]
+  }
+ },
+ "ingredients": {
+  "csirkemell": "Chicken breast fillet",
+  "csirkecomb": "Chicken legs",
+  "csirkeszarny": "Chicken wings",
+  "egesz_csirke": "Whole chicken",
+  "tyuk": "Boiling hen",
+  "pulykamell": "Turkey breast fillet",
+  "daralthus": "Minced pork",
+  "daralt_marha": "Minced beef",
+  "marhalabszar": "Beef shin",
+  "sertes_karaj": "Pork loin",
+  "sertes_comb": "Pork leg",
+  "sertes_tarja": "Pork neck",
+  "sertes_oldalas": "Pork spare ribs",
+  "virsli": "Frankfurters",
+  "kolbasz": "Sausage",
+  "bacon": "Smoked bacon",
+  "sonka": "Ham",
+  "zsir": "Lard",
+  "halfile": "White fish fillet",
+  "harcsa": "Catfish fillet",
+  "ponty": "Carp steaks",
+  "tonhal": "Canned tuna",
+  "tojas": "Eggs",
+  "tej": "Milk",
+  "tejfol": "Sour cream",
+  "tejszin": "Cooking cream",
+  "habtejszin": "Whipping cream",
+  "vaj": "Butter",
+  "trappista": "Trappista cheese",
+  "feta": "Feta cheese",
+  "mozzarella": "Mozzarella",
+  "turo": "Cottage cheese (túró)",
+  "joghurt": "Natural yoghurt",
+  "kefir": "Kefir",
+  "liszt": "Plain flour",
+  "retesliszt": "Fine flour",
+  "cukor": "Granulated sugar",
+  "porcukor": "Icing sugar",
+  "kakao": "Cocoa powder",
+  "keksz": "Plain biscuits",
+  "rizs": "Rice",
+  "spagetti": "Spaghetti",
+  "penne": "Dried pasta",
+  "tarhonya": "Tarhonya (egg barley)",
+  "lencse": "Lentils",
+  "zabpehely": "Rolled oats",
+  "napraforgoolaj": "Sunflower oil",
+  "olivaolaj": "Olive oil",
+  "kenyer": "Bread",
+  "zsemle": "Bread rolls",
+  "tortilla": "Tortilla wraps",
+  "burgonya": "Potatoes",
+  "hasabburgonya": "Frozen chips",
+  "voroshagyma": "Onions",
+  "fokhagyma": "Garlic",
+  "paradicsom": "Tomatoes",
+  "paprika": "Green peppers",
+  "uborka": "Cucumber",
+  "sargarepa": "Carrots",
+  "petrezselyem": "Parsley root",
+  "karfiol": "Cauliflower",
+  "kelkaposzta": "Savoy cabbage",
+  "kaposzta": "White cabbage",
+  "brokkoli": "Broccoli",
+  "cukkini": "Courgette",
+  "gomba": "Button mushrooms",
+  "alma": "Apples",
+  "korte": "Pears",
+  "banan": "Bananas",
+  "narancs": "Oranges",
+  "citrom": "Lemons",
+  "passata": "Tomato passata",
+  "voros_bab": "Canned red kidney beans",
+  "kukorica": "Canned sweetcorn",
+  "csicseri": "Canned chickpeas",
+  "kokusztej": "Coconut milk",
+  "lekvar": "Jam",
+  "spenot": "Spinach (frozen)",
+  "borso": "Green peas (frozen)",
+  "csemegeuborka": "Pickled gherkins",
+  "lazac": "Salmon fillet",
+  "gouda": "Gouda / Edam cheese",
+  "cheddar": "Cheddar cheese",
+  "camembert": "Camembert",
+  "parizsi": "Bologna sausage",
+  "szalami": "Salami",
+  "margarin": "Margarine",
+  "almale": "Apple juice",
+  "mogyoro": "Peanuts",
+  "eper": "Strawberries",
+  "lasagne": "Lasagne sheets",
+  "kuszkusz": "Couscous",
+  "rizsteszta": "Rice noodles",
+  "leveles_teszta": "Puff pastry (chilled)",
+  "sutotok": "Pumpkin",
+  "cekla": "Beetroot",
+  "edesburgonya": "Sweet potatoes",
+  "padlizsan": "Aubergine",
+  "zoldbab": "Green beans (frozen)",
+  "zoldsegkeverek": "Frozen mixed vegetables",
+  "feher_bab": "Canned white beans",
+  "tofu": "Tofu",
+  "pesto": "Pesto",
+  "dio": "Ground walnuts",
+  "mak": "Ground poppy seeds",
+  "olajbogyo": "Olives"
+ },
+ "words": {
+  "1 l zöldségalaplé": "1 l vegetable stock",
+  "1,5 l alaplé": "1.5 l stock",
+  "8 dl alaplé": "800 ml stock",
+  "babérlevél": "bay leaf",
+  "bazsalikom": "basil",
+  "bors": "pepper",
+  "chili": "chili",
+  "citrom": "lemon",
+  "citromhéj": "lemon zest",
+  "citromlé": "lemon juice",
+  "csipet só": "a pinch of salt",
+  "cukor": "sugar",
+  "curry": "curry",
+  "curryfűszer": "curry powder",
+  "currypaszta vagy curry": "curry paste or curry powder",
+  "dió": "walnuts",
+  "ecet": "vinegar",
+  "erős paprika": "hot pepper",
+  "fahéj": "cinnamon",
+  "fajitas-fűszer (paprika": "fajita seasoning (paprika",
+  "fokhagyma": "garlic",
+  "fokhagyma)": "garlic)",
+  "fokhagymapor": "garlic powder",
+  "frissen őrölt bors": "freshly ground pepper",
+  "füstölt paprika": "smoked paprika",
+  "fűszerpaprika": "paprika",
+  "garam masala": "garam masala",
+  "gyros-fűszer": "gyros seasoning",
+  "gyömbér": "ginger",
+  "ha van": "if you have it",
+  "kakukkfű": "thyme",
+  "kapor": "dill",
+  "keményítő": "cornflour",
+  "ketchup": "ketchup",
+  "kurkuma": "turmeric",
+  "kurkuma vagy sáfrány": "turmeric or saffron",
+  "kömény": "caraway",
+  "lilahagyma": "red onion",
+  "lime vagy citrom": "lime or lemon",
+  "majoránna": "marjoram",
+  "mazsola": "raisins",
+  "menta": "mint",
+  "mustár": "mustard",
+  "méz": "honey",
+  "méz vagy juharszirup": "honey or maple syrup",
+  "olaj": "oil",
+  "olajbogyó": "olives",
+  "olajspray": "oil spray",
+  "olívaolaj": "olive oil",
+  "olívaolaj vagy étolaj": "olive oil or cooking oil",
+  "oregánó": "oregano",
+  "paprika": "paprika",
+  "petrezselyem": "parsley",
+  "petrezselyemzöld": "chopped parsley",
+  "pirospaprika": "paprika",
+  "pirított hagyma": "crispy fried onions",
+  "rozmaring": "rosemary",
+  "római kömény": "cumin",
+  "snidling": "chives",
+  "szemes bors": "peppercorns",
+  "szerecsendió": "nutmeg",
+  "szezámmag": "sesame seeds",
+  "szódabikarbóna": "bicarbonate of soda",
+  "szójaszósz": "soy sauce",
+  "só": "salt",
+  "sütőpor": "baking powder",
+  "tahini": "tahini",
+  "tárkony": "tarragon",
+  "tökmag": "pumpkin seeds",
+  "vaníliás cukor": "vanilla sugar",
+  "zeller": "celeriac",
+  "zellerlevél": "celery leaves",
+  "zsálya": "sage",
+  "élesztő": "yeast",
+  "újhagyma": "spring onion",
+  "kömény, füstölt paprika": "caraway, smoked paprika"
+ },
+ "units": {
+  "fej": [
+   "head",
+   "heads"
+  ],
+  "kis fej": [
+   "small head",
+   "small heads"
+  ],
+  "nagy fej": [
+   "large head",
+   "large heads"
+  ],
+  "doboz": [
+   "tin",
+   "tins"
+  ],
+  "ek": [
+   "tbsp",
+   "tbsp"
+  ],
+  "pohár": [
+   "tub",
+   "tubs"
+  ],
+  "gerezd": [
+   "clove",
+   "cloves"
+  ],
+  "üveg": [
+   "jar",
+   "jars"
+  ],
+  "zacskó": [
+   "bag",
+   "bags"
+  ],
+  "szelet": [
+   "slice",
+   "slices"
+  ],
+  "csomag": [
+   "pack",
+   "packs"
+  ],
+  "golyó": [
+   "ball",
+   "balls"
+  ],
+  "tekercs": [
+   "roll",
+   "rolls"
+  ],
+  "vekni": [
+   "loaf",
+   "loaves"
+  ],
+  "db": [
+   "pc",
+   "pcs"
+  ],
+  "csomó": [
+   "bunch",
+   "bunches"
+  ]
+ },
+ "phrases": {
+  "Zöldség, gyümölcs": "Fruit & vegetables",
+  "Pékáru": "Bakery",
+  "Hús, hal": "Meat & fish",
+  "Felvágott, sajt": "Cold cuts & cheese",
+  "Tejtermék, tojás, hűtött": "Dairy, eggs & chilled",
+  "Száraz áru": "Dry goods",
+  "Konzerv, üveges": "Tins & jars",
+  "Mélyhűtött": "Frozen",
+  "Italok": "Drinks",
+  "Hétfő": "Monday",
+  "Kedd": "Tuesday",
+  "Szerda": "Wednesday",
+  "Csütörtök": "Thursday",
+  "Péntek": "Friday",
+  "Szombat": "Saturday",
+  "Vasárnap": "Sunday",
+  "tűzhely": "hob",
+  "sütő": "oven",
+  "sütő vagy airfryer": "oven or air fryer",
+  "könnyű": "easy",
+  "közepes": "medium",
+  "Magyarország": "Hungary",
+  "Horvátország": "Croatia",
+  "mérlegelős": "loose (weighed)",
+  "A keret szűkös: néhány napra a legolcsóbb receptet tettük, a változatossági szabályokat lazítva.": "The budget is tight: for some days we picked the cheapest recipe and relaxed the variety rules.",
+  "A beállításaidnak most kevés recept felel meg, ezért néhány napra a korábbi főzés maradéka jut (aznap többet főzöl).": "Few recipes match your settings right now, so some days get leftovers from an earlier meal (you cook more that day).",
+  "Demó árak (az Árfigyelő nem volt elérhető)": "Demo prices (the GVH price monitor was unavailable)",
+  "GVH Árfigyelő – friss letöltés": "GVH price monitor (Árfigyelő) – fresh download",
+  "GVH Árfigyelő – utoljára letöltött példány": "GVH price monitor (Árfigyelő) – last downloaded copy",
+  "GVH Árfigyelő": "GVH price monitor (Árfigyelő)",
+  "a horvát láncok napi árlistái (cijene.dev)": "the Croatian chains' daily price lists (cijene.dev)",
+  "A legfrissebb horvát árlista keresése…": "Looking for the latest Croatian price list…",
+  "A horvát árak feldolgozása…": "Processing the Croatian prices…",
+  "a lánc napi árlistája": "the chain's daily price list",
+  "Bolti akció": "Store promotion",
+  "Hűségkártyás/appos akció": "Loyalty card / app promotion",
+  "kézi": "manual",
+  "Egyéb": "Other",
+  "Adj meg egy tételt": "Enter an item",
+  "Legfeljebb 60 saját tétel lehet": "You can have at most 60 items of your own",
+  "Nincs ilyen tétel": "No such item",
+  "Legalább 2 karakteres keresőszó kell": "Type at least 2 characters",
+  "Hiányzó vagy érvénytelen profil-azonosító": "Missing or invalid profile ID",
+  "Nincs ilyen háztartás-profil": "No such household profile",
+  "Hibás tétel": "Invalid item",
+  "Hibás nap": "Invalid day",
+  "Ez a hét utolsó vacsorája": "This is the last dinner of the week",
+  "A profilok tárolása nincs bekapcsolva": "Profile storage is not enabled",
+  "Túl nagy kérés (legfeljebb 1 MB)": "Request too large (max. 1 MB)",
+  "Ismeretlen recept": "Unknown recipe",
+  "Az admin felület nincs bekapcsolva": "The admin area is not enabled",
+  "Az akciók kezelése nincs bekapcsolva": "Promotion management is not enabled"
+ },
+ "patterns": [
+  [
+   "^(\\S+)-kal olcsóbb, mint a másik láncban \\((.+)\\)$",
+   "$1 cheaper than at the other chain ($2)"
+  ],
+  [
+   "^(\\S+)-kal olcsóbb, mint a többi (\\d+) láncban \\((.+)\\)$",
+   "$1 cheaper than at the other $2 chains ($3)"
+  ],
+  [
+   "^(\\S+)-kal olcsóbb a szokásos áránál \\((.+)\\)$",
+   "$1 cheaper than its usual price ($2)"
+  ],
+  [
+   "^egyes boltjaikban (\\S+)-kal olcsóbb \\(máshol akár (.+)\\)$",
+   "$1 cheaper in some of their stores (up to $2 elsewhere)"
+  ],
+  [
+   "^egységárban a legolcsóbbak közt: (.+) \\(átlag (.+)\\)$",
+   "among the cheapest per unit: $1 (average $2)"
+  ],
+  [
+   "^Hűségkártyás/appos akció",
+   "Loyalty card / app promotion"
+  ],
+  [
+   "^Bolti akció",
+   "Store promotion"
+  ],
+  [
+   ", (\\S+)-kal olcsóbb \\(rendesen ([^)]+)\\)",
+   ", $1 cheaper (normally $2)"
+  ],
+  [
+   " · forrás: fájl: ",
+   " · source: file: "
+  ],
+  [
+   " · forrás: kézi",
+   " · source: manual"
+  ],
+  [
+   " · forrás: ",
+   " · source: "
+  ],
+  [
+   " · csak a boltjaik (\\d+)%-ában kapható",
+   " · only available in $1% of their stores"
+  ],
+  [
+   "^A szűrőknek csak (\\d+) recept felelt meg ebben a boltban\\.$",
+   "Only $1 recipes matched your filters in this store."
+  ],
+  [
+   "^A terv túllépi a keretet \\((.+)\\)\\.$",
+   "The plan goes over budget ($1)."
+  ],
+  [
+   "^cijene\\.dev – a horvát láncok napi árlistái \\((\\d+) lánc\\)$",
+   "cijene.dev – the Croatian chains' daily price lists ($1 chains)"
+  ],
+  [
+   "^GVH Árfigyelő – helyi fájl \\((.+)\\)$",
+   "GVH price monitor (Árfigyelő) – local file ($1)"
+  ],
+  [
+   "^A horvát árlista letöltése \\((.+)\\)…$",
+   "Downloading the Croatian price list ($1)…"
+  ],
+  [
+   "^(.+) árai töltődnek…$",
+   "Loading prices for $1…"
+  ],
+  [
+   "^Nem sikerült betölteni: ",
+   "Could not load: "
+  ],
+  [
+   "^Nincs ilyen recept: ",
+   "No such recipe: "
+  ],
+  [
+   "^Ismeretlen recept: ",
+   "Unknown recipe: "
+  ],
+  [
+   "^Ismeretlen végpont: ",
+   "Unknown endpoint: "
+  ],
+  [
+   "^Nincs ilyen termék: ",
+   "No such product: "
+  ],
+  [
+   "^Ismeretlen művelet: ",
+   "Unknown action: "
+  ],
+  [
+   "^Ismeretlen vagy hiányzó bolt: ",
+   "Unknown or missing store: "
+  ],
+  [
+   "^Nem támogatott kérés: ",
+   "Unsupported request: "
+  ],
+  [
+   "^Belső hiba: ",
+   "Internal error: "
+  ],
+  [
+   "\\(becsült\\)",
+   "(estimated)"
+  ],
+  [
+   " / csomó \\(kb\\. ",
+   " / bunch (approx. "
+  ],
+  [
+   "-os csomag ≈ ",
+   " pack ≈ "
+  ],
+  [
+   "\\bkb\\. ",
+   "approx. "
+  ],
+  [
+   "\\bfél\\b",
+   "½"
+  ],
+  [
+   "\\bmásfél\\b",
+   "1½"
+  ],
+  [
+   "\\bnéhány\\b",
+   "a few"
+  ],
+  [
+   "\\(morzsának\\)",
+   "(for breadcrumbs)"
+  ],
+  [
+   "\\(salátának\\)",
+   "(for salad)"
+  ],
+  [
+   "\\(csipetkének\\)",
+   "(for the dumplings)"
+  ],
+  [
+   "\\(mellé\\)",
+   "(on the side)"
+  ],
+  [
+   "\\(lila\\)",
+   "(red)"
+  ],
+  [
+   "\\(hamburgerzsemle\\)",
+   "(burger buns)"
+  ],
+  [
+   "\\(vastag szeletek\\)",
+   "(thick slices)"
+  ],
+  [
+   "\\(cérnametélt helyett\\)",
+   "(instead of vermicelli)"
+  ],
+  [
+   "\\(parmezán helyett\\)",
+   "(instead of parmesan)"
+  ],
+  [
+   "\\(kifli helyett\\)",
+   "(instead of crescent rolls)"
+  ],
+  [
+   "\\(ramen helyett\\)",
+   "(instead of ramen noodles)"
+  ],
+  [
+   "\\(pita helyett\\)",
+   "(instead of pita)"
+  ],
+  [
+   "\\(búzadara helyett\\)",
+   "(instead of semolina)"
+  ],
+  [
+   "\\(betűtészta helyett\\)",
+   "(instead of alphabet pasta)"
+  ],
+  [
+   "\\(lebbencs helyett\\)",
+   "(instead of lebbencs pasta)"
+  ],
+  [
+   "\\(áfonya helyett\\)",
+   "(instead of cranberries)"
+  ],
+  [
+   "\\((\\S+) helyett\\)",
+   "(instead of $1)"
+  ],
+  [
+   "\\bmellé$",
+   "on the side"
+  ],
+  [
+   "\\bpirítósnak$",
+   "for toast"
+  ],
+  [
+   "\\btartármártásnak$",
+   "for tartare sauce"
+  ],
+  [
+   "\\bzsemlemorzsának$",
+   "for breadcrumbs"
+  ],
+  [
+   "\\böntetnek$",
+   "for the dressing"
+  ],
+  [
+   "^a hagymához$",
+   "for the onions"
+  ],
+  [
+   "\\breszelt héja$",
+   "grated zest"
+  ],
+  [
+   "^érett ",
+   "ripe "
+  ],
+  [
+   ", vegyes színű$",
+   ", mixed colours"
+  ],
+  [
+   "\\bek olaj$",
+   "tbsp oil"
+  ]
+ ]
+}
