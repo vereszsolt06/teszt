@@ -87,7 +87,7 @@ const unitName = (u) => (u === "db" ? t("db") : u);
 function qty(amount, unit) {
   const comma = (n) => String(n).replace(".", DEC);
   if (unit === "kg" && amount < 1) return `${Math.round(amount * 1000)} g`;
-  if (unit === "l" && amount < 1) return LANG !== "en" ? `${comma(Math.round(amount * 100) / 10)} dl` : `${Math.round(amount * 1000)} ml`;
+  if (unit === "l" && amount < 1) return !["en", "de"].includes(LANG) ? `${comma(Math.round(amount * 100) / 10)} dl` : `${Math.round(amount * 1000)} ml`;
   return `${comma(Math.round(amount * 100) / 100)} ${unitName(unit)}`;
 }
 

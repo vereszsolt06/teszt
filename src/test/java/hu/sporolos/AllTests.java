@@ -550,14 +550,15 @@ public final class AllTests {
         eq("hu", Lang.normalize("xx"), "ismeretlen → magyar");
         eq("hu", Lang.fromAcceptLanguage(null), "fejléc nélkül magyar");
         eq("hu", Lang.fromAcceptLanguage("hu-HU,hu;q=0.9,en;q=0.8"), "magyar böngésző");
-        eq("en", Lang.fromAcceptLanguage("de-DE,de;q=0.9,en;q=0.7"), "német böngésző → az első támogatott (angol)");
+        eq("de", Lang.fromAcceptLanguage("de-DE,de;q=0.9,en;q=0.7"), "német böngésző → német");
+        eq("en", Lang.fromAcceptLanguage("it-IT,it;q=0.9,en;q=0.7"), "olasz böngésző → az első támogatott (angol)");
         eq("en", Lang.fromAcceptLanguage("fr-FR"), "nem támogatott nyelv → angol");
         eq("hr", Lang.fromAcceptLanguage("hr-HR,hr;q=0.9,en;q=0.8"), "horvát böngésző");
     }
 
     static void testEveryLanguageCoversEveryRecipeAndIngredient() {
         check(Translator.forLang("hu") == null, "magyarra nincs fordító");
-        for (String lang : List.of("en", "hr")) {
+        for (String lang : List.of("en", "hr", "de")) {
             Translator tr = Translator.forLang(lang);
             check(tr != null, "van fordító: " + lang);
             for (var r : CATALOG.recipes()) {
@@ -581,6 +582,17 @@ public final class AllTests {
         eq("oko 425 g (≈ 4 kom)", hr.text("kb. 425 g (≈ 4 db)", true), "mérlegelős");
         eq("Crvena paprika, sol, papar", hr.text("Pirospaprika, só, bors", false), "fűszerlista");
         eq("Srijeda", hr.text("Szerda", true), "napnév");
+    }
+
+    static void testGermanGeneratedTexts() {
+        Translator de = Translator.forLang("de");
+        eq("2 Zehen", de.text("2 gerezd", true), "többes szám");
+        eq("1 Dose", de.text("1 doboz", true), "egyes szám");
+        eq("150 ml", de.text("1,5 dl", true), "dl → ml");
+        eq("ca. 425 g (≈ 4 Stk.)", de.text("kb. 425 g (≈ 4 db)", true), "mérlegelős");
+        eq("37% günstiger als bei den anderen 5 Ketten (1\u00a0079\u00a0Ft)", de.text("37%-kal olcsóbb, mint a többi 5 láncban (1\u00a0079\u00a0Ft)", true), "indoklás");
+        eq("tej", de.searchToHungarian("milch"), "keresés németül");
+        eq("Mittwoch", de.text("Szerda", true), "napnév");
     }
 
     static void testSearchAcrossLanguages() {

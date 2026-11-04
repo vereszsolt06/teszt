@@ -750,3 +750,7 @@ dialog::backdrop { background: rgb(15 12 5 / 0.5); }
   .buy input[type="checkbox"] { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .price-tag { background: none !important; border: 1px solid #000; }
 }
+@media (max-width: 440px) {
+  .lang-switch { gap: 4px; }
+  .lang-switch button { padding: 5px 9px; font-size: 0.82rem; }
+}

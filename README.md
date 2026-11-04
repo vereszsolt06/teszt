@@ -348,7 +348,7 @@ Dockerfile, docker-compose.yml   konténer: app + postgres:16
 ./build.sh test        # Windows: build.cmd test
 ```
 
-42 teszt fut le:
+43 teszt fut le:
 - JSON- és xlsx-olvasás, az Árfigyelő-fejléc felismerése, egységátváltás;
 - mind a négy jó ár jel, valamint az elérhetőség hatása;
 - a kiszerelés-modell: tojásdoboz vagy tálca, mérlegelős áru minimum egy darabbal, „ca. 500g”, csak csomagolt liszt, darab ↔ kg (paprika, zsemle), csomós zöldség, tűrés, a nagy kiszerelés határa;
@@ -365,6 +365,7 @@ Dockerfile, docker-compose.yml   konténer: app + postgres:16
 - országok: forint- és eurós pénzformázás (a kérés szála szerint); a horvát névillesztés 31 valódi (a láncok listáiból vett) terméknéven, köztük olyanokon, amelyek *nem* alapanyagok (felvágott, kész étel, csokoládé, állateledel, habfürdő); egy valósághű horvát napi archívum feldolgozása (darabos tojás, mérlegelős csirkemell, akciós ár üres árral, idézőjeles-vesszős név, a drogéria kihagyása, két láncban ugyanaz a vonalkód), majd a teljes app horvát árakkal: 503 „töltődik”, euró, horvát boltok, magyar keresőszó, horvát bolti akció, vissza magyarra;
 - heti terv: a napok dátuma és neve, a hét kezdete, változatosság (jellegzetes alapanyag egyszer, krumpli legfeljebb kétszer), csere-javaslatok (nincsenek már a héten, a hét új ára közel a tényleges árhoz), választás után a többi nap és a kezdőnap marad, maradéknapnál a főzős nap javaslatai;
 - admin: rossz jelszó 401, jó jelszó token; az akció- és a frissítés-végpont token nélkül 401; receptmódosítás mentése, tárolóba írása és azonnali érvényesülése; hibás recept 400; előnézet figyelmeztetéssel; új / ismételt / törölt recept; alapanyag kizáró szóval kevesebb találat; használt alapanyag nem törölhető; visszaállás a beépítettre; az `/admin` oldal kiszolgálása;
+- német: minden recept / lépés / alapanyag, mértékek (dl → ml), keresés („milch” → tej), napnév;
 - horvát: minden recept / lépés / alapanyag, háromalakú többes szám (1, 3, 5, 12, 21), európai számformátum, a dl marad; keresés nyelvek között (angol → magyar, horvát → magyar, kifejezés egyben, alapanyagnév visszafelé, horvát boltban „coffee” → kava, „kava” marad); kéréskorlát (429, `Retry-After`, angol üzenet, a statikus fájlokat és a `/healthz`-t nem korlátozza);
 - többnyelvűség: nyelvfelismerés (`?lang=`, `Accept-Language`), minden recept, lépés és alapanyag angol fordítása megvan, a generált mondatok (akció-indoklás, mérlegelős mennyiség, forint és euró, dkg → g, dl → ml, egyes/többes szám, fűszerlista), a terméknév változatlan, az azonosítók és a szűrőkulcsok maradnak, a pipák kulcsa nyelvfüggetlen; a webszerveren angol recept és hibaüzenet, a magyar válasz egy angol kérés után is magyar, `/healthz`, ETag és 304;
 - végponttól végpontig teszt, ami elindítja a webszervert, és végighívja az összes API-t: boltszűrő, akciók felvitele / importja / törlése, háztartás-profil létrehozása, mentett hét, csere, konkrét recept egy napra, kipipálás, értékelés, boltváltás, automatikus bolt (a legolcsóbbat választja), „holnapra is főzök” / „inkább mást főzök”, kétnaponta főzés, a mennyiségek adagszámhoz igazítása, az Akciók végpont szűrése, saját tételek felvétele / törlése és beszámítása a boltválasztásba.
@@ -429,7 +430,7 @@ Ezeket kérdezés nélkül döntöttem el; bármelyik könnyen módosítható.
 - A NomNom Planner ötletét és felépítését vettem át (lásd lent), a szövegeit, fotóit és márkáját nem.
 - Az ár „hasonló termék” cseréje a saját tételeknél kategória + egység + kb. kiszerelés alapján megy; nagyon eltérő minőségű termékeket is párba állíthat.
 - Az árelőzmény csak attól a naptól gyűlik, amikor az app először fut; a GVH régebbi napi fájljait nem tölti le.
-- **Nyelvek:** magyar, angol, horvát. Az admin felület magyar maradt. A horvát fordítás gépi minőségű, anyanyelvi átnézés jót tenne neki. Az angol recept-mennyiségek a magyar mértékegységekből számolódnak (dkg → g); a „bögre/cup” típusú amerikai mértékek nincsenek.
+- **Nyelvek:** magyar, angol, horvát, német. Az admin felület magyar maradt. A horvát és a német fordítás gépi minőségű, anyanyelvi átnézés jót tenne nekik. Az angol recept-mennyiségek a magyar mértékegységekből számolódnak (dkg → g); a „bögre/cup” típusú amerikai mértékek nincsenek.
 - **Offline:** az első látogatás után működik (a service workernek egyszer be kell töltődnie); offline a csere és az új hét nem kérhető, a pipák viszont igen.
 - Ötletek: lánc-specifikus akció-letöltők külön feedként, árriasztás (ha egy kedvenc termék olcsó lesz), reggeli/ebéd tervezése is.
 
@@ -446,6 +447,8 @@ Az app eddig két országban tervezett, de csak magyarul beszélt – ez volt a 
 - **Új nyelv** (pl. horvát vagy német): egy `resources/i18n/{nyelv}.json` (a szerkezete az `en.json`-é), egy szótár az `i18n.js`-ben, és a nyelv kódja a `Lang.SUPPORTED`-ban és a `LANGS`-ban. Ami hiányzik, magyarul jelenik meg – fokozatosan is fordítható. A teszt (`testEnglishCoversEveryRecipeAndIngredient`) jelzi, ha egy új recept fordítása hiányzik.
 
 **2. Offline, a boltban is.** A sorok között gyakran nincs térerő – épp akkor, amikor a listát nézed. A service worker (`sw.js`) minden GET-et előbb a hálózatról kér (online mindig friss), a választ eltárolja, és ha nincs hálózat, a legutóbbit adja: a hét, a lista, a receptek offline is megnyílnak. A pipák offline azonnal látszanak, sorba állnak, és amint újra van hálózat, felmennek (egy tétel utolsó állapota számít); a fejléc alatt egy sáv jelzi az offline állapotot. A profil egy másolata az eszközön is megvan, hogy az app offline is elinduljon.
+
+**Németül is.** Horvátország legnagyobb turistacsoportja németajkú, és az EU legnagyobb nyelvi piaca: a felület, mind a 170 recept („Paprikahuhn mit Nockerln”, „Topfenknödel”), az alapanyagok, a generált mondatok és a keresés („Milch” → tej, „Kaffee” → kava) németül is; dkg → g, dl → ml, „am Mittwoch”.
 
 **Horvátul is.** A horvát piac mellé horvát felület: mind a 170 recept, az alapanyagok és a generált mondatok. A horvát háromféle többes számot ismer (1 porcija · 2 porcije · 5 porcija; 1 glavica · 3 glavice · 5 glavica) – a kliensben az `Intl.PluralRules`, a szerveren a mértékegységek `[egy, néhány, sok]` alakja dönt; a napok tárgyesetben („za srijedu”). A számformátum európai marad (12,49 €), a dkg grammra vált, a dl marad. Nyelvenként egy `options` blokk szabja meg (`numbers`, `metric`).
 

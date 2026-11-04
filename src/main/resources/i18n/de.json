@@ -1,0 +1,2063 @@
+{
+ "_comment": "Deutsch. Ugyanaz a szerkezet, mint az en.json-é. Európai számformátum (12,49 €), dkg → g, dl → ml.",
+ "options": {
+  "numbers": "eu",
+  "metric": [
+   "dkg",
+   "dl"
+  ]
+ },
+ "recipes": {
+  "paprikas-csirke": {
+   "name": "Paprikahuhn mit Nockerln",
+   "steps": [
+    "Die Zwiebel fein hacken, in Öl glasig dünsten, vom Herd nehmen und mit Paprikapulver bestreuen.",
+    "Hähnchenkeulen, gewürfelte Paprika und Tomate dazugeben, salzen und zugedeckt mit wenig Wasser etwa 40 Minuten schmoren.",
+    "Für die Nockerln Mehl mit Eiern, Salz und so viel Wasser verrühren, dass ein zäher Teig entsteht, und in kochendes Salzwasser schaben.",
+    "Die saure Sahne mit einem Löffel Mehl glatt rühren, zur Soße geben und noch 2–3 Minuten köcheln."
+   ]
+  },
+  "bolognai": {
+   "name": "Spaghetti Bolognese",
+   "steps": [
+    "Zwiebel, Knoblauch und geriebene Karotte in Öl andünsten.",
+    "Das Hackfleisch dazugeben und anbraten, dann mit Passata ablöschen, würzen und 20 Minuten köcheln.",
+    "Inzwischen die Spaghetti in Salzwasser kochen.",
+    "Die Soße auf die Nudeln geben und mit geriebenem Käse bestreuen."
+   ]
+  },
+  "rakott-krumpli": {
+   "name": "Ungarischer Kartoffelauflauf",
+   "steps": [
+    "Kartoffeln in der Schale und Eier hart kochen, beides schälen und in Scheiben schneiden.",
+    "In eine gebutterte Form schichten: Kartoffeln, Ei, Wurst, saure Sahne – oben Kartoffeln und saure Sahne.",
+    "Im 200 °C heißen Ofen etwa 35–40 Minuten goldbraun backen."
+   ]
+  },
+  "lecso": {
+   "name": "Letscho mit Wurst",
+   "steps": [
+    "Die Zwiebel in Öl andünsten und die geschnittene Wurst dazugeben.",
+    "Paprika in Streifen dazugeben, nach 10 Minuten die gewürfelten Tomaten, salzen.",
+    "Wenn das Gemüse weich ist, die Eier unterrühren, bis sie stocken. Mit frischem Brot servieren."
+   ]
+  },
+  "rantott-csirke": {
+   "name": "Paniertes Hähnchenbrustschnitzel mit Petersilienkartoffeln",
+   "steps": [
+    "Die Hähnchenbrust in Scheiben schneiden, flach klopfen und salzen.",
+    "In Mehl, verquirltem Ei und Semmelbröseln wenden und in reichlich Öl ausbacken.",
+    "Die Kartoffeln in Salzwasser kochen und mit Butter und Petersilie schwenken."
+   ]
+  },
+  "csirkes-curry": {
+   "name": "Hähnchen-Kokos-Curry mit Reis",
+   "steps": [
+    "Den Reis in der doppelten Menge Salzwasser weich kochen.",
+    "Zwiebel und Knoblauch anbraten, das gewürfelte Hähnchen und 2 EL Currypulver dazugeben.",
+    "Paprikastreifen und Kokosmilch dazugeben und 15 Minuten köcheln. Mit Reis servieren."
+   ]
+  },
+  "chili-con-carne": {
+   "name": "Chili con Carne",
+   "steps": [
+    "Das Hackfleisch mit der Zwiebel anbraten und mit Chili und gemahlenem Kreuzkümmel würzen.",
+    "Passata dazugeben, abgetropfte Bohnen und Mais hinzufügen und 25 Minuten köcheln.",
+    "Mit Reis oder Brot servieren."
+   ]
+  },
+  "tortilla": {
+   "name": "Hähnchen-Tortilla-Wraps",
+   "steps": [
+    "Das Hähnchen in Streifen schneiden, würzen und in der Pfanne durchbraten.",
+    "Die Tortillas in einer trockenen Pfanne erwärmen und mit saurer Sahne bestreichen.",
+    "Mit Fleisch, Mais, Gemüse und geriebenem Käse füllen und fest aufrollen."
+   ]
+  },
+  "rantotta": {
+   "name": "Rührei mit Paprika und Tomate",
+   "steps": [
+    "Paprika und Tomate würfeln und 3 Minuten in Butter dünsten.",
+    "Die verquirlten, gesalzenen Eier darübergießen und bei schwacher Hitze cremig rühren. Mit Toast servieren."
+   ]
+  },
+  "palacsinta": {
+   "name": "Palatschinken mit Marmelade und Quark",
+   "steps": [
+    "Mehl, Milch, Eier, eine Prise Salz und etwas Öl klümpchenfrei verrühren und 15 Minuten ruhen lassen.",
+    "In einer heißen Pfanne dünne Palatschinken backen.",
+    "Den Quark mit Zucker und Zitronenschale verrühren; die Hälfte mit Marmelade, die andere Hälfte mit Quark füllen."
+   ]
+  },
+  "turos-csusza": {
+   "name": "Nudeln mit Quark und knusprigem Speck",
+   "steps": [
+    "Die Nudeln in Salzwasser kochen.",
+    "Den Speck würfeln und knusprig braten.",
+    "Die Nudeln im ausgelassenen Fett schwenken und mit Quark, saurer Sahne und dem Speck belegen."
+   ]
+  },
+  "lencsefozelek": {
+   "name": "Linseneintopf mit Würstchen",
+   "steps": [
+    "Die eingeweichten Linsen mit einem Lorbeerblatt weich kochen.",
+    "Die Zwiebel in Öl andünsten, mit Mehl bestäuben, eine Mehlschwitze machen und zu den Linsen geben.",
+    "Mit Essig und Salz abschmecken und mit saurer Sahne verfeinern. Mit gekochten Würstchen servieren."
+   ]
+  },
+  "zoldborsofozelek": {
+   "name": "Erbsengemüse mit Fleischpflanzerln",
+   "steps": [
+    "Das Hackfleisch mit eingeweichtem Brötchen, Ei, geriebener Zwiebel und Gewürzen verkneten, Laibchen formen und braten.",
+    "Die Erbsen mit etwas Fett und einer Prise Zucker dünsten, dann mit wenig Wasser weich kochen.",
+    "Mit in Milch angerührtem Mehl binden und mit Petersilie abschmecken."
+   ]
+  },
+  "spenotfozelek": {
+   "name": "Rahmspinat mit Spiegelei",
+   "steps": [
+    "Den Spinat mit Knoblauch auftauen und aufkochen.",
+    "Mit in Milch angerührtem Mehl binden und salzen.",
+    "Mit Spiegeleiern und Salzkartoffeln servieren."
+   ]
+  },
+  "gombapaprikas": {
+   "name": "Pilzpaprikasch mit Nockerln",
+   "steps": [
+    "Die Zwiebel andünsten, mit Paprikapulver bestreuen, die geschnittenen Pilze dazugeben und im eigenen Saft weich dünsten.",
+    "Mit saurer Sahne binden.",
+    "Inzwischen aus Mehl, Ei und Wasser Nockerln schaben."
+   ]
+  },
+  "kaposztas-teszta": {
+   "name": "Krautfleckerl",
+   "steps": [
+    "Das Kraut reiben, salzen und nach 10 Minuten ausdrücken.",
+    "Den Zucker in Öl karamellisieren, das Kraut dazugeben und braun anbraten.",
+    "Mit den gekochten Nudeln vermengen und mit Pfeffer servieren."
+   ]
+  },
+  "brokkolis-teszta": {
+   "name": "Cremige Brokkoli-Speck-Nudeln",
+   "steps": [
+    "Nudeln und Brokkoliröschen im selben Salzwasser kochen (den Brokkoli die letzten 4 Minuten).",
+    "Speck und Knoblauch anbraten, mit Sahne ablöschen und den geriebenen Käse einrühren.",
+    "Die abgegossenen Nudeln und den Brokkoli mit der Soße vermengen."
+   ]
+  },
+  "tonhalas-teszta": {
+   "name": "Penne mit Thunfisch und Tomate",
+   "steps": [
+    "Zwiebel und Knoblauch in Öl anbraten, mit Passata ablöschen und 10 Minuten köcheln.",
+    "Den abgetropften Thunfisch unterrühren und würzen.",
+    "Die gekochten Penne mit der Soße vermengen."
+   ]
+  },
+  "sult-hal": {
+   "name": "Fischfilet in Butter mit Erbsenreis",
+   "steps": [
+    "Den Reis zusammen mit den Erbsen kochen.",
+    "Den aufgetauten Fisch salzen, in Mehl wenden und in Butter auf jeder Seite 3–4 Minuten braten.",
+    "Mit Zitronensaft beträufeln und mit dem Erbsenreis servieren."
+   ]
+  },
+  "csicseri-curry": {
+   "name": "Kichererbsen-Curry mit Spinat",
+   "steps": [
+    "Die Zwiebel anbraten und mit Curry würzen.",
+    "Kichererbsen, Passata und Kokosmilch dazugeben und 15 Minuten köcheln.",
+    "Den Spinat unterrühren und mit Reis servieren."
+   ]
+  },
+  "karaj-zoldseg": {
+   "name": "Schweinekarree mit Gemüse vom Blech",
+   "steps": [
+    "Das Karree in Scheiben schneiden und würzen.",
+    "Das Gemüse grob schneiden, aufs Blech legen, mit Öl beträufeln und das Fleisch darauflegen.",
+    "Zugedeckt bei 200 °C 40 Minuten, dann offen noch 20 Minuten backen."
+   ]
+  },
+  "porkolt": {
+   "name": "Schweinepörkölt mit Nudeln und Gurkensalat",
+   "steps": [
+    "Viel Zwiebel in Fett glasig dünsten, vom Herd nehmen und mit Paprikapulver bestreuen.",
+    "Das gewürfelte Fleisch dazugeben, mit Salz und Kümmel würzen und mit wenig Wasser 1,5 Stunden weich schmoren. Zwischendurch Paprika und Tomate dazugeben.",
+    "Die Nudeln kochen, die Gurke dünn hobeln und mit Essig-Zucker-Wasser einen Salat machen."
+   ]
+  },
+  "pizza-tortilla": {
+   "name": "Schnelle Tortilla-Pizza",
+   "steps": [
+    "Die Tortillas auf Backpapier legen und mit gewürzter Passata bestreichen.",
+    "Mit geschnittenen Pilzen, Mais und zerzupftem Mozzarella belegen.",
+    "Bei 220 °C 8–10 Minuten knusprig backen."
+   ]
+  },
+  "zabkasa": {
+   "name": "Apfel-Zimt-Porridge",
+   "steps": [
+    "Die Haferflocken mit der Milch aufkochen und unter Rühren 4–5 Minuten köcheln.",
+    "Einen Apfel hineinreiben und mit Zimt abschmecken.",
+    "Mit Apfel- und Bananenscheiben belegen."
+   ]
+  },
+  "rizi-bizi-csirke": {
+   "name": "Gebratene Hähnchenkeulen mit Risi-Bisi",
+   "steps": [
+    "Die Keulen würzen und bei 200 °C etwa 45 Minuten knusprig braten.",
+    "Den Reis mit den Erbsen kochen.",
+    "Zusammen servieren und mit dem Bratensaft beträufeln."
+   ]
+  },
+  "joghurtos-csirke": {
+   "name": "Hähnchensalat mit Knoblauchjoghurt",
+   "steps": [
+    "Die gewürzte Hähnchenbrust in der Grillpfanne braten und in Streifen schneiden.",
+    "Das Gemüse würfeln.",
+    "Den Joghurt mit zerdrücktem Knoblauch, Salz und Dill verrühren und alles vermengen. Mit Toast servieren."
+   ]
+  },
+  "gulyasleves": {
+   "name": "Gulaschsuppe",
+   "steps": [
+    "Die Zwiebel in Fett glasig dünsten, vom Herd nehmen und mit Paprikapulver bestreuen.",
+    "Das gewürfelte Fleisch dazugeben, mit Kümmel und zerdrücktem Knoblauch würzen und 1 Stunde im eigenen Saft schmoren.",
+    "Mit 2 Litern Wasser aufgießen, geschnittene Karotte, Petersilienwurzel, Paprika und Tomate dazugeben.",
+    "Wenn das Fleisch fast weich ist, die gewürfelten Kartoffeln dazugeben und alles weich kochen."
+   ]
+  },
+  "ujhazi": {
+   "name": "Újházi-Hühnersuppe",
+   "steps": [
+    "Das Suppenhuhn in kaltem Wasser aufsetzen und ganz sanft simmern lassen; den Schaum abschöpfen.",
+    "Nach zwei Stunden das geputzte Gemüse, die Zwiebel und die Gewürze dazugeben.",
+    "Wenn sich das Fleisch vom Knochen löst, die Suppe abseihen und die dünnen Nudeln separat kochen. Mit Fleisch und Gemüse servieren."
+   ]
+  },
+  "halaszle": {
+   "name": "Ungarische Fischsuppe (Halászlé)",
+   "steps": [
+    "Die gehackte Zwiebel in 1,5 Litern Wasser 30 Minuten kochen und dann passieren.",
+    "Die gesalzenen Fischstücke, Paprika, Tomate und reichlich Paprikapulver dazugeben.",
+    "20 Minuten kräftig kochen, ohne zu rühren – nur den Topf schwenken. Mit frischem Brot servieren."
+   ]
+  },
+  "harcsapaprikas": {
+   "name": "Welspaprikasch mit Quarknudeln",
+   "steps": [
+    "Die Zwiebel andünsten, mit Paprikapulver bestreuen, Paprika, Tomate und etwas Wasser dazugeben.",
+    "Die gesalzenen Welsstücke hineinlegen und 15 Minuten ohne Rühren garen.",
+    "Mit saurer Sahne binden. Die Nudeln kochen und mit Quark dazu servieren."
+   ]
+  },
+  "karfiolleves": {
+   "name": "Blumenkohlsuppe mit saurer Sahne",
+   "steps": [
+    "Blumenkohlröschen, Karotte und Petersilienwurzel in Scheiben in 1,5 Litern Salzwasser weich kochen.",
+    "Die saure Sahne mit Mehl und etwas kaltem Wasser glatt rühren und die Suppe damit binden.",
+    "Noch 3 Minuten kochen und mit Muskat abschmecken."
+   ]
+  },
+  "rantott-karfiol": {
+   "name": "Panierter Blumenkohl mit Petersilienkartoffeln",
+   "steps": [
+    "Die Blumenkohlröschen in Salzwasser bissfest vorkochen und abkühlen lassen.",
+    "In Mehl, Ei und Semmelbröseln wenden und in reichlich Öl goldbraun ausbacken.",
+    "Die Kartoffeln kochen und mit Butter und Petersilie schwenken. Joghurt mit Senf und Salz zu einer Soße rühren."
+   ]
+  },
+  "kelkaposzta-fozelek": {
+   "name": "Wirsinggemüse mit gebratener Wurst",
+   "steps": [
+    "Den Wirsing in Streifen schneiden, die Kartoffeln würfeln und in wenig Salzwasser mit Kümmel weich kochen.",
+    "Mit in Milch angerührtem Mehl und zerdrücktem Knoblauch binden und aufkochen.",
+    "Die Wurst in der Pfanne braten und auf das Gemüse legen."
+   ]
+  },
+  "repafozelek": {
+   "name": "Karottengemüse mit Spiegelei",
+   "steps": [
+    "Die Karottenscheiben mit etwas Zucker in Butter dünsten, dann mit wenig Wasser weich kochen.",
+    "Mit in Milch angerührtem Mehl binden und mit gehackter Petersilie abschmecken.",
+    "Mit Spiegeleiern servieren."
+   ]
+  },
+  "krumplifozelek": {
+   "name": "Kartoffelgemüse mit Würstchen",
+   "steps": [
+    "Die gewürfelten Kartoffeln mit einem Lorbeerblatt in Salzwasser weich kochen.",
+    "Die Zwiebel in Fett andünsten, mit Mehl und Paprikapulver eine Mehlschwitze machen und zu den Kartoffeln geben.",
+    "Mit saurer Sahne und etwas Essig abschmecken. Mit gekochten Würstchen servieren."
+   ]
+  },
+  "krumplileves": {
+   "name": "Kartoffelsuppe mit Wurst",
+   "steps": [
+    "Die Zwiebel andünsten, mit Paprikapulver bestreuen und mit 1,5 Litern Wasser aufgießen.",
+    "Gewürfelte Kartoffeln, Karotte, Petersilienwurzel und die geschnittene Wurst darin kochen.",
+    "Wenn alles weich ist, mit in saurer Sahne angerührtem Mehl binden."
+   ]
+  },
+  "zoldborsoleves": {
+   "name": "Erbsensuppe",
+   "steps": [
+    "Karotten- und Petersilienwurzelscheiben in Butter dünsten und die Erbsen dazugeben.",
+    "Mit Mehl bestäuben, mit 1,5 Litern Wasser aufgießen und 15 Minuten kochen.",
+    "Aus dem Ei und etwas Mehl einen Teig kneten und kleine Stücke in die Suppe zupfen."
+   ]
+  },
+  "brassoi": {
+   "name": "Kronstädter Schweinefleisch mit Bratkartoffeln",
+   "steps": [
+    "Das Fleisch in Streifen schneiden, mit der Zwiebel in Fett anbraten und mit wenig Wasser weich schmoren.",
+    "Die Kartoffeln würfeln und in Öl knusprig braten.",
+    "Zerdrückten Knoblauch und Majoran unter das Fleisch rühren und mit den Kartoffeln vermengen. Mit Essiggurken servieren."
+   ]
+  },
+  "rantott-hus": {
+   "name": "Schweineschnitzel mit Reis",
+   "steps": [
+    "Das Karree in Scheiben schneiden, klopfen und salzen.",
+    "In Mehl, verquirltem Ei und Semmelbröseln wenden und in reichlich Öl ausbacken.",
+    "Mit Reis und Essiggurken servieren."
+   ]
+  },
+  "sult-oldalas": {
+   "name": "Spareribs mit Zwiebelkartoffeln",
+   "steps": [
+    "Die Rippchen salzen, mit Knoblauchsenf bestreichen und zugedeckt mit etwas Wasser bei 160 °C 1 Stunde garen.",
+    "Kartoffelspalten und Zwiebel dazugeben und offen bei 200 °C noch 40 Minuten knusprig braten."
+   ]
+  },
+  "hagymas-tarja": {
+   "name": "Schweinenackensteak mit Röstzwiebeln und Pommes",
+   "steps": [
+    "Die Nackenscheiben klopfen, würzen und in einer heißen Pfanne je Seite 3–4 Minuten braten.",
+    "Die Zwiebelringe in Mehl wenden und in reichlich Öl knusprig ausbacken.",
+    "Die Pommes im Ofen oder in Öl backen und aus der Gurke einen Essigsalat machen."
+   ]
+  },
+  "csirkeszarny": {
+   "name": "Knusprige Chicken Wings mit Knoblauchjoghurt",
+   "steps": [
+    "Die Flügel mit Öl und Gewürzen vermengen und neben die Kartoffelspalten aufs Blech legen.",
+    "Bei 220 °C etwa 40 Minuten knusprig braten, nach der Hälfte wenden.",
+    "Den Joghurt mit zerdrücktem Knoblauch und Salz zu einer Soße rühren."
+   ]
+  },
+  "sult-csirke": {
+   "name": "Ganzes Brathähnchen auf Gemüse",
+   "steps": [
+    "Das Hähnchen innen und außen würzen, eine halbierte Zitrone hineinlegen und die Haut mit weicher Butter bestreichen.",
+    "Grob geschnittene Kartoffeln, Karotten und Zwiebeln aufs Blech legen und das Hähnchen daraufsetzen.",
+    "Bei 200 °C etwa 80 Minuten braten und ab und zu mit dem Bratensaft begießen."
+   ]
+  },
+  "pulykasalata": {
+   "name": "Salat mit gegrillter Putenbrust",
+   "steps": [
+    "Die Putenbrust in Scheiben schneiden, würzen und in einer heißen Pfanne durchbraten.",
+    "Das Gemüse klein schneiden und mit dem Mais vermengen.",
+    "Joghurt mit Senf und Salz zu einem Dressing rühren und mit dem in Streifen geschnittenen Fleisch auf den Salat geben. Mit Brötchen servieren."
+   ]
+  },
+  "rantott-sajt": {
+   "name": "Gebackener Käse mit Pommes",
+   "steps": [
+    "Den Käse in 1 cm dicke Scheiben schneiden.",
+    "Zweimal in Mehl, Ei und Semmelbröseln wenden, damit er beim Backen nicht ausläuft.",
+    "In reichlich heißem Öl schnell ausbacken. Mit Pommes und Senf-Joghurt-Soße servieren."
+   ]
+  },
+  "melegszendvics": {
+   "name": "Überbackene Schinken-Käse-Toasts",
+   "steps": [
+    "Die Brotscheiben dünn mit Butter bestreichen.",
+    "Mit Schinken, Tomatenscheiben und geriebenem Käse belegen.",
+    "Im 200 °C heißen Ofen 6–8 Minuten backen, bis der Käse schmilzt."
+   ]
+  },
+  "gorog-salata": {
+   "name": "Griechischer Salat",
+   "steps": [
+    "Tomate, Gurke und Paprika grob würfeln, die Zwiebel in dünne Ringe schneiden.",
+    "Vermengen, salzen, pfeffern und mit Olivenöl beträufeln.",
+    "Den Feta im Stück oder grob zerbröselt darauflegen und mit Oregano bestreuen."
+   ]
+  },
+  "korozott": {
+   "name": "Liptauer (Körözött) mit frischem Brot",
+   "steps": [
+    "Den Quark mit der weichen Butter mit einer Gabel zerdrücken.",
+    "Sehr fein gehackte Zwiebel, Paprikapulver, Kümmel und Salz unterrühren.",
+    "Mit frischem Brot und Paprikastreifen servieren."
+   ]
+  },
+  "sajtos-teszta": {
+   "name": "Nudeln mit Käse und saurer Sahne",
+   "steps": [
+    "Die Nudeln in Salzwasser kochen, abgießen und mit der Butter vermengen.",
+    "Die Hälfte der sauren Sahne unterrühren; beim Servieren die restliche saure Sahne und reichlich geriebenen Käse darübergeben."
+   ]
+  },
+  "almas-pite": {
+   "name": "Apfelkuchen vom Blech",
+   "steps": [
+    "Mehl mit kalter Butter verbröseln, Puderzucker, Ei, saure Sahne und Backpulver dazugeben und schnell zu einem Teig kneten. 30 Minuten kühlen.",
+    "Die Äpfel reiben, ausdrücken und mit Zucker, Zimt und Zitronensaft dünsten.",
+    "Die Hälfte des Teigs ins Blech ausrollen, die Füllung verstreichen, mit der anderen Hälfte bedecken und einstechen.",
+    "Bei 180 °C etwa 35 Minuten goldbraun backen."
+   ]
+  },
+  "tojasos-nokedli": {
+   "name": "Eiernockerl mit Gurkensalat",
+   "steps": [
+    "Aus Mehl, 3 Eiern, Salz und Wasser einen Nockerlteig rühren und in kochendes Salzwasser schaben.",
+    "Die gekochten Nockerl in Öl schwenken, die restlichen verquirlten Eier darübergießen und rühren, bis sie stocken.",
+    "Die Gurke dünn hobeln, in Essig-Zucker-Wasser legen und mit Paprikapulver bestreuen."
+   ]
+  },
+  "rakott-karfiol": {
+   "name": "Blumenkohlauflauf",
+   "steps": [
+    "Die Blumenkohlröschen in Salzwasser halb weich kochen, den Reis separat kochen.",
+    "Das Hackfleisch mit der Zwiebel anbraten, würzen und mit dem Reis vermengen.",
+    "Blumenkohl und Fleisch in eine Form schichten, mit Ei verrührte saure Sahne und geriebenen Käse darübergeben.",
+    "Bei 200 °C etwa 30 Minuten goldbraun backen."
+   ]
+  },
+  "rizses-hus": {
+   "name": "Reispfanne mit Hähnchen und Gemüse",
+   "steps": [
+    "Die Zwiebel andünsten, das gewürfelte Hähnchen dazugeben und anbraten, bis es weiß ist.",
+    "Reis und gewürfelte Karotte dazugeben, umrühren und mit der doppelten Menge Wasser aufgießen.",
+    "Zugedeckt 18 Minuten garen; in den letzten 5 Minuten Erbsen und Mais unterrühren."
+   ]
+  },
+  "gyumolcssalata": {
+   "name": "Obstsalat mit Joghurt",
+   "steps": [
+    "Das Obst waschen, schälen und mundgerecht schneiden.",
+    "Mit Zitronensaft beträufeln, damit es nicht braun wird.",
+    "Mit Honigjoghurt servieren."
+   ]
+  },
+  "kakaos-palacsinta": {
+   "name": "Kakao-Palatschinken",
+   "steps": [
+    "Mehl, Milch, Eier, eine Prise Salz und etwas Öl klümpchenfrei verrühren und 15 Minuten ruhen lassen.",
+    "In einer heißen Pfanne dünne Palatschinken backen.",
+    "Kakao mit Puderzucker mischen, die Palatschinken damit bestreuen und aufrollen."
+   ]
+  },
+  "kekszes-kremes": {
+   "name": "Keks-Sahne-Dessert im Glas",
+   "steps": [
+    "Die Sahne steif schlagen, den Quark mit Puderzucker verrühren und beides vorsichtig vermengen.",
+    "Zerbröselte Kekse, Creme und Bananenscheiben in Gläser schichten.",
+    "Mit Kakao bestäuben und bis zum Servieren kühlen."
+   ]
+  },
+  "carbonara": {
+   "name": "Spaghetti Carbonara",
+   "steps": [
+    "Die Spaghetti in reichlich Salzwasser kochen; eine Tasse Kochwasser aufheben.",
+    "Den gewürfelten Speck in der Pfanne auslassen.",
+    "Die Eier mit geriebenem Käse und viel Pfeffer verquirlen.",
+    "Die abgegossenen Nudeln mit dem Speck vermengen, vom Herd nehmen und die Ei-Käse-Mischung mit etwas Kochwasser unterrühren, sodass es cremig wird und nicht zu Rührei."
+   ]
+  },
+  "smash-burger": {
+   "name": "Smash Burger mit Pommes",
+   "steps": [
+    "Die Pommes nach Packungsangabe im Ofen oder in der Heißluftfritteuse backen.",
+    "Aus dem Hackfleisch 8 Kugeln formen und in einer sehr heißen Pfanne mit einem flachen Gegenstand dünn drücken; salzen und pfeffern.",
+    "Nach 1,5 Minuten wenden, Käse darauflegen und noch eine Minute braten.",
+    "In die halbierten, gerösteten Brötchen je zwei Patties, Zwiebel, Tomate, Gurke und Soße geben."
+   ]
+  },
+  "fajitas": {
+   "name": "Hähnchen-Fajitas",
+   "steps": [
+    "Die Hähnchenbrust in dünne Streifen schneiden und mit den Gewürzen vermengen.",
+    "In einer heißen Pfanne in wenigen Minuten durchbraten und herausnehmen.",
+    "In derselben Pfanne Paprika- und Zwiebelstreifen bissfest braten und das Fleisch zurückgeben.",
+    "Mit warmen Tortillas, saurer Sahne und geriebenem Käse servieren; jeder rollt selbst."
+   ]
+  },
+  "citromos-lazac": {
+   "name": "Zitronen-Butter-Lachs mit Reis und Brokkoli",
+   "steps": [
+    "Den Reis in der doppelten Menge Salzwasser weich kochen.",
+    "Die Brokkoliröschen 4 Minuten dämpfen oder in Salzwasser kochen.",
+    "Den Lachs salzen, pfeffern und auf der Hautseite 4 Minuten, dann auf der anderen Seite 2 Minuten braten (Heißluftfritteuse: 10 Minuten bei 200 °C).",
+    "Butter mit Zitronensaft und Dill in der Pfanne aufschäumen und über den Fisch löffeln."
+   ]
+  },
+  "lasagne": {
+   "name": "Lasagne Bolognese",
+   "steps": [
+    "Zwiebel und geriebene Karotte andünsten, Hackfleisch und dann Passata dazugeben und 20 Minuten köcheln.",
+    "Für die Béchamel die Butter schmelzen, Mehl einrühren, nach und nach die Milch dazugeben und dick einkochen; mit Salz und Muskat würzen.",
+    "In eine Form schichten: Ragù, Lasagneplatte, Béchamel – dreimal wiederholen, oben Käse.",
+    "Im 180 °C heißen Ofen etwa 40 Minuten backen und vor dem Schneiden 10 Minuten ruhen lassen."
+   ]
+  },
+  "csirkes-ramen": {
+   "name": "Hähnchen-Ramen mit Ei",
+   "steps": [
+    "Die Brühe mit Ingwer, Knoblauch und Sojasoße 15 Minuten köcheln.",
+    "Die Hähnchenbrust darin 12 Minuten garen, herausnehmen und in Scheiben schneiden.",
+    "Die Eier 7 Minuten kochen, kalt abschrecken, schälen und halbieren.",
+    "Geschnittene Pilze, Karotte und Nudeln in die Suppe geben; in Schalen mit Fleisch und Ei servieren."
+   ]
+  },
+  "csirkes-paella": {
+   "name": "Paella mit Hähnchen und Gemüse",
+   "steps": [
+    "Die Hähnchenkeulen in einer weiten Pfanne rundum anbraten und herausnehmen.",
+    "Zwiebel, Knoblauch, Paprika und geriebene Tomate im Fett dünsten, Gewürze und Reis dazugeben.",
+    "Mit Brühe aufgießen, das Fleisch zurücklegen und 20 Minuten ohne Rühren garen.",
+    "In den letzten 5 Minuten die Erbsen darüberstreuen; mit Zitronenspalten servieren."
+   ]
+  },
+  "gombas-rizotto": {
+   "name": "Pilzrisotto",
+   "steps": [
+    "Die Zwiebel in der Hälfte der Butter glasig dünsten, die Pilze dazugeben und im eigenen Saft anbraten.",
+    "Den Reis dazugeben und 2 Minuten unter Rühren anrösten.",
+    "Die heiße Brühe kellenweise zugeben und jeweils einkochen lassen; etwa 18 Minuten.",
+    "Zum Schluss die restliche Butter und den geriebenen Käse unterrühren und 2 Minuten ruhen lassen."
+   ]
+  },
+  "souvlaki": {
+   "name": "Hähnchen-Souvlaki mit Tsatsiki",
+   "steps": [
+    "Das gewürfelte Hähnchen mit Olivenöl, Zitronensaft, Oregano und Knoblauch 20 Minuten marinieren.",
+    "Auf Spieße stecken und in der Grillpfanne oder im Ofen rundum braten.",
+    "Für das Tsatsiki den Joghurt mit geriebener, ausgedrückter Gurke, Knoblauch und Salz verrühren.",
+    "Fleisch, Tomate, Zwiebel und Tsatsiki in warme Tortillas geben."
+   ]
+  },
+  "halas-taco": {
+   "name": "Knusprige Fisch-Tacos",
+   "steps": [
+    "Den Fisch würzen, je Seite 3 Minuten braten und mit einer Gabel zerpflücken.",
+    "Den Kohl fein schneiden und mit Zitronensaft und Salz verkneten.",
+    "Joghurt mit Zitronensaft und Chili zu einem Dressing rühren.",
+    "Kohl, Fisch, Mais und Dressing in die Tortillas füllen."
+   ]
+  },
+  "tikka-masala": {
+   "name": "Chicken Tikka Masala",
+   "steps": [
+    "Das Hähnchen 30 Minuten in Joghurt und der Hälfte der Gewürze marinieren, dann in einer heißen Pfanne scharf anbraten.",
+    "Zwiebel und Knoblauch dünsten, restliche Gewürze und Passata dazugeben und 10 Minuten köcheln.",
+    "Sahne und Fleisch unterrühren und noch 10 Minuten köcheln.",
+    "Mit Reis servieren."
+   ]
+  },
+  "chili-sin-carne": {
+   "name": "Chili sin Carne (vegetarisches Chili)",
+   "steps": [
+    "Zwiebel und gewürfelte Paprika dünsten und mit den Gewürzen bestreuen.",
+    "Passata, abgetropfte Bohnen und Mais dazugeben und 20 Minuten köcheln.",
+    "Mit Reis oder Brot servieren; saure Sahne passt auch gut dazu."
+   ]
+  },
+  "turogomboc": {
+   "name": "Topfenknödel",
+   "steps": [
+    "Den Quark mit Eiern, Mehl, Salz und Zitronenschale verkneten und 30 Minuten kühlen.",
+    "Die Semmelbrösel in Butter goldbraun rösten.",
+    "Mit nassen Händen Knödel formen und in leicht gesalzenem, sprudelndem Wasser 10 Minuten kochen.",
+    "In den Bröseln wälzen und mit Puderzucker und saurer Sahne servieren."
+   ]
+  },
+  "makos-teszta": {
+   "name": "Mohnnudeln",
+   "steps": [
+    "Die Nudeln in Salzwasser kochen und abgießen.",
+    "Mit Butter schwenken und mit Mohn und Puderzucker bestreuen."
+   ]
+  },
+  "dios-teszta": {
+   "name": "Nussnudeln",
+   "steps": [
+    "Die Nudeln in Salzwasser kochen und abgießen.",
+    "Mit Butter schwenken und mit Walnüssen und Puderzucker bestreuen."
+   ]
+  },
+  "krumplis-teszta": {
+   "name": "Kartoffelnudeln (Krumplis tészta)",
+   "steps": [
+    "Die Zwiebel in Öl glasig dünsten und mit Paprikapulver bestreuen.",
+    "Die gewürfelten Kartoffeln dazugeben, mit wenig Wasser weich dünsten und mit einer Gabel leicht zerdrücken.",
+    "Mit den gekochten Nudeln vermengen, pfeffern und mit Essiggurken servieren."
+   ]
+  },
+  "bableves": {
+   "name": "Bohnensuppe mit Wurst",
+   "steps": [
+    "Die Zwiebel andünsten, mit Paprikapulver bestreuen und mit 1,5 Litern Wasser aufgießen.",
+    "Das geschnittene Gemüse, das Lorbeerblatt und die Wurst darin kochen.",
+    "Wenn das Gemüse weich ist, die abgetropften Bohnen dazugeben und noch 10 Minuten kochen.",
+    "Mit in saurer Sahne angerührtem Mehl binden und mit etwas Essig abschmecken."
+   ]
+  },
+  "paradicsomleves": {
+   "name": "Tomatensuppe mit Buchstabennudeln",
+   "steps": [
+    "Das Mehl in der Butter hell anschwitzen, mit Passata und 500 ml Wasser aufgießen.",
+    "Mit Zucker, Salz und Basilikum würzen und 10 Minuten kochen.",
+    "Die Nudeln separat kochen und in die Suppe geben."
+   ]
+  },
+  "gombaleves": {
+   "name": "Pilzsuppe mit saurer Sahne",
+   "steps": [
+    "Die Zwiebel andünsten, die geschnittenen Pilze dazugeben und anbraten.",
+    "Mit 1,5 Litern Wasser aufgießen und Karotten- und Petersilienwurzelscheiben darin kochen.",
+    "Die saure Sahne mit Mehl verrühren, die Suppe damit binden und mit Thymian würzen."
+   ]
+  },
+  "gombas-csirkemell": {
+   "name": "Hähnchenbrust in Pilzrahm mit Reis",
+   "steps": [
+    "Den Reis dünsten.",
+    "Die Hähnchenbrust in Streifen schneiden und in einer heißen Pfanne rundum anbraten.",
+    "Zwiebel und Pilze dazugeben und 8 Minuten dünsten.",
+    "Mit saurer Sahne aufkochen, würzen und mit Reis servieren."
+   ]
+  },
+  "hortobagyi": {
+   "name": "Hortobágyer Palatschinken",
+   "steps": [
+    "Aus Mehl, Milch und Eiern Palatschinken backen.",
+    "Das Hähnchen mit Zwiebel und Paprika als Pörkölt kochen, das Fleisch herausnehmen und fein hacken.",
+    "Das Fleisch mit etwas Soße und saurer Sahne vermengen, in die Palatschinken rollen und die Enden einschlagen.",
+    "In eine Form legen, mit der mit saurer Sahne aufgekochten Soße übergießen und bei 180 °C 15 Minuten backen."
+   ]
+  },
+  "rakott-kaposzta": {
+   "name": "Ungarischer Krautauflauf",
+   "steps": [
+    "Das Kraut fein schneiden, salzen und in wenig Fett halb weich dünsten.",
+    "Das Hackfleisch mit der Zwiebel anbraten und würzen; den Reis halb gar kochen und untermischen.",
+    "In eine Form schichten: Kraut, Fleisch, Wurstscheiben, saure Sahne – oben Kraut und saure Sahne.",
+    "Im 180 °C heißen Ofen zugedeckt 40, dann offen noch 20 Minuten backen."
+   ]
+  },
+  "toltott-paprika": {
+   "name": "Gefüllte Paprika in Tomatensoße",
+   "steps": [
+    "Die Stiele und Kerngehäuse der Paprika herausschneiden.",
+    "Das Hackfleisch mit rohem Reis, Ei und Gewürzen vermengen und in die Paprika füllen.",
+    "Die Passata mit Wasser, Zucker und Salz aufkochen, die Paprika hineinlegen und bei schwacher Hitze 50 Minuten garen.",
+    "Mit Salzkartoffeln servieren."
+   ]
+  },
+  "szekelykaposzta": {
+   "name": "Szegediner Gulasch",
+   "steps": [
+    "Die Zwiebel dünsten, mit Paprikapulver bestreuen, das gewürfelte Fleisch dazugeben und als Pörkölt kochen.",
+    "Wenn das Fleisch halb weich ist, das fein geschnittene Kraut und den Kümmel dazugeben und zusammen weich schmoren.",
+    "Mit in saurer Sahne angerührtem Mehl binden und mit Dill servieren."
+   ]
+  },
+  "csirke-zoldsegagyon": {
+   "name": "Würzige Hähnchenbrust auf Gemüsebett",
+   "steps": [
+    "Kartoffeln und Gemüse grob schneiden und mit Öl und Gewürzen vermengen.",
+    "Die Hähnchenbrust mit den Gewürzen einreiben.",
+    "Das Gemüse auf dem Blech bei 200 °C 20 Minuten backen, dann das Fleisch darauflegen und noch 20 Minuten backen (Heißluftfritteuse: 190 °C in 2 Durchgängen)."
+   ]
+  },
+  "airfryer-csirkecomb": {
+   "name": "Knusprige Hähnchenkeulen mit Pommes",
+   "steps": [
+    "Die Keulen mit den Gewürzen einreiben.",
+    "In der Heißluftfritteuse bei 190 °C 25 Minuten oder im Ofen bei 200 °C 40 Minuten garen, nach der Hälfte wenden.",
+    "Die Pommes nach Packungsangabe backen.",
+    "Mit Knoblauchjoghurt servieren."
+   ]
+  },
+  "rantott-hal": {
+   "name": "Backfisch mit Kartoffelsalat",
+   "steps": [
+    "Die Kartoffeln in der Schale kochen, schälen, in Scheiben schneiden und mit Zwiebel, saurer Sahne und Senf zu einem Salat vermengen.",
+    "Den Fisch salzen und in Mehl, Ei und Semmelbröseln wenden.",
+    "In reichlich heißem Öl beidseitig goldbraun ausbacken.",
+    "Mit Zitronenspalten und dem Salat servieren."
+   ]
+  },
+  "lazacos-teszta": {
+   "name": "Cremige Lachs-Spinat-Nudeln",
+   "steps": [
+    "Die Nudeln kochen.",
+    "Den gewürfelten Lachs in der Pfanne rundum anbraten und herausnehmen.",
+    "Den Spinat mit Knoblauch auftauen, mit Sahne aufgießen und mit Zitronensaft abschmecken.",
+    "Den Fisch zurückgeben und alles mit den Nudeln vermengen."
+   ]
+  },
+  "tonhalsalata": {
+   "name": "Thunfischsalat mit Bohnen und Mais",
+   "steps": [
+    "Bohnen und Mais abtropfen lassen, Zwiebel und Paprika würfeln.",
+    "Mit dem abgetropften Thunfisch vermengen und mit Öl, Essig und Salz abschmecken.",
+    "Mit frischem Brot servieren."
+   ]
+  },
+  "bundas-kenyer": {
+   "name": "Ungarisches Arme-Ritter-Brot",
+   "steps": [
+    "Die Eier mit Milch und Salz verquirlen.",
+    "Die Brotscheiben darin wenden und in heißem Öl beidseitig goldbraun braten.",
+    "Mit Knoblauch einreiben und mit Tomaten servieren."
+   ]
+  },
+  "sonkas-omlett": {
+   "name": "Schinken-Käse-Omelett",
+   "steps": [
+    "Die Eier mit Salz und Pfeffer verquirlen.",
+    "Die gewürfelte Paprika eine Minute in Butter anbraten und die Eier darübergießen.",
+    "Wenn die Unterseite gestockt ist, eine Hälfte mit Schinken und Käse bestreuen, die andere Hälfte darüberklappen und noch eine Minute braten."
+   ]
+  },
+  "shakshuka": {
+   "name": "Shakshuka mit Feta",
+   "steps": [
+    "Zwiebel, Knoblauch und Paprika dünsten und mit den Gewürzen bestreuen.",
+    "Passata dazugeben und 10 Minuten dick einkochen.",
+    "Mulden machen, die Eier hineinschlagen und zugedeckt 6–8 Minuten garen.",
+    "Mit zerbröseltem Feta und frischem Brot servieren."
+   ]
+  },
+  "amerikai-palacsinta": {
+   "name": "Bananen-Pancakes",
+   "steps": [
+    "Mehl mit Backpulver, Zucker und Salz mischen, dann Milch, Ei und geschmolzene Butter dazugeben.",
+    "In einer kleinen Pfanne mit wenig Butter handtellergroße Pancakes backen; wenden, sobald sich oben Bläschen bilden.",
+    "Mit Bananenscheiben, Erdbeeren und Honig servieren."
+   ]
+  },
+  "joghurtos-zab": {
+   "name": "Overnight Oats mit Joghurt und Obst",
+   "steps": [
+    "Die Haferflocken mit dem Joghurt und einem Löffel Honig verrühren und über Nacht in den Kühlschrank stellen.",
+    "Morgens mit Bananenscheiben und Erdbeeren in Gläser schichten."
+   ]
+  },
+  "rizsfelfujt": {
+   "name": "Gebackener Milchreis",
+   "steps": [
+    "Den Reis mit einer Prise Salz in der Milch dick kochen und lauwarm abkühlen lassen.",
+    "Butter, Eigelb, die Hälfte des Zuckers und Zitronenschale unterrühren, dann vorsichtig den mit dem restlichen Zucker geschlagenen Eischnee unterheben.",
+    "In eine gebutterte Form streichen und bei 180 °C 30 Minuten backen.",
+    "Mit Marmelade servieren."
+   ]
+  },
+  "turokrem": {
+   "name": "Fruchtige Quarkcreme",
+   "steps": [
+    "Den Quark mit Joghurt, Puderzucker und Zitronenschale cremig rühren.",
+    "Mit dem geschnittenen Obst in Gläser schichten."
+   ]
+  },
+  "kakaos-csiga": {
+   "name": "Kakaoschnecken aus Blätterteig",
+   "steps": [
+    "Den Teig ausrollen, mit geschmolzener Butter bestreichen und mit Kakao-Puderzucker bestreuen.",
+    "Fest aufrollen, in 2 cm dicke Scheiben schneiden und auf ein mit Backpapier belegtes Blech legen.",
+    "Bei 200 °C 15–18 Minuten goldbraun backen."
+   ]
+  },
+  "rakott-teszta": {
+   "name": "Schinkennudel-Auflauf",
+   "steps": [
+    "Die Nudeln halb gar kochen.",
+    "Saure Sahne mit Eiern, Salz und Pfeffer verrühren und mit den Nudeln und dem gewürfelten Schinken vermengen.",
+    "In eine Form streichen, mit geriebenem Käse bestreuen und bei 190 °C 25 Minuten backen."
+   ]
+  },
+  "arrabbiata": {
+   "name": "Penne all'arrabbiata",
+   "steps": [
+    "Den geschnittenen Knoblauch und Chili eine Minute im Olivenöl anbraten.",
+    "Passata dazugeben, salzen und 10 Minuten köcheln.",
+    "Mit den gekochten Penne vermengen und mit geriebenem Käse servieren."
+   ]
+  },
+  "pestos-teszta": {
+   "name": "Pesto-Nudeln mit Hähnchen",
+   "steps": [
+    "Die Nudeln kochen.",
+    "Die gewürzten Hähnchenstreifen durchbraten.",
+    "Die Nudeln mit Pesto, Hähnchen und gewürfelter Tomate vermengen."
+   ]
+  },
+  "csirkes-wok": {
+   "name": "Hähnchen-Brokkoli aus dem Wok",
+   "steps": [
+    "Den Reis dünsten.",
+    "Die Hähnchenstreifen in einer sehr heißen Pfanne anbraten und herausnehmen.",
+    "Das Gemüse bissfest braten und das Fleisch zurückgeben.",
+    "Mit Sojasoße, Honig und Ingwer würzen und mit etwas Stärkewasser binden."
+   ]
+  },
+  "tofus-pad-thai": {
+   "name": "Gebratene Reisnudeln mit Tofu (Pad-Thai-Art)",
+   "steps": [
+    "Die Reisnudeln nach Packungsangabe in heißem Wasser einweichen.",
+    "Den gewürfelten Tofu knusprig braten und herausnehmen.",
+    "Das Gemüse anbraten, zur Seite schieben und daneben das verquirlte Ei stocken lassen.",
+    "Nudeln, Tofu und Soße dazugeben, vermengen und mit grob gehackten Erdnüssen und Zitrone servieren."
+   ]
+  },
+  "piritott-rizs": {
+   "name": "Gebratener Reis mit Ei",
+   "steps": [
+    "Den Reis kochen und vollständig abkühlen lassen (Reis vom Vortag ist am besten).",
+    "Karotte und Erbsen in einer heißen Pfanne anbraten und den gewürfelten Schinken dazugeben.",
+    "Zur Seite schieben, das verquirlte Ei stocken lassen, dann den Reis dazugeben und mit Sojasoße zusammen braten."
+   ]
+  },
+  "csicseri-salata": {
+   "name": "Mediterraner Kichererbsensalat",
+   "steps": [
+    "Die Kichererbsen abtropfen lassen und das Gemüse würfeln.",
+    "Mit Olivenöl, Zitronensaft und Gewürzen vermengen.",
+    "Mit zerbröseltem Feta bestreuen."
+   ]
+  },
+  "kuszkusz-salata": {
+   "name": "Couscous-Gemüsesalat",
+   "steps": [
+    "Den Couscous mit heißem Salzwasser übergießen, zugedeckt 5 Minuten quellen lassen und mit einer Gabel auflockern.",
+    "Das fein gehackte Gemüse, Zitronensaft und Öl dazugeben.",
+    "Mit Feta und frischen Kräutern servieren."
+   ]
+  },
+  "sutotokkremleves": {
+   "name": "Kürbiscremesuppe",
+   "steps": [
+    "Die Zwiebel andünsten, den gewürfelten Kürbis dazugeben und mit 1 Liter Wasser aufgießen.",
+    "Weich kochen und mit dem Stabmixer pürieren.",
+    "Mit Sahne, Ingwer und Muskat abschmecken; mit Toast servieren."
+   ]
+  },
+  "brokkolikremleves": {
+   "name": "Käsige Brokkolicremesuppe",
+   "steps": [
+    "Die Zwiebel dünsten, Brokkoli und gewürfelte Kartoffel dazugeben und mit 1 Liter Wasser aufgießen.",
+    "Weich kochen und pürieren.",
+    "Sahne und geriebenen Käse unterrühren und abschmecken."
+   ]
+  },
+  "edesburgonya-csirke": {
+   "name": "Hähnchenkeulen mit Süßkartoffeln aus dem Ofen",
+   "steps": [
+    "Die Süßkartoffeln in Spalten schneiden und mit Öl und Gewürzen vermengen.",
+    "Die Keulen mit den Gewürzen einreiben.",
+    "Zusammen bei 200 °C 40 Minuten backen (Heißluftfritteuse: 190 °C, zwei Durchgänge à 25 Minuten).",
+    "Mit Knoblauchjoghurt servieren."
+   ]
+  },
+  "muszaka": {
+   "name": "Moussaka mit Aubergine und Kartoffeln",
+   "steps": [
+    "Aubergine und Kartoffeln in Scheiben schneiden, salzen, mit Öl bestreichen und im Ofen vorbacken.",
+    "Das Hackfleisch mit Passata, Zimt und Oregano zu einem dicken Ragù kochen.",
+    "Aus Butter, Mehl und Milch eine Béchamel kochen und das Ei unterrühren.",
+    "In eine Form schichten: Kartoffeln, Aubergine, Ragù, oben Béchamel; bei 180 °C 45 Minuten backen."
+   ]
+  },
+  "zoldbabfozelek": {
+   "name": "Fisolengemüse mit Spiegelei",
+   "steps": [
+    "Die grünen Bohnen in wenig Salzwasser weich kochen.",
+    "Mit saurer Sahne, Mehl und Milch binden und mit Knoblauch, Dill und etwas Essig abschmecken.",
+    "Mit Spiegeleiern servieren."
+   ]
+  },
+  "karfiolfasirt": {
+   "name": "Blumenkohl-Laibchen mit Kartoffelpüree",
+   "steps": [
+    "Den Blumenkohl weich kochen, abgießen und mit einer Gabel zerdrücken.",
+    "Mit Ei, geriebenem Käse, eingeweichtem Brötchen und Gewürzen vermengen; Laibchen formen.",
+    "In wenig Öl beidseitig goldbraun braten.",
+    "Die Kartoffeln kochen und mit Butter und warmer Milch zu Püree stampfen."
+   ]
+  },
+  "fasirt-pure": {
+   "name": "Fleischlaibchen mit Kartoffelpüree",
+   "steps": [
+    "Das Hackfleisch mit eingeweichtem, ausgedrücktem Brötchen, Ei, geriebener Zwiebel und Gewürzen verkneten.",
+    "Flache Laibchen formen und in Öl je Seite 4–5 Minuten braten.",
+    "Die Kartoffeln kochen und mit Butter und warmer Milch zu Püree stampfen.",
+    "Mit Essiggurken servieren."
+   ]
+  },
+  "paprikas-krumpli": {
+   "name": "Paprikakartoffeln mit Wurst",
+   "steps": [
+    "Die Zwiebel in Fett andünsten und mit Paprikapulver bestreuen.",
+    "Gewürfelte Kartoffeln, Paprika, Tomate, Wurstscheiben und Kümmel dazugeben.",
+    "Mit so viel Wasser aufgießen, dass alles knapp bedeckt ist, und weich kochen. Mit Essiggurken servieren."
+   ]
+  },
+  "nuggets": {
+   "name": "Hausgemachte Chicken Nuggets mit Pommes",
+   "steps": [
+    "Das Hähnchen in mundgerechte Stücke schneiden und würzen.",
+    "In Mehl, Ei und Semmelbröseln wenden und mit etwas Öl besprühen.",
+    "In der Heißluftfritteuse bei 200 °C 12 Minuten oder im Ofen bei 220 °C 18 Minuten backen, nach der Hälfte wenden.",
+    "Mit Pommes und Knoblauchjoghurt servieren."
+   ]
+  },
+  "babgulyas": {
+   "name": "Bohnengulasch",
+   "steps": [
+    "Die Zwiebel dünsten, mit Paprikapulver bestreuen, das gewürfelte Fleisch dazugeben und 1 Stunde im eigenen Saft schmoren.",
+    "Mit 1,5 Litern Wasser aufgießen und Gemüse und Kartoffeln dazugeben.",
+    "Wenn alles weich ist, die abgetropften Bohnen unterrühren und noch 10 Minuten kochen."
+   ]
+  },
+  "marhahusleves": {
+   "name": "Rindsuppe mit Fadennudeln",
+   "steps": [
+    "Das Fleisch in kaltem Wasser aufsetzen und ganz sanft 2 Stunden simmern; den Schaum abschöpfen.",
+    "Gemüse, Zwiebel und Gewürze dazugeben und noch 45 Minuten kochen.",
+    "Die Suppe abseihen, die Nudeln separat kochen; mit Fleisch und Gemüse servieren."
+   ]
+  },
+  "zoldsegleves": {
+   "name": "Frühlingsgemüsesuppe",
+   "steps": [
+    "Das Gemüse würfeln und einige Minuten in Butter dünsten.",
+    "Mit Mehl bestäuben, mit 1,5 Litern Wasser aufgießen und weich kochen.",
+    "Mit gehackter Petersilie servieren."
+   ]
+  },
+  "pogacsa": {
+   "name": "Käse-Pogatscherl",
+   "steps": [
+    "Mehl mit Butter verbröseln, Hefe, saure Sahne, Eigelb, die Hälfte des Käses und Salz dazugeben und zu einem Teig kneten.",
+    "Fingerdick ausrollen, die Oberfläche einritzen, mit Ei bestreichen und mit dem restlichen Käse bestreuen.",
+    "Ausstechen und bei 200 °C 18–20 Minuten backen."
+   ]
+  },
+  "lekvaros-bukta": {
+   "name": "Buchteln mit Marmelade",
+   "steps": [
+    "Die Hefe in lauwarmer, gezuckerter Milch anrühren.",
+    "Mit Mehl, Ei, geschmolzener Butter und Salz zu einem weichen Teig kneten und auf das Doppelte gehen lassen.",
+    "Ausrollen, in Quadrate schneiden, Marmelade in die Mitte geben, zusammendrücken und ins Blech setzen.",
+    "Noch 20 Minuten gehen lassen, mit Ei bestreichen und bei 180 °C 25 Minuten backen."
+   ]
+  },
+  "turos-retes": {
+   "name": "Topfenstrudel aus Blätterteig",
+   "steps": [
+    "Den Quark mit Eigelb, Puderzucker, Zitronenschale und saurer Sahne verrühren.",
+    "Auf den Teigplatten verstreichen und aufrollen.",
+    "Mit Ei bestreichen und bei 200 °C 25 Minuten goldbraun backen."
+   ]
+  },
+  "almas-retes": {
+   "name": "Apfel-Nuss-Strudel",
+   "steps": [
+    "Die Äpfel reiben, ausdrücken und mit Zucker, Zimt und Walnüssen vermengen.",
+    "Auf den Teigplatten verstreichen, aufrollen und die Oberseite einstechen.",
+    "Bei 200 °C 25 Minuten backen."
+   ]
+  },
+  "bananos-kenyer": {
+   "name": "Bananenbrot mit Walnüssen",
+   "steps": [
+    "Die Bananen mit einer Gabel zerdrücken und mit geschmolzener Butter, Zucker und Eiern verrühren.",
+    "Mehl, Natron, Zimt und Walnüsse dazugeben und nur kurz unterrühren.",
+    "In einer mit Backpapier ausgelegten Kastenform bei 175 °C etwa 55 Minuten backen."
+   ]
+  },
+  "mezes-mustaros-csirke": {
+   "name": "Honig-Senf-Hähnchenkeulen mit Kartoffeln",
+   "steps": [
+    "Senf mit Honig, Knoblauch, Salz und etwas Öl verrühren und die Keulen damit bestreichen.",
+    "Die Kartoffeln in Spalten, die Zwiebel in Stücke schneiden und neben das Fleisch aufs Blech legen.",
+    "Bei 200 °C etwa 45 Minuten backen (Heißluftfritteuse: 190 °C, 25 Minuten)."
+   ]
+  },
+  "cordon-bleu": {
+   "name": "Cordon bleu vom Huhn mit Reis",
+   "steps": [
+    "In die Hähnchenbrust eine Tasche schneiden, salzen und mit Schinken und Käse füllen.",
+    "In Mehl, Ei und Semmelbröseln wenden.",
+    "Bei mittlerer Hitze in reichlich Öl je Seite 5–6 Minuten braten.",
+    "Mit Reis servieren."
+   ]
+  },
+  "karaj-gombamartas": {
+   "name": "Schweineschnitzel in Pilzsoße",
+   "steps": [
+    "Die Karreescheiben klopfen, würzen und in einer heißen Pfanne je Seite 3 Minuten braten, dann herausnehmen.",
+    "In derselben Pfanne Zwiebel und Pilze dünsten, mit Sahne aufgießen und aufkochen.",
+    "Das Fleisch zurückgeben und 5 Minuten in der Soße ziehen lassen. Mit Reis servieren."
+   ]
+  },
+  "gyros-tal": {
+   "name": "Gyros-Teller",
+   "steps": [
+    "Den Schweinenacken in dünne Streifen schneiden und 30 Minuten mit Gyrosgewürz marinieren.",
+    "Portionsweise in einer heißen Pfanne knusprig braten.",
+    "Aus Joghurt, geriebener Gurke und Knoblauch Tsatsiki rühren.",
+    "Mit Pommes, Salat und Tsatsiki servieren."
+   ]
+  },
+  "pulykaragu": {
+   "name": "Putenragout in Sahnesoße mit Reis",
+   "steps": [
+    "Die gewürfelte Pute mit der Zwiebel rundum anbraten.",
+    "Pilze und Erbsen dazugeben und 10 Minuten dünsten.",
+    "Mit Sahne und Estragon aufkochen und mit Reis servieren."
+   ]
+  },
+  "mexikoi-egytal": {
+   "name": "Mexikanischer Hackfleisch-Reis-Eintopf",
+   "steps": [
+    "Das Hackfleisch anbraten und würzen.",
+    "Reis, Passata und 600 ml Wasser dazugeben und zugedeckt 15 Minuten garen.",
+    "Bohnen, Mais und gewürfelte Paprika unterrühren und noch 5 Minuten kochen."
+   ]
+  },
+  "burrito": {
+   "name": "Bohnen-Reis-Burritos",
+   "steps": [
+    "Den Reis kochen; die Bohnen mit den Gewürzen dünsten und leicht zerdrücken.",
+    "Die Tortillas mit Reis, Bohnen, Mais, Tomate, Käse und saurer Sahne füllen.",
+    "Fest aufrollen und in einer trockenen Pfanne beidseitig anrösten."
+   ]
+  },
+  "quesadilla": {
+   "name": "Schinken-Käse-Quesadillas",
+   "steps": [
+    "Geriebenen Käse, Schinken, Mais und Paprika auf eine Hälfte jeder Tortilla streuen und die andere Hälfte darüberklappen.",
+    "In einer trockenen Pfanne je Seite 2–3 Minuten braten, bis der Käse schmilzt.",
+    "In Ecken schneiden und mit saurer Sahne servieren."
+   ]
+  },
+  "hazi-pizza": {
+   "name": "Hausgemachte Schinken-Pilz-Pizza",
+   "steps": [
+    "Mehl mit Hefe, Salz, Öl und 300 ml lauwarmem Wasser zu einem glatten Teig kneten und 1 Stunde gehen lassen.",
+    "Auf zwei Bleche ausrollen und mit gewürzter Passata bestreichen.",
+    "Mit Schinken, Pilzen, Mais und Mozzarella belegen.",
+    "Im möglichst heißen Ofen (250 °C) 10–12 Minuten backen."
+   ]
+  },
+  "margherita": {
+   "name": "Pizza Margherita",
+   "steps": [
+    "Mehl mit Hefe, Salz, Öl und 300 ml lauwarmem Wasser zu einem glatten Teig kneten und 1 Stunde gehen lassen.",
+    "Dünn ausrollen, mit gesalzener Passata bestreichen und mit zerzupftem Mozzarella und Tomatenscheiben belegen.",
+    "Bei 250 °C 10–12 Minuten backen und mit frischem Basilikum servieren."
+   ]
+  },
+  "langos": {
+   "name": "Lángos mit Käse und saurer Sahne",
+   "steps": [
+    "Gekochte, gepresste Kartoffeln mit Mehl, in lauwarmer Milch angesetzter Hefe und Salz zu einem weichen Teig kneten und 1 Stunde gehen lassen.",
+    "Mit geölten Händen handtellergroße Fladen ziehen.",
+    "In reichlich heißem Öl beidseitig goldbraun ausbacken.",
+    "Mit Knoblauchwasser bestreichen und mit saurer Sahne und geriebenem Käse servieren."
+   ]
+  },
+  "hot-dog": {
+   "name": "Hausgemachte Hot Dogs",
+   "steps": [
+    "Die Würstchen 5 Minuten in heißem Wasser erwärmen.",
+    "Die Brötchen einschneiden und im Ofen knusprig aufbacken.",
+    "Mit Würstchen, Gurke, Zwiebel und Soßen füllen."
+   ]
+  },
+  "frittata": {
+   "name": "Kartoffel-Wurst-Frittata",
+   "steps": [
+    "Die Kartoffeln in dünne Scheiben schneiden und in einer ofenfesten Pfanne weich braten.",
+    "Wurst und Paprika dazugeben und die gewürzten, verquirlten Eier darübergießen.",
+    "Mit Käse bestreuen und im 180 °C heißen Ofen 12–15 Minuten stocken lassen."
+   ]
+  },
+  "spenotos-pite": {
+   "name": "Spinat-Feta-Kuchen",
+   "steps": [
+    "Den Spinat mit Knoblauch auftauen und die Flüssigkeit verdampfen lassen.",
+    "Abgekühlt mit zerbröseltem Feta, Eiern und Gewürzen vermengen.",
+    "In eine mit Teig ausgelegte Form füllen, die Ränder einschlagen und bei 200 °C 25 Minuten backen."
+   ]
+  },
+  "rakott-brokkoli": {
+   "name": "Brokkoli-Schinken-Auflauf",
+   "steps": [
+    "Brokkoli und Kartoffelscheiben in Salzwasser halb weich kochen.",
+    "Mit dem gewürfelten Schinken in eine Form schichten.",
+    "Saure Sahne mit Eiern und Gewürzen verrühren, darübergießen und mit Käse bestreuen.",
+    "Bei 190 °C 25 Minuten backen."
+   ]
+  },
+  "sult-camembert": {
+   "name": "Gebackener Camembert mit Marmelade und Toast",
+   "steps": [
+    "Die Camemberts oben einritzen und mit Thymian bestreuen.",
+    "In der Heißluftfritteuse bei 180 °C 8 Minuten oder im Ofen bei 200 °C 12 Minuten backen.",
+    "Mit Toast, Marmelade und Tomaten servieren."
+   ]
+  },
+  "rantott-parizsi": {
+   "name": "Panierte Extrawurst mit Kartoffelpüree",
+   "steps": [
+    "Die Kartoffeln kochen und mit Butter und warmer Milch zu Püree stampfen.",
+    "Die Wurst in 1 cm dicke Scheiben schneiden und den Rand einschneiden.",
+    "In Mehl, Ei und Semmelbröseln wenden und in heißem Öl ausbacken."
+   ]
+  },
+  "voroslencse-dal": {
+   "name": "Rotes Linsen-Dal mit Kokosmilch",
+   "steps": [
+    "Zwiebel und Knoblauch dünsten und mit den Gewürzen bestreuen.",
+    "Linsen, Passata, Kokosmilch und 500 ml Wasser dazugeben und 20 Minuten kochen, bis die Linsen zerfallen.",
+    "Mit Reis servieren."
+   ]
+  },
+  "csirkes-kuszkusz": {
+   "name": "Couscous mit Hähnchen und Gemüse",
+   "steps": [
+    "Den Couscous mit heißem Salzwasser übergießen und 5 Minuten quellen lassen.",
+    "Hähnchen und Gemüse würfeln, würzen und anbraten.",
+    "Die abgetropften Kichererbsen dazugeben und alles mit dem Couscous vermengen."
+   ]
+  },
+  "hummusz-tal": {
+   "name": "Hummus-Teller mit Gemüse",
+   "steps": [
+    "Die Kichererbsen mit Zitronensaft, Öl, Knoblauch und etwas Wasser cremig pürieren.",
+    "Mit Salz und Kreuzkümmel abschmecken.",
+    "Mit Gemüsesticks und Brot servieren."
+   ]
+  },
+  "ceklas-tal": {
+   "name": "Ofen-Rote-Bete und Süßkartoffel mit Feta",
+   "steps": [
+    "Rote Bete und Süßkartoffel würfeln und mit Öl, Salz und Thymian vermengen.",
+    "Bei 200 °C 35–40 Minuten rösten.",
+    "Mit zerbröseltem Feta, Walnüssen und etwas Honig servieren."
+   ]
+  },
+  "sutotokos-rizotto": {
+   "name": "Kürbisrisotto",
+   "steps": [
+    "Die Zwiebel in Butter dünsten, den gewürfelten Kürbis und den Reis dazugeben.",
+    "Die Brühe kellenweise unter ständigem Rühren etwa 20 Minuten zugeben.",
+    "Mit Butter und Käse cremig rühren."
+   ]
+  },
+  "lazac-edesburgonya": {
+   "name": "Lachs mit Ofen-Süßkartoffeln und Brokkoli",
+   "steps": [
+    "Die Süßkartoffeln in Spalten schneiden, mit Öl würzen und bei 200 °C 20 Minuten backen.",
+    "Brokkoli und den gewürzten Lachs dazulegen und noch 12 Minuten backen (Heißluftfritteuse: 190 °C, 10 Minuten).",
+    "Mit Zitronensaft beträufelt servieren."
+   ]
+  },
+  "tonhalas-rakott": {
+   "name": "Thunfisch-Nudelauflauf",
+   "steps": [
+    "Die Nudeln halb gar kochen.",
+    "Mit Thunfisch, Mais und der Ei-Sauerrahm-Mischung vermengen.",
+    "In eine Form streichen, mit Käse bestreuen und bei 190 °C 25 Minuten backen."
+   ]
+  },
+  "rantott-ponty": {
+   "name": "Gebackener Karpfen mit Petersilienkartoffeln",
+   "steps": [
+    "Die Fischstücke salzen und 15 Minuten ziehen lassen.",
+    "In Mehl, Ei und nochmals in Mehl wenden und in reichlich Öl ausbacken.",
+    "Die Kartoffeln in Salzwasser kochen und mit Butter und Petersilie schwenken."
+   ]
+  },
+  "stroganoff": {
+   "name": "Schweine-Stroganoff mit Reis",
+   "steps": [
+    "Das Fleisch in dünne Streifen schneiden, in einer heißen Pfanne rasch rundum anbraten und herausnehmen.",
+    "Zwiebel und Pilze dünsten, Senf und Gurkenstreifen dazugeben.",
+    "Mit saurer Sahne aufkochen, das Fleisch zurückgeben und mit Reis servieren."
+   ]
+  },
+  "tejszines-sonkas-teszta": {
+   "name": "Sahnige Nudeln mit Schinken und Erbsen",
+   "steps": [
+    "Die Nudeln kochen und in den letzten 3 Minuten die Erbsen ins Wasser geben.",
+    "Den gewürfelten Schinken anbraten, mit Sahne aufgießen und aufkochen.",
+    "Mit den Nudeln und dem geriebenen Käse vermengen."
+   ]
+  },
+  "mac-and-cheese": {
+   "name": "Mac and Cheese (Käsemakkaroni)",
+   "steps": [
+    "Die Nudeln kochen.",
+    "Das Mehl in der Butter anschwitzen, nach und nach die Milch dazugeben und dick einkochen.",
+    "Den geriebenen Käse und etwas Senf unterrühren, dann die Nudeln."
+   ]
+  },
+  "rakott-burgonya-sajtos": {
+   "name": "Cremiges Kartoffelgratin mit Käse",
+   "steps": [
+    "Die Kartoffeln in dünne Scheiben hobeln.",
+    "In eine gebutterte, mit Knoblauch ausgeriebene Form schichten und jede Schicht würzen.",
+    "Mit Sahne übergießen, mit Käse bestreuen und bei 180 °C etwa 50 Minuten backen."
+   ]
+  },
+  "krumplisalata-virsli": {
+   "name": "Kartoffelsalat mit Würstchen",
+   "steps": [
+    "Die Kartoffeln in der Schale und die Eier hart kochen und in Scheiben schneiden.",
+    "Die Würstchen kochen oder braten und in Scheiben schneiden.",
+    "Alles mit einem Dressing aus Joghurt, Senf und Essig vermengen."
+   ]
+  },
+  "csirkes-tesztasalata": {
+   "name": "Nudelsalat mit Hähnchen",
+   "steps": [
+    "Nudeln und Erbsen kochen und kalt abspülen.",
+    "Die Hähnchenbrust braten und würfeln.",
+    "Alles mit dem Dill-Senf-Joghurt vermengen und bis zum Servieren kühlen."
+   ]
+  },
+  "paraszt-reggeli": {
+   "name": "Bauernfrühstück",
+   "steps": [
+    "Die gewürfelten Kartoffeln in wenig Fett knusprig braten.",
+    "Zwiebel und Wurst dazugeben, die verquirlten Eier darübergießen und zu Rührei rühren.",
+    "Mit Brot servieren."
+   ]
+  },
+  "makos-guba": {
+   "name": "Mohnbrotauflauf (Mákos guba)",
+   "steps": [
+    "Die Brötchen in Scheiben schneiden und mit warmer Vanille-Zucker-Milch beträufeln.",
+    "Jede Schicht mit Mohn und Puderzucker bestreuen.",
+    "Mit Butterflöckchen belegen und bei 180 °C 15 Minuten backen."
+   ]
+  },
+  "lebbencsleves": {
+   "name": "Lebbencs-Suppe (Nudel-Kartoffel-Suppe)",
+   "steps": [
+    "Den Speck auslassen und die Nudeln im Fett anrösten.",
+    "Die Zwiebel dazugeben, mit Paprikapulver bestreuen und mit 1,5 Litern Wasser aufgießen.",
+    "Kartoffeln, Paprika und Tomate darin kochen."
+   ]
+  },
+  "fokhagymakremleves": {
+   "name": "Knoblauchcremesuppe mit Croûtons",
+   "steps": [
+    "Den Knoblauch in Butter dünsten, die gewürfelten Kartoffeln dazugeben und mit 1 Liter Wasser aufgießen.",
+    "Weich kochen, pürieren und mit Sahne cremig rühren.",
+    "Mit Käse-Croûtons servieren."
+   ]
+  },
+  "sutotokos-curry": {
+   "name": "Kürbis-Hähnchen-Curry",
+   "steps": [
+    "Die Zwiebel dünsten, Curry und das gewürfelte Hähnchen dazugeben.",
+    "Den gewürfelten Kürbis und die Kokosmilch dazugeben und 20 Minuten kochen.",
+    "Mit Reis servieren."
+   ]
+  },
+  "szezamos-csirke": {
+   "name": "Sesam-Honig-Hähnchen mit Reis",
+   "steps": [
+    "Das gewürfelte Hähnchen in Mehl wenden und in heißem Öl knusprig braten.",
+    "Sojasoße mit Honig und Knoblauch aufkochen und das Fleisch darin schwenken.",
+    "Mit Sesam bestreuen und mit Reis und Brokkoli servieren."
+   ]
+  },
+  "csirke-uborkasalata": {
+   "name": "Gegrillte Hähnchenbrust mit Gurken-Rahmsalat",
+   "steps": [
+    "Die Hähnchenbrust würzen und in der Grillpfanne je Seite 5–6 Minuten braten.",
+    "Die Gurke dünn hobeln, salzen, ausdrücken und mit saurer Sahne, Knoblauch und etwas Essig vermengen.",
+    "Mit Salzkartoffeln servieren."
+   ]
+  },
+  "kremes-spenotos-csirke": {
+   "name": "Cremiges Spinathähnchen mit Reis",
+   "steps": [
+    "Die gewürzte Hähnchenbrust durchbraten und herausnehmen.",
+    "In derselben Pfanne den Spinat mit Knoblauch auftauen und mit Sahne aufgießen.",
+    "Das Fleisch zurückgeben, aufkochen und mit Reis servieren."
+   ]
+  },
+  "risi-bisi-sonkas": {
+   "name": "Risi-Bisi mit Schinken",
+   "steps": [
+    "Den Reis in Butter schwenken und in der doppelten Menge Salzwasser weich garen.",
+    "In den letzten 5 Minuten Erbsen und gewürfelten Schinken dazugeben.",
+    "Mit geriebenem Käse und Petersilie servieren."
+   ]
+  },
+  "caprese-csirke": {
+   "name": "Überbackenes Hähnchen mit Tomate und Mozzarella",
+   "steps": [
+    "Die Kartoffeln in Spalten schneiden, mit Öl würzen und bei 200 °C 15 Minuten vorbacken.",
+    "Die Hähnchenbrüste würzen, daneben legen und mit Tomaten- und Mozzarellascheiben belegen.",
+    "Noch 20 Minuten backen (Heißluftfritteuse: 190 °C, 15 Minuten)."
+   ]
+  },
+  "csirkeporkolt": {
+   "name": "Hühnerpörkölt mit Nockerln",
+   "steps": [
+    "Die Zwiebel in Fett glasig dünsten, vom Herd nehmen und mit Paprikapulver bestreuen.",
+    "Hähnchen, Paprika und Tomate dazugeben, salzen und mit wenig Wasser 40 Minuten schmoren.",
+    "Aus Mehl, Eiern und Wasser Nockerln schaben. Mit Essiggurken servieren."
+   ]
+  },
+  "marhaporkolt": {
+   "name": "Rindspörkölt mit Salzkartoffeln",
+   "steps": [
+    "Viel Zwiebel langsam in Fett glasig dünsten und mit Paprikapulver bestreuen.",
+    "Das gewürfelte Fleisch dazugeben, würzen und mit wenig Wasser 2–2,5 Stunden weich schmoren.",
+    "Die Kartoffeln in Salzwasser kochen; mit Essiggurken servieren."
+   ]
+  },
+  "tocsni": {
+   "name": "Kartoffelpuffer mit Käse und saurer Sahne",
+   "steps": [
+    "Die Kartoffeln reiben und ausdrücken.",
+    "Mit Ei, Mehl, zerdrücktem Knoblauch und Gewürzen vermengen.",
+    "In heißem Öl dünne Puffer braten.",
+    "Mit saurer Sahne und geriebenem Käse servieren."
+   ]
+  },
+  "zoldseges-tojasos-teszta": {
+   "name": "Gebratene Nudeln mit Gemüse und Ei",
+   "steps": [
+    "Die Nudeln kochen.",
+    "Gemüse und Kohlstreifen in einer heißen Pfanne anbraten.",
+    "Zur Seite schieben, das verquirlte Ei stocken lassen, dann Nudeln und Sojasoße dazugeben und zusammen braten."
+   ]
+  },
+  "lencsefasirt": {
+   "name": "Linsenlaibchen mit Joghurtsoße",
+   "steps": [
+    "Die Linsen weich kochen, abgießen und mit einer Gabel zerdrücken.",
+    "Mit geriebener Zwiebel, Ei, Semmelbröseln und Gewürzen vermengen; Laibchen formen.",
+    "In wenig Öl beidseitig braten.",
+    "Mit Salzkartoffeln und Knoblauchjoghurt servieren."
+   ]
+  },
+  "tejfoles-csirkecomb-tepsis": {
+   "name": "Hähnchenkeulen in saurer Sahne vom Blech",
+   "steps": [
+    "Die Kartoffeln in Scheiben schneiden und mit der Zwiebel auf den Boden der Form legen.",
+    "Die gewürzten Keulen darauflegen.",
+    "Die saure Sahne mit Knoblauch verrühren, in die Form gießen und bei 190 °C 50 Minuten backen."
+   ]
+  },
+  "csirkemell-rizs-zoldseg": {
+   "name": "Hähnchen-Gemüse-Bowl",
+   "steps": [
+    "Den Reis dünsten.",
+    "Das Gemüse dämpfen oder in wenig Salzwasser bissfest garen.",
+    "Die gewürzte Hähnchenbrust in der Grillpfanne braten und in Scheiben schneiden."
+   ]
+  },
+  "kolbaszos-babos-egytal": {
+   "name": "Wurst-Bohnen-Eintopf",
+   "steps": [
+    "Zwiebel, Paprika und Wurstscheiben anbraten.",
+    "Bohnen und Passata dazugeben, würzen und 20 Minuten kochen.",
+    "Mit frischem Brot servieren."
+   ]
+  },
+  "parizsi-tojasrantotta": {
+   "name": "Rührei mit Extrawurst und Toast",
+   "steps": [
+    "Die Zwiebel in Butter dünsten und die gewürfelte Wurst dazugeben.",
+    "Die verquirlten Eier darübergießen und cremig rühren.",
+    "Mit Toast servieren."
+   ]
+  },
+  "gyumolcsos-palacsinta-eper": {
+   "name": "Erdbeer-Topfen-Palatschinken",
+   "steps": [
+    "Aus Mehl, Milch und Eiern einen Teig rühren und dünne Palatschinken backen.",
+    "Den Quark mit Puderzucker verrühren.",
+    "Die Palatschinken mit der Quarkcreme und Erdbeerscheiben füllen."
+   ]
+  },
+  "almas-zabos-morzsa": {
+   "name": "Apfel-Hafer-Crumble",
+   "steps": [
+    "Die Äpfel würfeln, mit Zimt und Zitronensaft vermengen und in eine Form geben.",
+    "Haferflocken, Mehl, Zucker und kalte Butter zu Streuseln reiben und über die Äpfel streuen.",
+    "Bei 180 °C 30 Minuten backen, bis die Oberfläche goldbraun ist."
+   ]
+  }
+ },
+ "ingredients": {
+  "csirkemell": "Hähnchenbrustfilet",
+  "csirkecomb": "Hähnchenkeulen",
+  "csirkeszarny": "Hähnchenflügel",
+  "egesz_csirke": "Ganzes Hähnchen",
+  "tyuk": "Suppenhuhn",
+  "pulykamell": "Putenbrustfilet",
+  "daralthus": "Schweinehackfleisch",
+  "daralt_marha": "Rinderhackfleisch",
+  "marhalabszar": "Rinderwade",
+  "sertes_karaj": "Schweinekarree",
+  "sertes_comb": "Schweinekeule",
+  "sertes_tarja": "Schweinenacken",
+  "sertes_oldalas": "Schweinerippchen",
+  "virsli": "Würstchen",
+  "kolbasz": "Paprikawurst",
+  "bacon": "Räucherspeck",
+  "sonka": "Schinken",
+  "zsir": "Schweineschmalz",
+  "halfile": "Seefischfilet",
+  "harcsa": "Welsfilet",
+  "ponty": "Karpfenstücke",
+  "tonhal": "Thunfisch (Dose)",
+  "tojas": "Eier",
+  "tej": "Milch",
+  "tejfol": "Saure Sahne",
+  "tejszin": "Kochsahne",
+  "habtejszin": "Schlagsahne",
+  "vaj": "Butter",
+  "trappista": "Trappista-Käse",
+  "feta": "Feta",
+  "mozzarella": "Mozzarella",
+  "turo": "Quark (Topfen)",
+  "joghurt": "Naturjoghurt",
+  "kefir": "Kefir",
+  "liszt": "Weizenmehl",
+  "retesliszt": "Griffiges Mehl",
+  "cukor": "Kristallzucker",
+  "porcukor": "Puderzucker",
+  "kakao": "Kakaopulver",
+  "keksz": "Butterkekse",
+  "rizs": "Reis",
+  "spagetti": "Spaghetti",
+  "penne": "Nudeln",
+  "tarhonya": "Eiergraupen (Tarhonya)",
+  "lencse": "Linsen",
+  "zabpehely": "Haferflocken",
+  "napraforgoolaj": "Sonnenblumenöl",
+  "olivaolaj": "Olivenöl",
+  "kenyer": "Brot",
+  "zsemle": "Brötchen",
+  "tortilla": "Tortillafladen",
+  "burgonya": "Kartoffeln",
+  "hasabburgonya": "Tiefkühl-Pommes",
+  "voroshagyma": "Zwiebeln",
+  "fokhagyma": "Knoblauch",
+  "paradicsom": "Tomaten",
+  "paprika": "Grüne Paprika",
+  "uborka": "Salatgurke",
+  "sargarepa": "Karotten",
+  "petrezselyem": "Petersilienwurzel",
+  "karfiol": "Blumenkohl",
+  "kelkaposzta": "Wirsing",
+  "kaposzta": "Weißkohl",
+  "brokkoli": "Brokkoli",
+  "cukkini": "Zucchini",
+  "gomba": "Champignons",
+  "alma": "Äpfel",
+  "korte": "Birnen",
+  "banan": "Bananen",
+  "narancs": "Orangen",
+  "citrom": "Zitronen",
+  "passata": "Passierte Tomaten",
+  "voros_bab": "Kidneybohnen (Dose)",
+  "kukorica": "Mais (Dose)",
+  "csicseri": "Kichererbsen (Dose)",
+  "kokusztej": "Kokosmilch",
+  "lekvar": "Marmelade",
+  "spenot": "Spinat (TK)",
+  "borso": "Erbsen (TK)",
+  "csemegeuborka": "Essiggurken",
+  "lazac": "Lachsfilet",
+  "gouda": "Gouda / Edamer",
+  "cheddar": "Cheddar",
+  "camembert": "Camembert",
+  "parizsi": "Extrawurst / Fleischwurst",
+  "szalami": "Salami",
+  "margarin": "Margarine",
+  "almale": "Apfelsaft",
+  "mogyoro": "Erdnüsse",
+  "eper": "Erdbeeren",
+  "lasagne": "Lasagneplatten",
+  "kuszkusz": "Couscous",
+  "rizsteszta": "Reisnudeln",
+  "leveles_teszta": "Blätterteig (Kühlregal)",
+  "sutotok": "Kürbis",
+  "cekla": "Rote Bete",
+  "edesburgonya": "Süßkartoffeln",
+  "padlizsan": "Aubergine",
+  "zoldbab": "Grüne Bohnen (TK)",
+  "zoldsegkeverek": "TK-Gemüsemischung",
+  "feher_bab": "Weiße Bohnen (Dose)",
+  "tofu": "Tofu",
+  "pesto": "Pesto",
+  "dio": "Gemahlene Walnüsse",
+  "mak": "Gemahlener Mohn",
+  "olajbogyo": "Oliven"
+ },
+ "words": {
+  "1 l zöldségalaplé": "1 l Gemüsebrühe",
+  "1,5 l alaplé": "1,5 l Brühe",
+  "8 dl alaplé": "800 ml Brühe",
+  "babérlevél": "Lorbeerblatt",
+  "bazsalikom": "Basilikum",
+  "bors": "Pfeffer",
+  "chili": "Chili",
+  "citrom": "Zitrone",
+  "citromhéj": "Zitronenschale",
+  "citromlé": "Zitronensaft",
+  "csipet só": "eine Prise Salz",
+  "cukor": "Zucker",
+  "curry": "Curry",
+  "curryfűszer": "Currypulver",
+  "currypaszta vagy curry": "Currypaste oder Currypulver",
+  "dió": "Walnüsse",
+  "ecet": "Essig",
+  "erős paprika": "scharfe Paprika",
+  "fahéj": "Zimt",
+  "fajitas-fűszer (paprika": "Fajita-Gewürz (Paprika",
+  "fokhagyma": "Knoblauch",
+  "fokhagyma)": "Knoblauch)",
+  "fokhagymapor": "Knoblauchpulver",
+  "frissen őrölt bors": "frisch gemahlener Pfeffer",
+  "füstölt paprika": "geräuchertes Paprikapulver",
+  "fűszerpaprika": "Paprikapulver",
+  "garam masala": "Garam Masala",
+  "gyros-fűszer": "Gyrosgewürz",
+  "gyömbér": "Ingwer",
+  "ha van": "falls vorhanden",
+  "kakukkfű": "Thymian",
+  "kapor": "Dill",
+  "keményítő": "Speisestärke",
+  "ketchup": "Ketchup",
+  "kurkuma": "Kurkuma",
+  "kurkuma vagy sáfrány": "Kurkuma oder Safran",
+  "kömény": "Kümmel",
+  "lilahagyma": "rote Zwiebel",
+  "lime vagy citrom": "Limette oder Zitrone",
+  "majoránna": "Majoran",
+  "mazsola": "Rosinen",
+  "menta": "Minze",
+  "mustár": "Senf",
+  "méz": "Honig",
+  "méz vagy juharszirup": "Honig oder Ahornsirup",
+  "olaj": "Öl",
+  "olajbogyó": "Oliven",
+  "olajspray": "Ölspray",
+  "olívaolaj": "Olivenöl",
+  "olívaolaj vagy étolaj": "Oliven- oder Speiseöl",
+  "oregánó": "Oregano",
+  "paprika": "Paprika",
+  "petrezselyem": "Petersilie",
+  "petrezselyemzöld": "gehackte Petersilie",
+  "pirospaprika": "Paprikapulver",
+  "pirított hagyma": "Röstzwiebeln",
+  "rozmaring": "Rosmarin",
+  "római kömény": "Kreuzkümmel",
+  "snidling": "Schnittlauch",
+  "szemes bors": "Pfefferkörner",
+  "szerecsendió": "Muskat",
+  "szezámmag": "Sesam",
+  "szódabikarbóna": "Natron",
+  "szójaszósz": "Sojasoße",
+  "só": "Salz",
+  "sütőpor": "Backpulver",
+  "tahini": "Tahini",
+  "tárkony": "Estragon",
+  "tökmag": "Kürbiskerne",
+  "vaníliás cukor": "Vanillezucker",
+  "zeller": "Sellerie",
+  "zellerlevél": "Sellerieblätter",
+  "zsálya": "Salbei",
+  "élesztő": "Hefe",
+  "újhagyma": "Frühlingszwiebel",
+  "kömény, füstölt paprika": "Kümmel, geräuchertes Paprikapulver"
+ },
+ "units": {
+  "fej": [
+   "Kopf",
+   "Köpfe"
+  ],
+  "kis fej": [
+   "kleiner Kopf",
+   "kleine Köpfe"
+  ],
+  "nagy fej": [
+   "großer Kopf",
+   "große Köpfe"
+  ],
+  "doboz": [
+   "Dose",
+   "Dosen"
+  ],
+  "ek": [
+   "EL",
+   "EL"
+  ],
+  "pohár": [
+   "Becher",
+   "Becher"
+  ],
+  "gerezd": [
+   "Zehe",
+   "Zehen"
+  ],
+  "üveg": [
+   "Glas",
+   "Gläser"
+  ],
+  "zacskó": [
+   "Beutel",
+   "Beutel"
+  ],
+  "szelet": [
+   "Scheibe",
+   "Scheiben"
+  ],
+  "csomag": [
+   "Packung",
+   "Packungen"
+  ],
+  "golyó": [
+   "Kugel",
+   "Kugeln"
+  ],
+  "tekercs": [
+   "Rolle",
+   "Rollen"
+  ],
+  "vekni": [
+   "Laib",
+   "Laibe"
+  ],
+  "db": [
+   "Stk.",
+   "Stk."
+  ],
+  "csomó": [
+   "Bund",
+   "Bund"
+  ]
+ },
+ "phrases": {
+  "Zöldség, gyümölcs": "Obst & Gemüse",
+  "Pékáru": "Backwaren",
+  "Hús, hal": "Fleisch & Fisch",
+  "Felvágott, sajt": "Aufschnitt & Käse",
+  "Tejtermék, tojás, hűtött": "Milchprodukte, Eier & Kühlregal",
+  "Száraz áru": "Trockenwaren",
+  "Konzerv, üveges": "Konserven & Gläser",
+  "Mélyhűtött": "Tiefkühl",
+  "Italok": "Getränke",
+  "Hétfő": "Montag",
+  "Kedd": "Dienstag",
+  "Szerda": "Mittwoch",
+  "Csütörtök": "Donnerstag",
+  "Péntek": "Freitag",
+  "Szombat": "Samstag",
+  "Vasárnap": "Sonntag",
+  "tűzhely": "Herd",
+  "sütő": "Backofen",
+  "sütő vagy airfryer": "Backofen oder Heißluftfritteuse",
+  "könnyű": "einfach",
+  "közepes": "mittel",
+  "Magyarország": "Ungarn",
+  "Horvátország": "Kroatien",
+  "mérlegelős": "lose (gewogen)",
+  "A keret szűkös: néhány napra a legolcsóbb receptet tettük, a változatossági szabályokat lazítva.": "Das Budget ist knapp: An manchen Tagen haben wir das günstigste Rezept genommen und die Abwechslungsregeln gelockert.",
+  "A beállításaidnak most kevés recept felel meg, ezért néhány napra a korábbi főzés maradéka jut (aznap többet főzöl).": "Zu deinen Einstellungen passen gerade wenige Rezepte, daher gibt es an manchen Tagen Reste vom Vortag (an dem Tag kochst du mehr).",
+  "Demó árak (az Árfigyelő nem volt elérhető)": "Demo-Preise (der ungarische GVH-Preismonitor war nicht erreichbar)",
+  "GVH Árfigyelő – friss letöltés": "GVH-Preismonitor (Árfigyelő) – frisch geladen",
+  "GVH Árfigyelő – utoljára letöltött példány": "GVH-Preismonitor (Árfigyelő) – zuletzt geladene Kopie",
+  "GVH Árfigyelő": "GVH-Preismonitor (Árfigyelő)",
+  "a horvát láncok napi árlistái (cijene.dev)": "Tagespreislisten der kroatischen Handelsketten (cijene.dev)",
+  "A legfrissebb horvát árlista keresése…": "Suche die neueste kroatische Preisliste…",
+  "A horvát árak feldolgozása…": "Verarbeite die kroatischen Preise…",
+  "a lánc napi árlistája": "Tagespreisliste der Kette",
+  "Bolti akció": "Aktion im Markt",
+  "Hűségkártyás/appos akció": "Kundenkarten-/App-Aktion",
+  "kézi": "manuell",
+  "Egyéb": "Sonstiges",
+  "Adj meg egy tételt": "Gib einen Artikel ein",
+  "Legfeljebb 60 saját tétel lehet": "Höchstens 60 eigene Artikel möglich",
+  "Nincs ilyen tétel": "Kein solcher Artikel",
+  "Legalább 2 karakteres keresőszó kell": "Mindestens 2 Zeichen eingeben",
+  "Hiányzó vagy érvénytelen profil-azonosító": "Fehlende oder ungültige Profil-ID",
+  "Nincs ilyen háztartás-profil": "Kein solches Haushaltsprofil",
+  "Hibás tétel": "Ungültiger Artikel",
+  "Hibás nap": "Ungültiger Tag",
+  "Ez a hét utolsó vacsorája": "Das ist das letzte Abendessen der Woche",
+  "A profilok tárolása nincs bekapcsolva": "Profilspeicherung ist nicht aktiviert",
+  "Túl nagy kérés (legfeljebb 1 MB)": "Anfrage zu groß (max. 1 MB)",
+  "Ismeretlen recept": "Unbekanntes Rezept",
+  "Az admin felület nincs bekapcsolva": "Der Admin-Bereich ist nicht aktiviert",
+  "Az akciók kezelése nincs bekapcsolva": "Aktionsverwaltung ist nicht aktiviert",
+  "Túl sok kérés – próbáld újra egy perc múlva.": "Zu viele Anfragen – bitte in einer Minute erneut versuchen."
+ },
+ "patterns": [
+  [
+   "^(\\S+)-kal olcsóbb, mint a másik láncban \\((.+)\\)$",
+   "$1 günstiger als bei der anderen Kette ($2)"
+  ],
+  [
+   "^(\\S+)-kal olcsóbb, mint a többi (\\d+) láncban \\((.+)\\)$",
+   "$1 günstiger als bei den anderen $2 Ketten ($3)"
+  ],
+  [
+   "^(\\S+)-kal olcsóbb a szokásos áránál \\((.+)\\)$",
+   "$1 günstiger als der übliche Preis ($2)"
+  ],
+  [
+   "^egyes boltjaikban (\\S+)-kal olcsóbb \\(máshol akár (.+)\\)$",
+   "in manchen ihrer Filialen $1 günstiger (anderswo bis zu $2)"
+  ],
+  [
+   "^egységárban a legolcsóbbak közt: (.+) \\(átlag (.+)\\)$",
+   "beim Grundpreis unter den günstigsten: $1 (Durchschnitt $2)"
+  ],
+  [
+   "^Hűségkártyás/appos akció",
+   "Kundenkarten-/App-Aktion"
+  ],
+  [
+   "^Bolti akció",
+   "Aktion im Markt"
+  ],
+  [
+   ", (\\S+)-kal olcsóbb \\(rendesen ([^)]+)\\)",
+   ", $1 günstiger (sonst $2)"
+  ],
+  [
+   " · forrás: fájl: ",
+   " · Quelle: Datei: "
+  ],
+  [
+   " · forrás: kézi",
+   " · Quelle: manuell"
+  ],
+  [
+   " · forrás: ",
+   " · Quelle: "
+  ],
+  [
+   " · csak a boltjaik (\\d+)%-ában kapható",
+   " · nur in $1 % ihrer Filialen erhältlich"
+  ],
+  [
+   "^A szűrőknek csak (\\d+) recept felelt meg ebben a boltban\\.$",
+   "Nur $1 Rezepte passen in diesem Markt zu deinen Filtern."
+  ],
+  [
+   "^A terv túllépi a keretet \\((.+)\\)\\.$",
+   "Der Plan überschreitet das Budget ($1)."
+  ],
+  [
+   "^cijene\\.dev – a horvát láncok napi árlistái \\((\\d+) lánc\\)$",
+   "cijene.dev – Tagespreislisten der kroatischen Ketten ($1 Ketten)"
+  ],
+  [
+   "^GVH Árfigyelő – helyi fájl \\((.+)\\)$",
+   "GVH-Preismonitor – lokale Datei ($1)"
+  ],
+  [
+   "^A horvát árlista letöltése \\((.+)\\)…$",
+   "Lade die kroatische Preisliste ($1)…"
+  ],
+  [
+   "^(.+) árai töltődnek…$",
+   "Preise für $1 werden geladen…"
+  ],
+  [
+   "^Nem sikerült betölteni: ",
+   "Laden fehlgeschlagen: "
+  ],
+  [
+   "^Nincs ilyen recept: ",
+   "Kein solches Rezept: "
+  ],
+  [
+   "^Ismeretlen recept: ",
+   "Unbekanntes Rezept: "
+  ],
+  [
+   "^Ismeretlen végpont: ",
+   "Unbekannter Endpunkt: "
+  ],
+  [
+   "^Nincs ilyen termék: ",
+   "Kein solches Produkt: "
+  ],
+  [
+   "^Ismeretlen művelet: ",
+   "Unbekannte Aktion: "
+  ],
+  [
+   "^Ismeretlen vagy hiányzó bolt: ",
+   "Unbekannter oder fehlender Markt: "
+  ],
+  [
+   "^Nem támogatott kérés: ",
+   "Nicht unterstützte Anfrage: "
+  ],
+  [
+   "^Belső hiba: ",
+   "Interner Fehler: "
+  ],
+  [
+   "\\(becsült\\)",
+   "(geschätzt)"
+  ],
+  [
+   " / csomó \\(kb\\. ",
+   " / Bund (ca. "
+  ],
+  [
+   "-os csomag ≈ ",
+   "-Packung ≈ "
+  ],
+  [
+   "\\bkb\\. ",
+   "ca. "
+  ],
+  [
+   "\\bfél\\b",
+   "½"
+  ],
+  [
+   "\\bmásfél\\b",
+   "1½"
+  ],
+  [
+   "\\bnéhány\\b",
+   "ein paar"
+  ],
+  [
+   "\\(morzsának\\)",
+   "(für Brösel)"
+  ],
+  [
+   "\\(salátának\\)",
+   "(für den Salat)"
+  ],
+  [
+   "\\(csipetkének\\)",
+   "(für die Einlage)"
+  ],
+  [
+   "\\(mellé\\)",
+   "(als Beilage)"
+  ],
+  [
+   "\\(lila\\)",
+   "(rot)"
+  ],
+  [
+   "\\(hamburgerzsemle\\)",
+   "(Burgerbrötchen)"
+  ],
+  [
+   "\\(vastag szeletek\\)",
+   "(dicke Scheiben)"
+  ],
+  [
+   "\\(cérnametélt helyett\\)",
+   "(statt Fadennudeln)"
+  ],
+  [
+   "\\(parmezán helyett\\)",
+   "(statt Parmesan)"
+  ],
+  [
+   "\\(kifli helyett\\)",
+   "(statt Kipferl)"
+  ],
+  [
+   "\\(ramen helyett\\)",
+   "(statt Ramen-Nudeln)"
+  ],
+  [
+   "\\(pita helyett\\)",
+   "(statt Pita)"
+  ],
+  [
+   "\\(búzadara helyett\\)",
+   "(statt Grieß)"
+  ],
+  [
+   "\\(betűtészta helyett\\)",
+   "(statt Buchstabennudeln)"
+  ],
+  [
+   "\\(lebbencs helyett\\)",
+   "(statt Lebbencs-Nudeln)"
+  ],
+  [
+   "\\(áfonya helyett\\)",
+   "(statt Preiselbeeren)"
+  ],
+  [
+   "\\((\\S+) helyett\\)",
+   "(statt $1)"
+  ],
+  [
+   "\\bmellé$",
+   "als Beilage"
+  ],
+  [
+   "\\bpirítósnak$",
+   "für Toast"
+  ],
+  [
+   "\\btartármártásnak$",
+   "für Remoulade"
+  ],
+  [
+   "\\bzsemlemorzsának$",
+   "für Semmelbrösel"
+  ],
+  [
+   "\\böntetnek$",
+   "für das Dressing"
+  ],
+  [
+   "^a hagymához$",
+   "für die Zwiebeln"
+  ],
+  [
+   "\\breszelt héja$",
+   "abgeriebene Schale"
+  ],
+  [
+   "^érett ",
+   "reif: "
+  ],
+  [
+   ", vegyes színű$",
+   ", bunt gemischt"
+  ],
+  [
+   "\\bek olaj$",
+   "EL Öl"
+  ]
+ ],
+ "search": {
+  "kaffee": "kave",
+  "brot": "kenyer",
+  "milch": "tej",
+  "ei": "tojas",
+  "eier": "tojas",
+  "bier": "sor",
+  "wein": "bor",
+  "wasser": "viz",
+  "mineralwasser": "asvanyviz",
+  "limonade": "uditol",
+  "saft": "gyumolcsle",
+  "apfelsaft": "almale",
+  "orangensaft": "narancsle",
+  "schokolade": "csokolade",
+  "kekse": "keksz",
+  "käse": "sajt",
+  "kase": "sajt",
+  "butter": "vaj",
+  "joghurt": "joghurt",
+  "saure sahne": "tejfol",
+  "sauerrahm": "tejfol",
+  "nudeln": "teszta",
+  "reis": "rizs",
+  "zucker": "cukor",
+  "mehl": "liszt",
+  "salz": "so",
+  "pfeffer": "bors",
+  "öl": "olaj",
+  "ol": "olaj",
+  "essig": "ecet",
+  "honig": "mez",
+  "banane": "banan",
+  "bananen": "banan",
+  "apfel": "alma",
+  "äpfel": "alma",
+  "birne": "korte",
+  "orange": "narancs",
+  "orangen": "narancs",
+  "zitrone": "citrom",
+  "trauben": "szolo",
+  "tomate": "paradicsom",
+  "tomaten": "paradicsom",
+  "gurke": "uborka",
+  "zwiebel": "hagyma",
+  "zwiebeln": "hagyma",
+  "knoblauch": "fokhagyma",
+  "kartoffeln": "krumpli",
+  "kartoffel": "krumpli",
+  "karotte": "repa",
+  "karotten": "repa",
+  "möhren": "repa",
+  "hähnchen": "csirke",
+  "hahnchen": "csirke",
+  "huhn": "csirke",
+  "schwein": "sertes",
+  "rind": "marha",
+  "fisch": "hal",
+  "schinken": "sonka",
+  "wurst": "kolbasz",
+  "salami": "szalami",
+  "spülmittel": "mosogatoszer",
+  "spulmittel": "mosogatoszer",
+  "waschmittel": "mososzer",
+  "toilettenpapier": "wc papir",
+  "klopapier": "wc papir",
+  "küchenrolle": "papirtorlo",
+  "kuchenrolle": "papirtorlo",
+  "zahnpasta": "fogkrem",
+  "shampoo": "sampon",
+  "seife": "szappan",
+  "windeln": "pelenka",
+  "taschentücher": "zsebkendo",
+  "taschentucher": "zsebkendo",
+  "tee": "tea",
+  "kakao": "kakao",
+  "chips": "chips",
+  "eis": "jegkrem",
+  "speiseeis": "jegkrem",
+  "pizza": "pizza",
+  "hafer": "zab",
+  "haferflocken": "zabpehely",
+  "müsli": "muzli",
+  "musli": "muzli",
+  "sahne": "tejszin",
+  "pilze": "gomba",
+  "champignons": "gomba",
+  "paprika": "paprika",
+  "kohl": "kaposzta",
+  "blumenkohl": "karfiol",
+  "brokkoli": "brokkoli",
+  "bohnen": "bab",
+  "linsen": "lencse",
+  "thunfisch": "tonhal",
+  "lachs": "lazac",
+  "pute": "pulyka",
+  "marmelade": "lekvar",
+  "spinat": "spenot",
+  "erbsen": "borso",
+  "mais": "kukorica",
+  "quark": "turo",
+  "topfen": "turo"
+ }
+}

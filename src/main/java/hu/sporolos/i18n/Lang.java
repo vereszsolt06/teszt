@@ -9,9 +9,9 @@ import java.util.Locale;
  */
 public final class Lang {
 
-    public static final String HU = "hu", EN = "en", HR = "hr";
+    public static final String HU = "hu", EN = "en", HR = "hr", DE = "de";
     /** A támogatott nyelvek, a felület nyelvválasztójának sorrendjében. */
-    public static final List<String> SUPPORTED = List.of(HU, EN, HR);
+    public static final List<String> SUPPORTED = List.of(HU, EN, HR, DE);
 
     private static final ThreadLocal<String> CURRENT = ThreadLocal.withInitial(() -> HU);
 
