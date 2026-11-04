@@ -110,22 +110,7 @@ cd deploy && cp .env.example .env   # DOMAIN, DB_PASSWORD, ADMIN_PASSWORD
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-**1. TLS a proxyn.** Az app maga nem kezel tanúsítványt; a proxy végzi a HTTPS-t, és az appnak `TRUST_PROXY=true`-t kell kapnia, hogy a kliens IP-címét (kéréskorlát) és a HTTPS-t (HSTS fejléc) a proxytól vegye. Az app az `X-Forwarded-For` **utolsó** elemét tekinti a kliensnek (azt írta a közvetlenül előtte álló proxy; az első elemet a kliens hamisíthatja), vagyis egy proxy-réteget feltételez – CDN + terheléselosztó láncnál a terheléselosztó cserélje le a fejlécet a valódi kliens címére. Caddyvel (automatikus Let's Encrypt-tanúsítvány):
-
-```
-sporolos.example.com {
-    encode gzip
-    # az admin felület és a metrikák csak belső hálózatról (ajánlott)
-    @kivulrol {
-        path /admin /admin/* /api/admin/* /metrics
-        not remote_ip private_ranges
-    }
-    respond @kivulrol 403
-    reverse_proxy app:8080
-}
-```
-
-nginx-szel ugyanez: `proxy_pass http://app:8080;` mellett `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;` és `proxy_set_header X-Forwarded-Proto $scheme;`.
+**1. TLS a proxyn.** Az app maga nem kezel tanúsítványt; a proxy végzi a HTTPS-t, és az appnak `TRUST_PROXY=true`-t kell kapnia, hogy a kliens IP-címét (kéréskorlát) és a HTTPS-t (HSTS fejléc) a proxytól vegye. Az app az `X-Forwarded-For` **utolsó** elemét tekinti a kliensnek (azt írta a közvetlenül előtte álló proxy; az első elemet a kliens hamisíthatja), vagyis egy proxy-réteget feltételez – CDN + terheléselosztó láncnál a terheléselosztó cserélje le a fejlécet a valódi kliens címére. Caddyvel a kész konfiguráció a [`deploy/Caddyfile`](deploy/Caddyfile) (automatikus Let's Encrypt-tanúsítvány, a `/metrics` csak belső hálózatról, opcionálisan az admin is); nginx-szel ugyanez: `proxy_pass http://app:8080;` mellett `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;` és `proxy_set_header X-Forwarded-Proto $scheme;`.
 
 **2. Beállítások élesben:** `HOST=0.0.0.0`, `DATABASE_URL=postgres://…`, `ADMIN_PASSWORD` (legalább 12 karakter – rövidebbre az app figyelmeztet), `TRUST_PROXY=true`. A többi alapértéke éles üzemre van hangolva.
 
