@@ -1,0 +1,21 @@
+# Spórolós Konyha – Caddy reverse proxy: automatikus HTTPS (Let's Encrypt), HTTP → HTTPS átirányítás.
+# A DOMAIN környezeti változó adja a nevet (a docker-compose.prod.yml a .env-ből tölti).
+{$DOMAIN} {
+	# a metrikák csak belső hálózatról (a Prometheus innen olvas); kívülről 403
+	@metrikak_kivulrol {
+		path /metrics
+		not remote_ip private_ranges
+	}
+	respond @metrikak_kivulrol 403
+
+	# ha az admin felületet is csak belső hálózatról / VPN-ről akarod elérni, vedd ki a megjegyzést:
+	# @admin_kivulrol {
+	# 	path /admin /admin/* /api/admin/*
+	# 	not remote_ip private_ranges
+	# }
+	# respond @admin_kivulrol 403
+
+	# az app maga tömörít és küldi a biztonsági fejléceket; a Caddy beállítja az X-Forwarded-For / -Proto
+	# fejléceket, amiket az app a TRUST_PROXY=true miatt elfogad
+	reverse_proxy app:8080
+}

@@ -103,6 +103,13 @@ Az app egyetlen JAR (vagy Docker-kép), külső függőség nélkül. Élesben �
 internet ──HTTPS──▶ reverse proxy (Caddy / nginx / felhős LB) ──HTTP──▶ app :8080 (1…n példány) ──▶ PostgreSQL
 ```
 
+**Gyors telepítés egy szerverre** (a `deploy/` mappa: Caddy automatikus HTTPS-sel + app + PostgreSQL; a CI minden pushnál ellenőrzi a compose- és a Caddy-konfigurációt):
+
+```bash
+cd deploy && cp .env.example .env   # DOMAIN, DB_PASSWORD, ADMIN_PASSWORD
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
 **1. TLS a proxyn.** Az app maga nem kezel tanúsítványt; a proxy végzi a HTTPS-t, és az appnak `TRUST_PROXY=true`-t kell kapnia, hogy a kliens IP-címét (kéréskorlát) és a HTTPS-t (HSTS fejléc) a proxytól vegye. Caddyvel (automatikus Let's Encrypt-tanúsítvány):
 
 ```

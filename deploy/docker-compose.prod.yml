@@ -1,0 +1,73 @@
+# Spórolós Konyha – éles telepítés egy gépen: Caddy (HTTPS) → app → PostgreSQL.
+#
+#   cd deploy
+#   cp .env.example .env      # töltsd ki: DOMAIN, DB_PASSWORD, ADMIN_PASSWORD
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# A DOMAIN DNS-rekordja erre a gépre mutasson, a 80-as és a 443-as port legyen nyitva (a tanúsítványhoz).
+# Az app nem publikál portot: csak a Caddyn át érhető el.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sporolos
+      POSTGRES_USER: sporolos
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Add meg a DB_PASSWORD-öt a .env-ben}
+    volumes:
+      - db-adatok:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sporolos -d sporolos"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build:
+      context: ..
+      args:
+        VERSION: ${VERSION:-prod}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # a DB_PASSWORD URL-ben szerepel: csak betű, szám, - és _ legyen benne
+      DATABASE_URL: postgres://sporolos:${DB_PASSWORD}@db:5432/sporolos
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Add meg az ADMIN_PASSWORD-öt a .env-ben (legalább 12 karakter)}
+      TRUST_PROXY: "true"
+      MARKETS: ${MARKETS:-hu,hr}
+      RATE_LIMIT: ${RATE_LIMIT:-600}
+      MAX_CONCURRENT: ${MAX_CONCURRENT:-64}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
+      LOG_REQUESTS: ${LOG_REQUESTS:-true}
+      JAVA_OPTS: ${JAVA_OPTS:-}
+    volumes:
+      - app-adatok:/app/data
+    stop_grace_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: ${APP_MEMORY:-1g}
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN:?Add meg a DOMAIN-t a .env-ben (pl. sporolos.example.com)}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-adatok:/data
+      - caddy-config:/config
+
+volumes:
+  db-adatok:
+  app-adatok:
+  caddy-adatok:
+  caddy-config:

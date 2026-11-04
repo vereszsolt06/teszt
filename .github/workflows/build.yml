@@ -46,6 +46,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Docker-kép építése
         run: docker build --build-arg VERSION=${GITHUB_SHA::7} -t sporolos-konyha .
+      - name: Éles telepítőcsomag (deploy/) ellenőrzése
+        run: |
+          cd deploy
+          DOMAIN=example.com DB_PASSWORD=teszt ADMIN_PASSWORD=teszt-jelszo-123 docker compose -f docker-compose.prod.yml config -q
+          docker run --rm -e DOMAIN=example.com -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
       - name: docker compose – indul és válaszol
         run: |
           VERSION=${GITHUB_SHA::7} docker compose up -d --build
