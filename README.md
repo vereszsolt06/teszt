@@ -450,6 +450,8 @@ Az app eddig két országban tervezett, de csak magyarul beszélt – ez volt a 
 
 **Németül is.** Horvátország legnagyobb turistacsoportja németajkú, és az EU legnagyobb nyelvi piaca: a felület, mind a 170 recept („Paprikahuhn mit Nockerln”, „Topfenknödel”), az alapanyagok, a generált mondatok és a keresés („Milch” → tej, „Kaffee” → kava) németül is; dkg → g, dl → ml, „am Mittwoch”.
 
+**Akadálymentesség.** Az axe-core átvizsgálás szerint mind a 8 nézet (első indítás, hét, receptlap, lista, akciók, receptek, Nom vagy nem, beállítások) világos és sötét módban is hibátlan: javítva a zöld címkék és gombok kontrasztja (sötét módban sötét szöveg a világos zöld / piros alapon), az adagár-kiemelés, a hét H1 címsora, és a figyelmeztető sávok feliratos régióban vannak.
+
 **Horvátul is.** A horvát piac mellé horvát felület: mind a 170 recept, az alapanyagok és a generált mondatok. A horvát háromféle többes számot ismer (1 porcija · 2 porcije · 5 porcija; 1 glavica · 3 glavice · 5 glavica) – a kliensben az `Intl.PluralRules`, a szerveren a mértékegységek `[egy, néhány, sok]` alakja dönt; a napok tárgyesetben („za srijedu”). A számformátum európai marad (12,49 €), a dkg grammra vált, a dl marad. Nyelvenként egy `options` blokk szabja meg (`numbers`, `metric`).
 
 **Keresés a saját nyelveden.** Minden nyelvi fájlnak van egy keresési szótára (`search`: helyi szó → magyar), és az alapanyagnevek visszafelé is működnek. A keresőszó útja: a felület nyelve → magyar → a piac nyelve. Így egy angol felhasználó a magyar boltban a „milk”-re tejet, a horvátban a „coffee”-ra *kava*-t talál; a horvát szó a horvát boltban változatlan marad.

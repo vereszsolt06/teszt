@@ -397,6 +397,7 @@ const I18N = {
     "🔗 Megosztás": "🔗 Share",
     "A recept linkje a vágólapra került.": "Recipe link copied.",
     "🖨 Nyomtatás": "🖨 Print",
+    "Értesítések": "Notifications",
   },
   hr: {
     "Itt a legolcsóbb": "Ovdje najjeftinije",
@@ -746,6 +747,7 @@ const I18N = {
     "🔗 Megosztás": "🔗 Podijeli",
     "A recept linkje a vágólapra került.": "Poveznica recepta je kopirana.",
     "🖨 Nyomtatás": "🖨 Ispis",
+    "Értesítések": "Obavijesti",
   },
   de: {
     "Itt a legolcsóbb": "Hier am günstigsten",
@@ -1095,6 +1097,7 @@ const I18N = {
     "🔗 Megosztás": "🔗 Teilen",
     "A recept linkje a vágólapra került.": "Rezept-Link kopiert.",
     "🖨 Nyomtatás": "🖨 Drucken",
+    "Értesítések": "Hinweise",
   },
 };
 

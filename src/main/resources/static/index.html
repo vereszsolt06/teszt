@@ -37,15 +37,17 @@
     </div>
   </header>
 
+  <div role="region" aria-label="Értesítések">
   <div class="banner" id="banner" hidden></div>
   <div class="banner offline" id="offline" role="status" hidden>Offline vagy – a legutóbb betöltött hetet és listát látod.</div>
+  </div>
 
   <main id="main" tabindex="-1">
     <!-- HÉT -->
     <section class="view" data-view="het" aria-labelledby="week-title">
       <div class="week-head">
         <div class="week-sum" id="week-sum">
-          <p class="eyebrow" id="week-title">Ez a heted</p>
+          <h1 class="eyebrow" id="week-title">Ez a heted</h1>
           <p class="week-total" id="week-total"><span class="skel-line wide"></span></p>
           <p class="week-meta" id="week-meta"></p>
           <div class="meter" id="week-meter" hidden><span></span></div>

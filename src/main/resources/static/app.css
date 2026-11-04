@@ -14,7 +14,8 @@
   --tag: #ffd84a;
   --tag-ink: #2a2105;
   --red: #c8243a;
-  --leaf: #2d7a4c;
+  --leaf: #276b42;
+  --on-accent: #fff;
   --leaf-soft: #dcecdf;
   --shadow: 0 1px 2px rgb(40 30 10 / 0.06), 0 8px 24px rgb(40 30 10 / 0.07);
   --radius: 20px;
@@ -36,6 +37,7 @@
     --tag-ink: #241c03;
     --red: #ff6b7d;
     --leaf: #6fcf97;
+    --on-accent: #14130f;
     --leaf-soft: #20352a;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.25);
     color-scheme: dark;
@@ -225,11 +227,11 @@ main { max-width: 1180px; margin: 0 auto; padding: 8px 20px 40px; outline: none;
 .dinner-sub { color: var(--muted); font-size: 0.84rem; }
 .dinner .badges { margin-top: 4px; }
 .dinner.leftover { background: color-mix(in srgb, var(--leaf-soft) 55%, var(--paper)); box-shadow: none; border: 1.5px dashed color-mix(in srgb, var(--leaf) 40%, var(--line)); }
-.dinner.leftover .day-chip { background: var(--leaf); }
+.dinner.leftover .day-chip { background: var(--leaf); color: var(--on-accent); }
 .dinner.leftover .dinner-name { font-size: 1.1rem; }
 .dinner.leftover .dinner-hero { min-height: 64px; background: transparent; }
 .dinner.leftover .hero-emoji { font-size: 2.2rem; opacity: 0.8; margin-bottom: 0; }
-.per-serving { background: color-mix(in srgb, var(--tag) 55%, transparent); padding: 0 6px; border-radius: 4px; }
+.dinner-line b.per-serving, .per-serving { color: var(--tag-ink); background: color-mix(in srgb, var(--tag) 80%, transparent); padding: 0 6px; border-radius: 4px; }
 .dinner-acts { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 14px 14px; }
 .act-btn {
   display: inline-flex; align-items: center; gap: 5px;
@@ -275,7 +277,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 8px 20px 40px; outline: none;
 .buy-price { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 700; }
 .buy li.done .buy-name, .buy li.done .buy-price { text-decoration: line-through; color: var(--muted); }
 .buy-deal { grid-column: 2 / -1; justify-self: start; font-size: 0.72rem; font-weight: 700; background: var(--tag); color: var(--tag-ink); padding: 0 7px; border-radius: 3px; }
-.buy-deal.promo { background: var(--leaf); color: #fff; }
+.buy-deal.promo { background: var(--leaf); color: var(--on-accent); }
 .pantry { break-inside: avoid; color: var(--muted); font-size: 0.9rem; padding: 12px 4px 0; margin: 0; }
 
 /* ---------- Nom vagy nem ---------- */
@@ -302,7 +304,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 8px 20px 40px; outline: none;
 .nom-buttons { display: flex; gap: 14px; margin-top: 24px; align-items: center; }
 .nom-btn { border: 2px solid var(--line); background: var(--paper); border-radius: 999px; padding: 12px 24px; font-family: var(--display); font-weight: 800; font-size: 1.05rem; }
 .nom-btn.no { color: var(--red); border-color: color-mix(in srgb, var(--red) 45%, var(--line)); }
-.nom-btn.yes { color: #fff; background: var(--leaf); border-color: var(--leaf); }
+.nom-btn.yes { color: var(--on-accent); background: var(--leaf); border-color: var(--leaf); }
 .nom-btn.later { font-weight: 600; font-size: 0.92rem; padding: 9px 16px; color: var(--muted); }
 .nom-btn[disabled] { opacity: 0.4; cursor: default; }
 .nom-liked { max-width: 760px; margin: 10px auto 0; }
@@ -612,7 +614,7 @@ dialog::backdrop { background: rgb(15 12 5 / 0.5); }
 .offer-prices { display: flex; gap: 8px; align-items: baseline; margin-top: auto; padding-top: 4px; }
 .offer-prices s { color: var(--red); font-size: 0.86rem; }
 .offer-prices b { font-family: var(--display); font-size: 1.3rem; }
-.offer-save { margin-left: auto; background: var(--red); color: #fff; font-weight: 800; font-size: 0.8rem; padding: 1px 7px; border-radius: 4px; }
+.offer-save { margin-left: auto; background: var(--red); color: var(--on-accent); font-weight: 800; font-size: 0.8rem; padding: 1px 7px; border-radius: 4px; }
 .offer-why { font-size: 0.78rem; color: var(--muted); }
 
 /* ---------- saját tételek ---------- */
