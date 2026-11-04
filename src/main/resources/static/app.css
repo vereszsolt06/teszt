@@ -1,9 +1,9 @@
 /* Spórolós Konyha – heti terv; a sárga polccímke a vezérmotívum (árak). */
 
 /* betűk: az apphoz csomagolva (nincs külső betöltés, offline is ugyanígy néz ki); SIL Open Font License, lásd fonts/OFL-*.txt */
-@font-face { font-family: "Bricolage Grotesque"; src: url("fonts/bricolage-grotesque.woff") format("woff"); font-weight: 400 800; font-display: swap; }
-@font-face { font-family: "Atkinson Hyperlegible"; src: url("fonts/atkinson-hyperlegible-400.woff") format("woff"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "Atkinson Hyperlegible"; src: url("fonts/atkinson-hyperlegible-700.woff") format("woff"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Bricolage Grotesque"; src: url("fonts/bricolage-grotesque.woff2") format("woff2"); font-weight: 400 800; font-display: swap; }
+@font-face { font-family: "Atkinson Hyperlegible"; src: url("fonts/atkinson-hyperlegible-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Atkinson Hyperlegible"; src: url("fonts/atkinson-hyperlegible-700.woff2") format("woff2"); font-weight: 700; font-display: swap; }
 
 :root {
   --bg: #f3f0e8;
