@@ -570,8 +570,18 @@ public final class WebServer {
         return i < 0 ? n : n.substring(0, i);
     }
 
-    /** Külföldi árlistában magyarul is lehessen keresni: „kávé” → „kava” (az ország szinonimalistája szerint). */
+    /**
+     * A keresőszó a piac nyelvén. Előbb a felület nyelvéről magyarra („milk” → „tej”, „mlijeko” → „tej”), aztán
+     * külföldi árlistánál magyarról az ország nyelvére („tej” → „mlijeko”, a piac szinonimalistája szerint).
+     */
     private String localQuery(String query) {
+        Translator tr = Translator.forLang(Lang.current());
+        if (tr != null) {
+            String hu = tr.searchToHungarian(query);
+            // ha a szó már a piac nyelvén van (horvát felhasználó a horvát boltban), maradjon az eredeti is
+            if (rt().def() != null && !hu.equals(query) && rt().def().search().containsValue(query)) return query;
+            query = hu;
+        }
         if (rt().def() == null) return query;
         Map<String, String> syn = rt().def().search();
         String whole = syn.get(query);

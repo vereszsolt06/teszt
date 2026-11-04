@@ -49,16 +49,29 @@ public final class Translator {
     private final Map<String, String> words = new HashMap<>();
     private final List<Map.Entry<Pattern, String>> patterns = new ArrayList<>();
     private final Map<String, String[]> units = new HashMap<>();
+    /** Keresés: a nyelv szava (normalizálva) → magyar keresőszó („milk” → „tej”, „mlijeko” → „tej”). */
+    private final Map<String, String> search = new HashMap<>();
     private final Pattern unitPattern;
+    /** Angol számformátum (tizedespont, ezres vessző, € elöl); különben marad a magyar/európai („12,49 €”). */
+    private final boolean englishNumbers;
+    /** Ezeket a magyar konyhai mértékeket váltjuk át (dkg → g, dl → ml). */
+    private final Set<String> metricUnits;
 
     private static final Pattern DECIMAL = Pattern.compile("(\\d),(\\d)");
     /** A magyar konyhai mértékegységek, amiket külföldön nem használnak: dkg → g, dl → ml. */
     private static final Pattern DKG_DL = Pattern.compile("(\\d+(?:,\\d+)?)\\s*(dkg|dl)(?![\\p{L}])", Pattern.UNICODE_CHARACTER_CLASS);
+    /** Szóval kifejezett határozatlan mennyiség (a minták után): többes számot kap. */
+    private static final String FEW_WORDS = "a few|nekoliko|ein paar";
     private static final Pattern MONEY = Pattern.compile("([-−]?)(\\d{1,3}(?: \\d{3})*)(?:\\.(\\d{2}))? (Ft|€)");
 
     Translator(String lang, String dictJson, String recipesJson, String productsJson) {
         this.lang = lang;
         Map<String, Object> d = Json.obj(Json.parse(dictJson));
+        Map<String, Object> opt = d.get("options") == null ? Map.of() : Json.obj(d.get("options"));
+        englishNumbers = "en".equals(opt.get("numbers"));
+        Set<String> mu = new java.util.HashSet<>();
+        for (Object o : opt.get("metric") == null ? List.of("dkg", "dl") : Json.arr(opt.get("metric"))) mu.add(Json.str(o));
+        metricUnits = Set.copyOf(mu);
         Map<String, Object> recipes = d.get("recipes") == null ? Map.of() : Json.obj(d.get("recipes"));
         if (recipesJson != null) {
             for (Object o : Json.arr(Json.obj(Json.parse(recipesJson)).get("recipes"))) {
@@ -76,12 +89,20 @@ public final class Translator {
             for (Object o : Json.arr(Json.obj(Json.parse(productsJson)).get("products"))) {
                 Map<String, Object> p = Json.obj(o);
                 Object t = ingredients.get(Json.str(p.get("key")));
-                if (t != null) exact.put(Json.str(p.get("name")), Json.str(t));
+                if (t != null) {
+                    exact.put(Json.str(p.get("name")), Json.str(t));
+                    search.putIfAbsent(hu.sporolos.data.Catalog.normalize(Json.str(t)), hu.sporolos.data.Catalog.normalize(Json.str(p.get("name"))));
+                }
             }
         }
         if (d.get("phrases") != null) for (var e : Json.obj(d.get("phrases")).entrySet()) exact.put(e.getKey(), Json.str(e.getValue()));
         if (d.get("words") != null) {
             for (var e : Json.obj(d.get("words")).entrySet()) words.put(e.getKey().toLowerCase(Locale.ROOT), Json.str(e.getValue()));
+        }
+        if (d.get("search") != null) {
+            for (var e : Json.obj(d.get("search")).entrySet()) {
+                search.put(hu.sporolos.data.Catalog.normalize(e.getKey()), hu.sporolos.data.Catalog.normalize(Json.str(e.getValue())));
+            }
         }
         if (d.get("patterns") != null) {
             for (Object o : Json.arr(d.get("patterns"))) {
@@ -92,7 +113,8 @@ public final class Translator {
         if (d.get("units") != null) {
             for (var e : Json.obj(d.get("units")).entrySet()) {
                 List<Object> f = Json.arr(e.getValue());
-                units.put(e.getKey(), new String[] {Json.str(f.get(0)), Json.str(f.get(f.size() - 1))});
+                // [egy, több] vagy [egy, néhány (2–4), sok] – a horvát háromféle többes számot ismer
+                units.put(e.getKey(), f.stream().map(Json::str).toArray(String[]::new));
             }
         }
         List<String> keys = new ArrayList<>(units.keySet());
@@ -100,7 +122,7 @@ public final class Translator {
         StringBuilder alt = new StringBuilder();
         for (String k : keys) alt.append(alt.isEmpty() ? "" : "|").append(Pattern.quote(k));
         unitPattern = keys.isEmpty() ? null : Pattern.compile(
-                "(\\d+(?:\\.\\d+)?|½|1½|a few)\\s+(" + alt + ")(?![\\p{L}])|/(" + alt + ")(?![\\p{L}])",
+                "(\\d+(?:[.,]\\d+)?|½|1½|" + FEW_WORDS + ")\\s+(" + alt + ")(?![\\p{L}])|/(" + alt + ")(?![\\p{L}])",
                 Pattern.UNICODE_CHARACTER_CLASS);
     }
 
@@ -125,6 +147,22 @@ public final class Translator {
     }
 
     public String lang() { return lang; }
+
+    /**
+     * Keresőszó a nyelvről magyarra (normalizált bemenet): előbb az egész kifejezés („toilet paper” → „wc papir”),
+     * különben szavanként; amit nem ismer, változatlan (pl. márkanév, vagy a felhasználó eleve magyarul ír).
+     */
+    public String searchToHungarian(String normalized) {
+        if (normalized == null || normalized.isBlank()) return normalized;
+        String whole = search.get(normalized);
+        if (whole != null) return whole;
+        StringBuilder sb = new StringBuilder();
+        for (String w : normalized.split(" ")) {
+            if (sb.length() > 0) sb.append(' ');
+            sb.append(search.getOrDefault(w, w));
+        }
+        return sb.toString();
+    }
 
     /** Van-e pontos fordítás erre a szövegre (receptnév, lépés, alapanyag, kifejezés)? */
     public boolean knows(String s) { return exact.containsKey(s); }
@@ -168,11 +206,11 @@ public final class Translator {
         String w = wordList(s);
         if (w != null) return w;
         if (!generated) return s;
-        String r = metric(s);
+        String r = metric(s, metricUnits);
         for (Map.Entry<Pattern, String> p : patterns) r = p.getKey().matcher(r).replaceAll(p.getValue());
-        r = DECIMAL.matcher(r).replaceAll("$1.$2");
+        if (englishNumbers) r = DECIMAL.matcher(r).replaceAll("$1.$2");
         if (unitPattern != null) r = units(r);
-        r = money(r);
+        if (englishNumbers) r = money(r);
         return r;
     }
 
@@ -202,8 +240,7 @@ public final class Translator {
                 rep = "/" + units.get(m.group(3))[0];
             } else {
                 String n = m.group(1);
-                boolean one = n.equals("1") || n.equals("½");
-                rep = n + " " + units.get(m.group(2))[one ? 0 : 1];
+                rep = n + " " + form(units.get(m.group(2)), n);
             }
             m.appendReplacement(sb, Matcher.quoteReplacement(rep));
         }
@@ -211,16 +248,39 @@ public final class Translator {
         return sb.toString();
     }
 
-    /** „9,4 dkg” → „94 g”, „1,5 dl” → „150 ml”. */
-    static String metric(String s) {
+    /**
+     * A mértékegység alakja a szám szerint. Két alaknál [egy, több] (angol); háromnál [egy, néhány, sok] a horvát
+     * szabállyal: 1, 21, 31… → egy; 2–4, 22–24… → néhány; a többi (és 11–14) → sok; törtszám → néhány.
+     */
+    static String form(String[] forms, String n) {
+        if (forms.length == 1) return forms[0];
+        boolean fraction = n.contains(".") || n.contains(",") || n.contains("½");
+        if (forms.length == 2) return (n.equals("1") || n.equals("½")) ? forms[0] : forms[1];
+        if (fraction) return forms[1];
+        if (!n.matches("\\d+")) return forms[2];
+        long v = Long.parseLong(n);
+        long d = v % 10, h = v % 100;
+        if (d == 1 && h != 11) return forms[0];
+        if (d >= 2 && d <= 4 && (h < 12 || h > 14)) return forms[1];
+        return forms[2];
+    }
+
+    /** „9,4 dkg” → „94 g”, „1,5 dl” → „150 ml”, „120 dkg” → „1,2 kg” (csak a megadott egységeket). */
+    static String metric(String s, Set<String> which) {
+        if (which.isEmpty()) return s;
         Matcher m = DKG_DL.matcher(s);
         StringBuilder sb = new StringBuilder();
         while (m.find()) {
+            if (!which.contains(m.group(2))) {
+                m.appendReplacement(sb, Matcher.quoteReplacement(m.group()));
+                continue;
+            }
             double v = Double.parseDouble(m.group(1).replace(',', '.'));
             boolean dkg = m.group(2).equals("dkg");
             long x = Math.round(v * (dkg ? 10 : 100));
-            String rep = dkg ? (x >= 1000 && x % 100 == 0 ? (x / 1000.0 + "").replace(".0", "") + " kg" : x + " g")
-                    : (x >= 1000 && x % 100 == 0 ? (x / 1000.0 + "").replace(".0", "") + " l" : x + " ml");
+            String big = (x / 1000.0 + "").replace(".0", "").replace('.', ',');
+            String rep = dkg ? (x >= 1000 && x % 100 == 0 ? big + " kg" : x + " g")
+                    : (x >= 1000 && x % 100 == 0 ? big + " l" : x + " ml");
             m.appendReplacement(sb, Matcher.quoteReplacement(rep));
         }
         m.appendTail(sb);

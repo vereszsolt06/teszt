@@ -552,16 +552,43 @@ public final class AllTests {
         eq("hu", Lang.fromAcceptLanguage("hu-HU,hu;q=0.9,en;q=0.8"), "magyar böngésző");
         eq("en", Lang.fromAcceptLanguage("de-DE,de;q=0.9,en;q=0.7"), "német böngésző → az első támogatott (angol)");
         eq("en", Lang.fromAcceptLanguage("fr-FR"), "nem támogatott nyelv → angol");
+        eq("hr", Lang.fromAcceptLanguage("hr-HR,hr;q=0.9,en;q=0.8"), "horvát böngésző");
     }
 
-    static void testEnglishCoversEveryRecipeAndIngredient() {
-        Translator en = Translator.forLang("en");
-        check(en != null && Translator.forLang("hu") == null, "angolra van fordító, magyarra nincs");
-        for (var r : CATALOG.recipes()) {
-            check(en.knows(r.name()), "angol receptnév: " + r.name());
-            for (String step : r.steps()) check(en.knows(step), "angol lépés: " + r.id() + ": " + step);
+    static void testEveryLanguageCoversEveryRecipeAndIngredient() {
+        check(Translator.forLang("hu") == null, "magyarra nincs fordító");
+        for (String lang : List.of("en", "hr")) {
+            Translator tr = Translator.forLang(lang);
+            check(tr != null, "van fordító: " + lang);
+            for (var r : CATALOG.recipes()) {
+                check(tr.knows(r.name()), lang + " receptnév: " + r.name());
+                for (String step : r.steps()) check(tr.knows(step), lang + " lépés: " + r.id() + ": " + step);
+            }
+            for (var p : CATALOG.products().values()) check(tr.knows(p.name()), lang + " alapanyagnév: " + p.name());
         }
-        for (var p : CATALOG.products().values()) check(en.knows(p.name()), "angol alapanyagnév: " + p.name());
+    }
+
+    static void testCroatianGeneratedTexts() {
+        Translator hr = Translator.forLang("hr");
+        eq("1 glavica", hr.text("1 fej", true), "egy");
+        eq("3 glavice", hr.text("3 fej", true), "2–4: néhány");
+        eq("5 glavica", hr.text("5 fej", true), "5+: sok");
+        eq("21 češanj", hr.text("21 gerezd", true), "21: egy");
+        eq("12 češnjeva", hr.text("12 gerezd", true), "12: sok");
+        eq("94 g", hr.text("9,4 dkg", true), "dkg → g");
+        eq("1,5 dl", hr.text("1,5 dl", true), "a dl marad (Horvátországban is használják)");
+        eq("12,49\u00a0€/kom", hr.text("12,49\u00a0€/db", true), "európai számformátum marad");
+        eq("oko 425 g (≈ 4 kom)", hr.text("kb. 425 g (≈ 4 db)", true), "mérlegelős");
+        eq("Crvena paprika, sol, papar", hr.text("Pirospaprika, só, bors", false), "fűszerlista");
+        eq("Srijeda", hr.text("Szerda", true), "napnév");
+    }
+
+    static void testSearchAcrossLanguages() {
+        eq("tej", Translator.forLang("en").searchToHungarian("milk"), "angol → magyar");
+        eq("wc papir", Translator.forLang("en").searchToHungarian("toilet paper"), "kifejezés egyben");
+        eq("tej", Translator.forLang("hr").searchToHungarian("mlijeko"), "horvát → magyar");
+        eq("csirkemellfile", Translator.forLang("en").searchToHungarian("chicken breast fillet"), "alapanyagnév visszafelé");
+        eq("trappista", Translator.forLang("en").searchToHungarian("trappista"), "ismeretlen szó marad");
     }
 
     static void testEnglishGeneratedTexts() {
@@ -617,6 +644,10 @@ public final class AllTests {
                     HttpResponse.BodyHandlers.ofString());
             eq(304, again.statusCode(), "változatlan fájlra 304");
             get(c, base + "/sw.js", 200);
+            List<Object> milk = Json.arr(Json.parse(get(c, base + "/api/search?q=milk&lang=en", 200)));
+            check(!milk.isEmpty(), "angolul is talál tejet („milk”)");
+            Map<String, Object> hrRec = Json.obj(Json.parse(get(c, base + "/api/recipe?id=paprikas-csirke&store=lidl&lang=hr", 200)));
+            eq("Piletina u paprika umaku s noklicama", Json.obj(hrRec.get("recipe")).get("name"), "?lang=hr → horvát");
             get(c, base + "/i18n.js", 200);
         } finally {
             server.stop();
@@ -1310,6 +1341,13 @@ public final class AllTests {
                 // keresés magyarul a horvát árlistában
                 List<Object> hits = Json.arr(Json.parse(get(c, base + "/api/search?q=k%C3%A1v%C3%A9&market=hr", 200)));
                 check(!hits.isEmpty() && Json.str(Json.obj(hits.get(0)).get("name")).startsWith("Kava"), "kávé → kava");
+                // angolul („coffee” → kávé → kava) és horvátul („kava” marad) is
+                List<Object> en = Json.arr(Json.parse(get(c, base + "/api/search?q=coffee&market=hr&lang=en", 200)));
+                check(!en.isEmpty() && Json.str(Json.obj(en.get(0)).get("name")).startsWith("Kava"), "coffee → kava");
+                List<Object> hrHits = Json.arr(Json.parse(get(c, base + "/api/search?q=kava&market=hr&lang=hr", 200)));
+                check(!hrHits.isEmpty() && Json.str(Json.obj(hrHits.get(0)).get("name")).startsWith("Kava"), "kava → kava");
+                Map<String, Object> wHr = Json.obj(Json.parse(get(c, base + "/api/week?id=" + pid + "&lang=hr", 200)));
+                check(wHr.toString().contains("€"), "horvátul is euró");
                 // az akciók között ott a Konzum csirkemellje, euróban
                 List<Object> offers = Json.arr(Json.parse(get(c, base + "/api/offers?market=hr&ingredients=false", 200)));
                 check(offers.stream().anyMatch(o -> "PROMO".equals(Json.obj(o).get("type")) && Json.str(Json.obj(o).get("reason")).contains("€")), "horvát bolti akció euróban");

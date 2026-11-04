@@ -1,0 +1,2069 @@
+{
+ "_comment": "Hrvatski. Ugyanaz a szerkezet, mint az en.json-é; units: [egy, 2–4, 5+] a horvát többes szám szerint. A számformátum marad európai (12,49 €), a dkg grammra vált, a dl marad (Horvátországban is használják).",
+ "options": {
+  "numbers": "eu",
+  "metric": [
+   "dkg"
+  ]
+ },
+ "recipes": {
+  "paprikas-csirke": {
+   "name": "Piletina u paprika umaku s noklicama",
+   "steps": [
+    "Sitno nasjeckaj luk i prži ga na ulju dok ne postane staklast, makni s vatre i pospi crvenom paprikom.",
+    "Dodaj pileće batke, narezanu papriku i rajčicu, posoli i pirjaj poklopljeno s malo vode oko 40 minuta.",
+    "Za noklice izmiješaj brašno s jajima, solju i toliko vode da dobiješ gusto tijesto, pa ga kidaj u kipuću slanu vodu.",
+    "Vrhnje glatko izmiješaj sa žlicom brašna, dodaj u umak i kuhaj još 2–3 minute."
+   ]
+  },
+  "bolognai": {
+   "name": "Špageti bolonjez",
+   "steps": [
+    "Na ulju poprži luk, češnjak i naribanu mrkvu.",
+    "Dodaj mljeveno meso i prži dok ne posivi, zatim prelij pasiranom rajčicom, začini i kuhaj 20 minuta.",
+    "U međuvremenu skuhaj špagete u slanoj vodi.",
+    "Umak posloži preko tjestenine i pospi naribanim sirom."
+   ]
+  },
+  "rakott-krumpli": {
+   "name": "Mađarski složenac od krumpira",
+   "steps": [
+    "Skuhaj krumpir u ljusci i jaja na tvrdo, oguli ih i nareži na kolutove.",
+    "Slaži u namašćen pekač: krumpir, jaja, kobasica, vrhnje – na vrhu neka bude krumpir i vrhnje.",
+    "Peci u pećnici na 200 °C oko 35–40 minuta dok ne porumeni."
+   ]
+  },
+  "lecso": {
+   "name": "Lečo s kobasicom",
+   "steps": [
+    "Na ulju poprži luk i dodaj narezanu kobasicu.",
+    "Dodaj papriku narezanu na trakice, nakon 10 minuta narezanu rajčicu i posoli.",
+    "Kad povrće omekša, umiješaj jaja i miješaj dok se ne stisnu. Posluži sa svježim kruhom."
+   ]
+  },
+  "rantott-csirke": {
+   "name": "Pohana pileća prsa s krumpirom i peršinom",
+   "steps": [
+    "Pileća prsa nareži na odreske, istuci ih i posoli.",
+    "Uvaljaj ih u brašno, razmućena jaja pa u krušne mrvice i prži u dosta ulja.",
+    "Krumpir skuhaj u slanoj vodi i promiješaj s maslacem i peršinom."
+   ]
+  },
+  "csirkes-curry": {
+   "name": "Piletina u curryju s kokosom i rižom",
+   "steps": [
+    "Skuhaj rižu u dvostrukoj količini slane vode.",
+    "Poprži luk i češnjak, dodaj piletinu narezanu na kocke i 2 žlice curryja.",
+    "Dodaj papriku na trakice i kokosovo mlijeko te kuhaj 15 minuta. Posluži s rižom."
+   ]
+  },
+  "chili-con-carne": {
+   "name": "Chili con carne",
+   "steps": [
+    "Na luku poprži mljeveno meso i začini čilijem i mljevenim kuminom.",
+    "Prelij pasiranom rajčicom, dodaj ocijeđeni grah i kukuruz te kuhaj 25 minuta.",
+    "Posluži s kuhanom rižom ili kruhom."
+   ]
+  },
+  "tortilla": {
+   "name": "Tortilje s piletinom",
+   "steps": [
+    "Piletinu nareži na trakice, začini i ispeci u tavi.",
+    "Tortilje zagrij u suhoj tavi i premaži ih vrhnjem.",
+    "Napuni ih mesom, kukuruzom, povrćem i naribanim sirom pa čvrsto zarolaj."
+   ]
+  },
+  "rantotta": {
+   "name": "Kajgana s paprikom i rajčicom",
+   "steps": [
+    "Papriku i rajčicu nareži na kockice i pirjaj na maslacu 3 minute.",
+    "Prelij razmućenim, posoljenim jajima i na laganoj vatri miješaj dok ne bude kremasto. Posluži s tostom."
+   ]
+  },
+  "palacsinta": {
+   "name": "Palačinke s pekmezom i sirom",
+   "steps": [
+    "Brašno, mlijeko, jaja, prstohvat soli i malo ulja izmiješaj bez grudica i ostavi 15 minuta.",
+    "Na vrućoj tavi peci tanke palačinke.",
+    "Svježi sir izmiješaj sa šećerom i limunovom koricom; pola palačinki napuni pekmezom, pola sirom."
+   ]
+  },
+  "turos-csusza": {
+   "name": "Tjestenina sa svježim sirom i hrskavom slaninom",
+   "steps": [
+    "Skuhaj tjesteninu u slanoj vodi.",
+    "Slaninu nareži na kockice i prži dok ne postane hrskava.",
+    "Tjesteninu promiješaj s otopljenom masti, a na vrh stavi svježi sir, vrhnje i prženu slaninu."
+   ]
+  },
+  "lencsefozelek": {
+   "name": "Varivo od leće s hrenovkama",
+   "steps": [
+    "Namočenu leću skuhaj s lovorovim listom dok ne omekša.",
+    "Na ulju poprži luk, pospi brašnom, napravi zapršku i dodaj je leći.",
+    "Začini octom i solju, razrijedi vrhnjem. Posluži s kuhanim hrenovkama."
+   ]
+  },
+  "zoldborsofozelek": {
+   "name": "Varivo od graška s polpetama",
+   "steps": [
+    "Mljeveno meso izmijesi s namočenim pecivom, jajem, naribanim lukom i začinima, oblikuj polpete i ispeci ih.",
+    "Grašak pirjaj na malo masnoće s prstohvatom šećera, pa ga skuhaj s malo vode.",
+    "Zgusni mlijekom razmućenim s brašnom i začini peršinom."
+   ]
+  },
+  "spenotfozelek": {
+   "name": "Varivo od špinata s jajima na oko",
+   "steps": [
+    "Špinat odmrzni s češnjakom i zakuhaj.",
+    "Zgusni mlijekom razmućenim s brašnom i posoli.",
+    "Posluži s jajima na oko i krumpirom kuhanim u slanoj vodi."
+   ]
+  },
+  "gombapaprikas": {
+   "name": "Gljive u paprika umaku s noklicama",
+   "steps": [
+    "Poprži luk, pospi crvenom paprikom, dodaj narezane gljive i pirjaj ih u vlastitom soku dok ne omekšaju.",
+    "Zgusni vrhnjem.",
+    "U međuvremenu od brašna, jaja i vode napravi noklice."
+   ]
+  },
+  "kaposztas-teszta": {
+   "name": "Tjestenina s kupusom",
+   "steps": [
+    "Kupus naribaj, posoli i nakon 10 minuta ocijedi.",
+    "Na ulju karameliziraj šećer, dodaj kupus i prži dok ne porumeni.",
+    "Promiješaj s kuhanom tjesteninom i posluži s paprom."
+   ]
+  },
+  "brokkolis-teszta": {
+   "name": "Kremasta tjestenina s brokulom i slaninom",
+   "steps": [
+    "Tjesteninu i cvjetove brokule skuhaj u istoj slanoj vodi (brokulu zadnje 4 minute).",
+    "Poprži slaninu i češnjak, prelij vrhnjem za kuhanje i umiješaj naribani sir.",
+    "Ocijeđenu tjesteninu i brokulu promiješaj s umakom."
+   ]
+  },
+  "tonhalas-teszta": {
+   "name": "Penne s tunom i rajčicom",
+   "steps": [
+    "Na ulju poprži luk i češnjak, prelij pasiranom rajčicom i kuhaj 10 minuta.",
+    "Umiješaj ocijeđenu tunu i začini.",
+    "Kuhane penne promiješaj s umakom."
+   ]
+  },
+  "sult-hal": {
+   "name": "Riblji file na maslacu s rižom i graškom",
+   "steps": [
+    "Skuhaj rižu zajedno s graškom.",
+    "Odmrznutu ribu posoli, uvaljaj u brašno i peci na maslacu 3–4 minute sa svake strane.",
+    "Pokapaj limunovim sokom i posluži s rižom i graškom."
+   ]
+  },
+  "csicseri-curry": {
+   "name": "Curry od slanutka sa špinatom",
+   "steps": [
+    "Poprži luk i začini ga curryjem.",
+    "Dodaj slanutak, pasiranu rajčicu i kokosovo mlijeko te kuhaj 15 minuta.",
+    "Umiješaj špinat i posluži s rižom."
+   ]
+  },
+  "karaj-zoldseg": {
+   "name": "Svinjski kare s povrćem iz pećnice",
+   "steps": [
+    "Kare nareži na odreske i začini.",
+    "Povrće nareži na veće komade, stavi u pekač, pokapaj uljem i na njega položi meso.",
+    "Peci poklopljeno na 200 °C 40 minuta, zatim otklopljeno još 20 minuta."
+   ]
+  },
+  "porkolt": {
+   "name": "Svinjski perkelt s tjesteninom i salatom od krastavaca",
+   "steps": [
+    "Puno luka pirjaj na masnoći dok ne postane staklast, makni s vatre i pospi crvenom paprikom.",
+    "Dodaj meso narezano na kocke, posoli, začini kimom i pirjaj s malo vode 1,5 sat dok ne omekša. Usput dodaj papriku i rajčicu.",
+    "Skuhaj tjesteninu, krastavac tanko nareži i napravi salatu s vodom, octom i šećerom."
+   ]
+  },
+  "pizza-tortilla": {
+   "name": "Brza pizza od tortilje",
+   "steps": [
+    "Tortilje stavi na papir za pečenje i premaži začinjenom pasiranom rajčicom.",
+    "Pospi narezanim gljivama, kukuruzom i natrganom mozzarellom.",
+    "Peci na 220 °C 8–10 minuta dok ne postanu hrskave."
+   ]
+  },
+  "zabkasa": {
+   "name": "Zobena kaša s jabukom i cimetom",
+   "steps": [
+    "Zobene pahuljice zakuhaj s mlijekom i kuhaj 4–5 minuta uz miješanje.",
+    "Umiješaj jednu naribanu jabuku i začini cimetom.",
+    "Na vrh stavi narezanu jabuku i bananu."
+   ]
+  },
+  "rizi-bizi-csirke": {
+   "name": "Pečeni pileći batci s rižom i graškom",
+   "steps": [
+    "Batke začini i peci na 200 °C oko 45 minuta dok ne postanu hrskavi.",
+    "Rižu skuhaj s graškom.",
+    "Posluži zajedno, preliveno sokom od pečenja."
+   ]
+  },
+  "joghurtos-csirke": {
+   "name": "Pileća salata s jogurtom i češnjakom",
+   "steps": [
+    "Začinjena pileća prsa ispeci u grill tavi i nareži na trakice.",
+    "Povrće nareži na kockice.",
+    "Jogurt izmiješaj sa zgnječenim češnjakom, solju i koprom pa sve promiješaj. Posluži s tostom."
+   ]
+  },
+  "gulyasleves": {
+   "name": "Gulaš juha",
+   "steps": [
+    "Luk pirjaj na masnoći dok ne postane staklast, makni s vatre i pospi crvenom paprikom.",
+    "Dodaj meso narezano na kocke, začini kimom i zgnječenim češnjakom te pirjaj u vlastitom soku 1 sat.",
+    "Prelij s 2 litre vode, dodaj narezanu mrkvu, korijen peršina, papriku i rajčicu.",
+    "Kad je meso gotovo mekano, dodaj krumpir narezan na kocke i kuhaj dok sve ne omekša."
+   ]
+  },
+  "ujhazi": {
+   "name": "Kokošja juha Újházi",
+   "steps": [
+    "Kokoš stavi u hladnu vodu i kuhaj na vrlo laganoj vatri; skidaj pjenu.",
+    "Nakon dva sata dodaj očišćeno povrće, luk i začine.",
+    "Kad se meso odvaja od kosti, procijedi juhu, a tanke rezance skuhaj posebno. Posluži s mesom i povrćem."
+   ]
+  },
+  "halaszle": {
+   "name": "Riblji paprikaš (halászlé)",
+   "steps": [
+    "Sitno nasjeckani luk kuhaj u 1,5 litri vode 30 minuta, pa ga protisni kroz sito.",
+    "Dodaj posoljene komade ribe, papriku, rajčicu i puno crvene paprike.",
+    "Kuhaj na jakoj vatri 20 minuta bez miješanja, samo protresaj lonac. Posluži sa svježim kruhom."
+   ]
+  },
+  "harcsapaprikas": {
+   "name": "Som u paprika umaku s tjesteninom i sirom",
+   "steps": [
+    "Poprži luk, pospi crvenom paprikom, dodaj papriku, rajčicu i malo vode.",
+    "Položi posoljene komade soma i kuhaj 15 minuta bez miješanja.",
+    "Zgusni vrhnjem. Skuhaj tjesteninu i posluži je uz svježi sir."
+   ]
+  },
+  "karfiolleves": {
+   "name": "Krem juha od cvjetače s vrhnjem",
+   "steps": [
+    "Cvjetove cvjetače, narezanu mrkvu i korijen peršina skuhaj u 1,5 litri slane vode.",
+    "Vrhnje glatko izmiješaj s brašnom i malo hladne vode pa time zgusni juhu.",
+    "Kuhaj još 3 minute i začini muškatnim oraščićem."
+   ]
+  },
+  "rantott-karfiol": {
+   "name": "Pohana cvjetača s krumpirom i peršinom",
+   "steps": [
+    "Cvjetove cvjetače kratko prokuhaj u slanoj vodi i ostavi da se ohlade.",
+    "Uvaljaj ih u brašno, jaje i krušne mrvice te prži u dosta ulja dok ne porumene.",
+    "Skuhaj krumpir i promiješaj ga s maslacem i peršinom. Jogurt izmiješaj sa senfom i solju u umak."
+   ]
+  },
+  "kelkaposzta-fozelek": {
+   "name": "Varivo od kelja s pečenom kobasicom",
+   "steps": [
+    "Kelj nareži na trakice, krumpir na kocke i skuhaj ih u malo slane vode s kimom.",
+    "Zgusni mlijekom razmućenim s brašnom i zgnječenim češnjakom pa zakuhaj.",
+    "Kobasicu ispeci u tavi i stavi je na varivo."
+   ]
+  },
+  "repafozelek": {
+   "name": "Varivo od mrkve s jajima na oko",
+   "steps": [
+    "Narezanu mrkvu pirjaj na maslacu s malo šećera, pa je skuhaj s malo vode.",
+    "Zgusni mlijekom razmućenim s brašnom i začini sjeckanim peršinom.",
+    "Posluži s jajima na oko."
+   ]
+  },
+  "krumplifozelek": {
+   "name": "Varivo od krumpira s hrenovkama",
+   "steps": [
+    "Krumpir narezan na kocke skuhaj u slanoj vodi s lovorovim listom.",
+    "Na masnoći poprži luk, napravi zapršku s brašnom i crvenom paprikom i dodaj krumpiru.",
+    "Začini vrhnjem i malo octa. Posluži s kuhanim hrenovkama."
+   ]
+  },
+  "krumplileves": {
+   "name": "Juha od krumpira s kobasicom",
+   "steps": [
+    "Poprži luk, pospi crvenom paprikom i prelij s 1,5 litrom vode.",
+    "U njoj skuhaj krumpir narezan na kocke, mrkvu, korijen peršina i narezanu kobasicu.",
+    "Kad sve omekša, zgusni vrhnjem razmućenim s brašnom."
+   ]
+  },
+  "zoldborsoleves": {
+   "name": "Juha od graška",
+   "steps": [
+    "Narezanu mrkvu i korijen peršina pirjaj na maslacu i dodaj grašak.",
+    "Pospi brašnom, prelij s 1,5 litrom vode i kuhaj 15 minuta.",
+    "Od jajeta i malo brašna zamijesi tijesto i kidaj male komadiće u juhu."
+   ]
+  },
+  "brassoi": {
+   "name": "Svinjetina na brašovski s prženim krumpirom",
+   "steps": [
+    "Meso nareži na trakice, zapeci ga s lukom na masnoći pa pirjaj s malo vode dok ne omekša.",
+    "Krumpir nareži na kocke i prži u ulju dok ne postane hrskav.",
+    "U meso umiješaj zgnječeni češnjak i majoran pa promiješaj s krumpirom. Posluži s kiselim krastavcima."
+   ]
+  },
+  "rantott-hus": {
+   "name": "Pohani svinjski odrezak s rižom",
+   "steps": [
+    "Kare nareži na odreske, istuci ih i posoli.",
+    "Uvaljaj u brašno, razmućena jaja pa u krušne mrvice i prži u dosta ulja.",
+    "Posluži s rižom i kiselim krastavcima."
+   ]
+  },
+  "sult-oldalas": {
+   "name": "Pečena rebarca s krumpirom i lukom",
+   "steps": [
+    "Rebarca posoli, premaži senfom s češnjakom i peci poklopljeno s malo vode na 160 °C 1 sat.",
+    "Dodaj krumpir narezan na kriške i luk te peci otklopljeno na 200 °C još 40 minuta dok sve ne postane hrskavo."
+   ]
+  },
+  "hagymas-tarja": {
+   "name": "Svinjski vrat s hrskavim lukom i pomfritom",
+   "steps": [
+    "Odreske vrata istuci, začini i peci u vrućoj tavi 3–4 minute sa svake strane.",
+    "Kolutove luka uvaljaj u brašno i prži u dosta ulja dok ne postanu hrskavi.",
+    "Pomfrit ispeci u pećnici ili ulju, a od krastavca napravi salatu s octom."
+   ]
+  },
+  "csirkeszarny": {
+   "name": "Hrskava pečena pileća krilca s jogurtom i češnjakom",
+   "steps": [
+    "Krilca promiješaj s uljem i začinima i stavi u pekač pokraj krumpira narezanog na kriške.",
+    "Peci na 220 °C oko 40 minuta dok ne postanu hrskava, na pola ih okreni.",
+    "Jogurt izmiješaj sa zgnječenim češnjakom i solju u umak."
+   ]
+  },
+  "sult-csirke": {
+   "name": "Cijelo pečeno pile na povrću",
+   "steps": [
+    "Pile začini iznutra i izvana, u trbuh stavi prepolovljeni limun, a kožu premaži mekanim maslacem.",
+    "U pekač stavi krupno narezan krumpir, mrkvu i luk, a na njih položi pile.",
+    "Peci na 200 °C oko 80 minuta, povremeno ga prelijevaj sokom od pečenja."
+   ]
+  },
+  "pulykasalata": {
+   "name": "Salata s puretinom s roštilja",
+   "steps": [
+    "Pureća prsa nareži na odreske, začini i ispeci u vrućoj tavi.",
+    "Povrće nasjeckaj i promiješaj s kukuruzom.",
+    "Jogurt izmiješaj sa senfom i solju u preljev i stavi ga na salatu zajedno s mesom narezanim na trakice. Posluži s pecivom."
+   ]
+  },
+  "rantott-sajt": {
+   "name": "Pohani sir s pomfritom",
+   "steps": [
+    "Sir nareži na ploške debele 1 cm.",
+    "Dvaput ih uvaljaj u brašno, jaje i krušne mrvice da se sir ne razlije tijekom prženja.",
+    "Brzo ih isprži u dosta vrućeg ulja. Posluži s pomfritom i umakom od jogurta i senfa."
+   ]
+  },
+  "melegszendvics": {
+   "name": "Topli sendviči sa šunkom i sirom",
+   "steps": [
+    "Kriške kruha tanko namaži maslacem.",
+    "Stavi na njih šunku, kolutove rajčice i naribani sir.",
+    "Peci u pećnici na 200 °C 6–8 minuta, dok se sir ne otopi."
+   ]
+  },
+  "gorog-salata": {
+   "name": "Grčka salata",
+   "steps": [
+    "Rajčicu, krastavac i papriku nareži na veće kocke, a luk na tanke kolutove.",
+    "Promiješaj, posoli, popapri i prelij maslinovim uljem.",
+    "Na vrh stavi fetu u komadu ili grubo izmrvljenu i pospi origanom."
+   ]
+  },
+  "korozott": {
+   "name": "Körözött (namaz od sira s paprikom) i svježi kruh",
+   "steps": [
+    "Svježi sir vilicom izgnječi s mekanim maslacem.",
+    "Umiješaj vrlo sitno nasjeckan luk, crvenu papriku, kim i sol.",
+    "Posluži sa svježim kruhom i narezanom paprikom."
+   ]
+  },
+  "sajtos-teszta": {
+   "name": "Tjestenina sa sirom i vrhnjem",
+   "steps": [
+    "Tjesteninu skuhaj u slanoj vodi, ocijedi i promiješaj s maslacem.",
+    "Umiješaj pola vrhnja; pri posluživanju na vrh stavi ostatak vrhnja i puno naribanog sira."
+   ]
+  },
+  "almas-pite": {
+   "name": "Pita od jabuka",
+   "steps": [
+    "Brašno izmrvi s hladnim maslacem, dodaj šećer u prahu, jaje, vrhnje i prašak za pecivo pa brzo zamijesi tijesto. Stavi ga u hladnjak na 30 minuta.",
+    "Jabuke naribaj, ocijedi i pirjaj sa šećerom, cimetom i limunovim sokom.",
+    "Pola tijesta razvaljaj u lim, rasporedi nadjev, pokrij drugom polovicom i izbockaj vilicom.",
+    "Peci na 180 °C oko 35 minuta dok ne porumeni."
+   ]
+  },
+  "tojasos-nokedli": {
+   "name": "Noklice s jajima i salata od krastavaca",
+   "steps": [
+    "Od brašna, 3 jaja, soli i vode zamijesi tijesto za noklice i kidaj ga u kipuću slanu vodu.",
+    "Kuhane noklice promiješaj na ulju, prelij ostatkom razmućenih jaja i miješaj dok se ne stisnu.",
+    "Krastavac tanko nareži, stavi u vodu s octom i šećerom i pospi crvenom paprikom."
+   ]
+  },
+  "rakott-karfiol": {
+   "name": "Složenac od cvjetače",
+   "steps": [
+    "Cvjetove cvjetače napola skuhaj u slanoj vodi, a rižu skuhaj posebno.",
+    "Mljeveno meso poprži s lukom, začini i promiješaj s rižom.",
+    "U pekač slaži cvjetaču i meso, a na vrh stavi vrhnje izmiješano s jajem i naribani sir.",
+    "Peci na 200 °C oko 30 minuta dok ne porumeni."
+   ]
+  },
+  "rizses-hus": {
+   "name": "Riža s piletinom i povrćem",
+   "steps": [
+    "Poprži luk, dodaj piletinu narezanu na kocke i prži dok ne posivi.",
+    "Dodaj rižu i mrkvu narezanu na kocke, promiješaj i prelij s dvostruko više vode od riže.",
+    "Kuhaj poklopljeno 18 minuta; zadnjih 5 minuta umiješaj grašak i kukuruz."
+   ]
+  },
+  "gyumolcssalata": {
+   "name": "Voćna salata s jogurtom",
+   "steps": [
+    "Voće operi, oguli i nareži na zalogaje.",
+    "Pokapaj limunovim sokom da ne potamni.",
+    "Posluži s jogurtom i medom."
+   ]
+  },
+  "kakaos-palacsinta": {
+   "name": "Palačinke s kakaom",
+   "steps": [
+    "Brašno, mlijeko, jaja, prstohvat soli i malo ulja izmiješaj bez grudica i ostavi 15 minuta.",
+    "Na vrućoj tavi peci tanke palačinke.",
+    "Kakao pomiješaj sa šećerom u prahu, pospi palačinke i zarolaj ih."
+   ]
+  },
+  "kekszes-kremes": {
+   "name": "Krem s keksima u čaši",
+   "steps": [
+    "Slatko vrhnje istuci u čvrst šlag, svježi sir izmiješaj sa šećerom u prahu, pa ih lagano sjedini.",
+    "U čaše slaži izmrvljene kekse, krem i kolutove banane.",
+    "Vrh pospi kakaom i do posluživanja drži u hladnjaku."
+   ]
+  },
+  "carbonara": {
+   "name": "Špageti carbonara",
+   "steps": [
+    "Špagete skuhaj u puno slane vode; odvoji šalicu vode od kuhanja.",
+    "Slaninu narezanu na kockice prži u tavi dok ne pusti mast.",
+    "Jaja izmiješaj s naribanim sirom i puno papra.",
+    "Ocijeđenu tjesteninu promiješaj sa slaninom, makni s vatre i umiješaj jaja sa sirom i malo vode od kuhanja, da bude kremasto, a ne kajgana."
+   ]
+  },
+  "smash-burger": {
+   "name": "Smash burgeri s pomfritom",
+   "steps": [
+    "Pomfrit ispeci u pećnici ili fritezi na vrući zrak prema uputi na pakiranju.",
+    "Od mljevenog mesa oblikuj 8 kuglica i u jako vrućoj tavi ih spljošti ravnim predmetom; posoli i popapri.",
+    "Nakon 1,5 minute okreni ih, stavi sir i peci još minutu.",
+    "U prepolovljena, zapečena peciva stavi po dvije pljeskavice, luk, rajčicu, krastavac i umak."
+   ]
+  },
+  "fajitas": {
+   "name": "Pileći fajitas",
+   "steps": [
+    "Pileća prsa nareži na tanke trakice i promiješaj sa začinima.",
+    "Ispeci ih u vrućoj tavi za nekoliko minuta, pa izvadi.",
+    "U istoj tavi poprži trakice paprike i luka da ostanu hrskavi i vrati meso.",
+    "Posluži s toplim tortiljama, vrhnjem i naribanim sirom; svatko zarola svoju."
+   ]
+  },
+  "citromos-lazac": {
+   "name": "Losos na maslacu s limunom, rižom i brokulom",
+   "steps": [
+    "Skuhaj rižu u dvostrukoj količini slane vode.",
+    "Cvjetove brokule kuhaj na pari ili u slanoj vodi 4 minute.",
+    "Losos posoli, popapri i peci kožom prema dolje 4 minute, pa s druge strane 2 minute (u fritezi na vrući zrak 10 minuta na 200 °C).",
+    "U tavi zapjeni maslac s limunovim sokom i koprom i prelij preko ribe."
+   ]
+  },
+  "lasagne": {
+   "name": "Lazanje bolonjez",
+   "steps": [
+    "Poprži luk i naribanu mrkvu, dodaj mljeveno meso, zatim pasiranu rajčicu i kuhaj 20 minuta.",
+    "Za bešamel otopi maslac, umiješaj brašno, pa postupno mlijeko i kuhaj dok se ne zgusne; začini solju i muškatnim oraščićem.",
+    "U pekač slaži: ragu, list lazanja, bešamel – ponovi tri puta, a na vrh stavi sir.",
+    "Peci u pećnici na 180 °C oko 40 minuta i ostavi 10 minuta prije rezanja."
+   ]
+  },
+  "csirkes-ramen": {
+   "name": "Pileći ramen s jajem",
+   "steps": [
+    "Temeljac kuhaj s đumbirom, češnjakom i sojinim umakom 15 minuta.",
+    "U temeljcu kuhaj pileća prsa 12 minuta, izvadi ih i nareži.",
+    "Jaja kuhaj 7 minuta, stavi u hladnu vodu, oguli i prepolovi.",
+    "U juhu dodaj narezane gljive, mrkvu i rezance; posluži u zdjelama s piletinom i jajem."
+   ]
+  },
+  "csirkes-paella": {
+   "name": "Paella s piletinom i povrćem",
+   "steps": [
+    "Pileće batke zapeci sa svih strana u širokoj tavi i izvadi ih.",
+    "Na masnoći pirjaj luk, češnjak, papriku i naribanu rajčicu, dodaj začine i rižu.",
+    "Prelij temeljcem, vrati meso i kuhaj 20 minuta bez miješanja.",
+    "Zadnjih 5 minuta pospi grašak; posluži s kriškama limuna."
+   ]
+  },
+  "gombas-rizotto": {
+   "name": "Rižoto s gljivama",
+   "steps": [
+    "Luk pirjaj na pola maslaca dok ne postane staklast, dodaj narezane gljive i poprži ih u vlastitom soku.",
+    "Dodaj rižu i prži je 2 minute uz miješanje.",
+    "Dolijevaj vrući temeljac kutlaču po kutlaču i svaki put pričekaj da ga upije; oko 18 minuta.",
+    "Na kraju umiješaj ostatak maslaca i naribani sir i ostavi 2 minute."
+   ]
+  },
+  "souvlaki": {
+   "name": "Pileći souvlaki s tzatzikijem",
+   "steps": [
+    "Piletinu narezanu na kocke mariniraj 20 minuta u maslinovom ulju, limunovom soku, origanu i češnjaku.",
+    "Nabodi na ražnjiće i ispeci sa svih strana u grill tavi ili pećnici.",
+    "Za tzatziki jogurt izmiješaj s naribanim, ocijeđenim krastavcem, češnjakom i solju.",
+    "U tople tortilje stavi meso, rajčicu, luk i tzatziki."
+   ]
+  },
+  "halas-taco": {
+   "name": "Hrskavi tacosi s ribom",
+   "steps": [
+    "Ribu začini, ispeci 3 minute sa svake strane pa je vilicom razdvoji na komadiće.",
+    "Kupus tanko nareži i izgnječi s limunovim sokom i solju.",
+    "Jogurt izmiješaj s limunovim sokom i čilijem u preljev.",
+    "U tortilje stavi kupus, ribu, kukuruz i preljev."
+   ]
+  },
+  "tikka-masala": {
+   "name": "Piletina tikka masala",
+   "steps": [
+    "Piletinu mariniraj 30 minuta u jogurtu i polovici začina, pa je zapeci u vrućoj tavi.",
+    "Pirjaj luk i češnjak, dodaj ostatak začina i pasiranu rajčicu te kuhaj 10 minuta.",
+    "Umiješaj vrhnje za kuhanje i piletinu i krčkaj još 10 minuta.",
+    "Posluži s rižom."
+   ]
+  },
+  "chili-sin-carne": {
+   "name": "Chili sin carne (chili bez mesa)",
+   "steps": [
+    "Pirjaj luk i papriku narezanu na kocke i pospi začinima.",
+    "Dodaj pasiranu rajčicu, ocijeđeni grah i kukuruz i kuhaj 20 minuta.",
+    "Posluži s rižom ili kruhom; dobro ide i vrhnje."
+   ]
+  },
+  "turogomboc": {
+   "name": "Okruglice od sira",
+   "steps": [
+    "Svježi sir zamijesi s jajima, brašnom, solju i limunovom koricom i stavi u hladnjak na 30 minuta.",
+    "Krušne mrvice poprži na maslacu dok ne porumene.",
+    "Mokrim rukama oblikuj okruglice i kuhaj ih 10 minuta u blago posoljenoj kipućoj vodi.",
+    "Uvaljaj ih u mrvice i posluži sa šećerom u prahu i vrhnjem."
+   ]
+  },
+  "makos-teszta": {
+   "name": "Tjestenina s makom",
+   "steps": [
+    "Tjesteninu skuhaj u slanoj vodi i ocijedi.",
+    "Promiješaj je s maslacem i pospi makom pomiješanim sa šećerom u prahu."
+   ]
+  },
+  "dios-teszta": {
+   "name": "Tjestenina s orasima",
+   "steps": [
+    "Tjesteninu skuhaj u slanoj vodi i ocijedi.",
+    "Promiješaj je s maslacem i pospi orasima pomiješanim sa šećerom u prahu."
+   ]
+  },
+  "krumplis-teszta": {
+   "name": "Tjestenina s krumpirom",
+   "steps": [
+    "Luk pirjaj na ulju dok ne postane staklast i pospi crvenom paprikom.",
+    "Dodaj krumpir narezan na kocke, pirjaj s malo vode dok ne omekša i lagano ga izgnječi vilicom.",
+    "Promiješaj s kuhanom tjesteninom, popapri i posluži s kiselim krastavcima."
+   ]
+  },
+  "bableves": {
+   "name": "Juha od graha s kobasicom",
+   "steps": [
+    "Poprži luk, pospi crvenom paprikom i prelij s 1,5 litrom vode.",
+    "U njoj skuhaj narezano povrće, lovorov list i kobasicu.",
+    "Kad povrće omekša, dodaj ocijeđeni grah i kuhaj još 10 minuta.",
+    "Zgusni vrhnjem razmućenim s brašnom i začini s malo octa."
+   ]
+  },
+  "paradicsomleves": {
+   "name": "Juha od rajčice s tjesteninom slovima",
+   "steps": [
+    "Na maslacu lagano poprži brašno, prelij pasiranom rajčicom i s 5 dl vode.",
+    "Začini šećerom, solju i bosiljkom i kuhaj 10 minuta.",
+    "Tjesteninu skuhaj posebno i dodaj u juhu."
+   ]
+  },
+  "gombaleves": {
+   "name": "Juha od gljiva s vrhnjem",
+   "steps": [
+    "Poprži luk, dodaj narezane gljive i poprži ih.",
+    "Prelij s 1,5 litrom vode i u njoj skuhaj narezanu mrkvu i korijen peršina.",
+    "Vrhnje izmiješaj s brašnom, time zgusni juhu i začini timijanom."
+   ]
+  },
+  "gombas-csirkemell": {
+   "name": "Pileća prsa s gljivama i vrhnjem uz rižu",
+   "steps": [
+    "Skuhaj rižu.",
+    "Pileća prsa nareži na trakice i zapeci ih sa svih strana u vrućoj tavi.",
+    "Dodaj luk i gljive i pirjaj 8 minuta.",
+    "Zakuhaj s vrhnjem, začini i posluži s rižom."
+   ]
+  },
+  "hortobagyi": {
+   "name": "Palačinke na hortobáđski",
+   "steps": [
+    "Od brašna, mlijeka i jaja ispeci palačinke.",
+    "Piletinu skuhaj s lukom i paprikom kao perkelt, zatim izvadi meso i sitno ga nasjeckaj.",
+    "Sjeckano meso izmiješaj s malo umaka i vrhnja, zarolaj u palačinke i preklopi krajeve.",
+    "Stavi ih u pekač, prelij umakom zakuhanim s vrhnjem i peci na 180 °C 15 minuta."
+   ]
+  },
+  "rakott-kaposzta": {
+   "name": "Složenac od kupusa",
+   "steps": [
+    "Kupus tanko nareži, posoli i pirjaj na malo masnoće dok napola ne omekša.",
+    "Mljeveno meso poprži s lukom i začini; rižu napola skuhaj i umiješaj u meso.",
+    "U pekač slaži: kupus, meso, narezana kobasica, vrhnje – na vrh kupus i vrhnje.",
+    "Peci u pećnici na 180 °C poklopljeno 40, zatim otklopljeno još 20 minuta."
+   ]
+  },
+  "toltott-paprika": {
+   "name": "Punjene paprike u umaku od rajčice",
+   "steps": [
+    "Paprikama izreži peteljke sa sjemenkama.",
+    "Mljeveno meso izmiješaj sa sirovom rižom, jajem i začinima i napuni paprike.",
+    "Pasiranu rajčicu zakuhaj s vodom, šećerom i solju, položi paprike i kuhaj na laganoj vatri 50 minuta.",
+    "Posluži s krumpirom kuhanim u slanoj vodi."
+   ]
+  },
+  "szekelykaposzta": {
+   "name": "Segedin gulaš (svinjetina s kiselim kupusom)",
+   "steps": [
+    "Pirjaj luk, pospi crvenom paprikom, dodaj meso narezano na kocke i kuhaj ga kao perkelt.",
+    "Kad meso napola omekša, dodaj tanko narezani kupus i kim pa pirjaj zajedno dok ne omekša.",
+    "Zgusni vrhnjem razmućenim s brašnom i posluži s koprom."
+   ]
+  },
+  "csirke-zoldsegagyon": {
+   "name": "Začinjena pileća prsa na povrću",
+   "steps": [
+    "Krumpir i povrće nareži na veće komade i promiješaj s uljem i začinima.",
+    "Pileća prsa natrljaj začinima.",
+    "Povrće peci u pekaču na 200 °C 20 minuta, zatim na njega stavi meso i peci još 20 minuta (u fritezi na vrući zrak na 190 °C u 2 tura)."
+   ]
+  },
+  "airfryer-csirkecomb": {
+   "name": "Hrskavi pileći batci s pomfritom",
+   "steps": [
+    "Batke natrljaj začinima.",
+    "Peci ih u fritezi na vrući zrak na 190 °C 25 minuta ili u pećnici na 200 °C 40 minuta, na pola ih okreni.",
+    "Pomfrit ispeci prema uputi na pakiranju.",
+    "Posluži s jogurtom i češnjakom."
+   ]
+  },
+  "rantott-hal": {
+   "name": "Pohana riba s krumpir salatom",
+   "steps": [
+    "Krumpir skuhaj u ljusci, oguli, nareži i promiješaj s lukom, vrhnjem i senfom u salatu.",
+    "Ribu posoli i uvaljaj u brašno, jaje i krušne mrvice.",
+    "Prži je u dosta vrućeg ulja dok ne porumeni s obje strane.",
+    "Posluži s kriškama limuna i salatom."
+   ]
+  },
+  "lazacos-teszta": {
+   "name": "Kremasta tjestenina s lososom i špinatom",
+   "steps": [
+    "Skuhaj tjesteninu.",
+    "Losos narezan na kocke zapeci sa svih strana u tavi i izvadi.",
+    "Na češnjaku odmrzni špinat, prelij vrhnjem za kuhanje i začini limunovim sokom.",
+    "Vrati ribu i sve promiješaj s tjesteninom."
+   ]
+  },
+  "tonhalsalata": {
+   "name": "Salata od tune s grahom i kukuruzom",
+   "steps": [
+    "Ocijedi grah i kukuruz, a luk i papriku nareži na kockice.",
+    "Promiješaj s ocijeđenom tunom i začini uljem, octom i solju.",
+    "Posluži sa svježim kruhom."
+   ]
+  },
+  "bundas-kenyer": {
+   "name": "Prženi kruh u jajima",
+   "steps": [
+    "Jaja razmuti s mlijekom i solju.",
+    "Umoči kriške kruha i prži ih u vrućem ulju dok ne porumene s obje strane.",
+    "Natrljaj ih češnjakom i posluži s rajčicama."
+   ]
+  },
+  "sonkas-omlett": {
+   "name": "Omlet sa šunkom i sirom",
+   "steps": [
+    "Jaja razmuti sa solju i paprom.",
+    "Na maslacu minutu poprži papriku narezanu na kockice i prelij jajima.",
+    "Kad se donja strana stisne, na jednu polovicu pospi šunku i sir, preklopi drugu polovicu i peci još minutu."
+   ]
+  },
+  "shakshuka": {
+   "name": "Šakšuka s fetom",
+   "steps": [
+    "Pirjaj luk, češnjak i papriku i pospi začinima.",
+    "Dodaj pasiranu rajčicu i kuhaj 10 minuta dok se ne zgusne.",
+    "Napravi udubine, u njih razbij jaja i kuhaj poklopljeno 6–8 minuta.",
+    "Posluži s izmrvljenom fetom i svježim kruhom."
+   ]
+  },
+  "amerikai-palacsinta": {
+   "name": "Američke palačinke s bananom",
+   "steps": [
+    "Brašno pomiješaj s praškom za pecivo, šećerom i solju, pa dodaj mlijeko, jaje i otopljeni maslac.",
+    "U maloj tavi na malo maslaca peci palačinke veličine dlana; okreni ih kad se na vrhu pojave mjehurići.",
+    "Posluži s narezanom bananom, jagodama i medom."
+   ]
+  },
+  "joghurtos-zab": {
+   "name": "Zobene pahuljice s jogurtom i voćem preko noći",
+   "steps": [
+    "Zobene pahuljice izmiješaj s jogurtom i žlicom meda i ostavi preko noći u hladnjaku.",
+    "Ujutro ih slaži u čaše s narezanom bananom i jagodama."
+   ]
+  },
+  "rizsfelfujt": {
+   "name": "Zapečeni puding od riže",
+   "steps": [
+    "Rižu kuhaj u mlijeku s prstohvatom soli dok se ne zgusne i ostavi da se mlako ohladi.",
+    "Umiješaj maslac, žumanjke, pola šećera i limunovu koricu, a zatim lagano snijeg istučen s ostatkom šećera.",
+    "Rasporedi u namašćen pekač i peci na 180 °C 30 minuta.",
+    "Posluži s pekmezom."
+   ]
+  },
+  "turokrem": {
+   "name": "Voćna krema od svježeg sira",
+   "steps": [
+    "Svježi sir izmiješaj s jogurtom, šećerom u prahu i limunovom koricom u kremu.",
+    "Slaži je u čaše s narezanim voćem."
+   ]
+  },
+  "kakaos-csiga": {
+   "name": "Puževi s kakaom od lisnatog tijesta",
+   "steps": [
+    "Tijesto razvij, premaži otopljenim maslacem i pospi kakaom pomiješanim sa šećerom u prahu.",
+    "Čvrsto ga zarolaj, nareži na ploške od 2 cm i složi na lim s papirom za pečenje.",
+    "Peci na 200 °C 15–18 minuta dok ne porumene."
+   ]
+  },
+  "rakott-teszta": {
+   "name": "Zapečena tjestenina sa šunkom",
+   "steps": [
+    "Tjesteninu napola skuhaj.",
+    "Vrhnje izmiješaj s jajima, solju i paprom te promiješaj s tjesteninom i šunkom narezanom na kockice.",
+    "Rasporedi u pekač, pospi naribanim sirom i peci na 190 °C 25 minuta."
+   ]
+  },
+  "arrabbiata": {
+   "name": "Penne all'arrabbiata",
+   "steps": [
+    "Na maslinovom ulju minutu poprži narezani češnjak i čili.",
+    "Dodaj pasiranu rajčicu, posoli i kuhaj 10 minuta.",
+    "Promiješaj s kuhanim pennama i posluži s naribanim sirom."
+   ]
+  },
+  "pestos-teszta": {
+   "name": "Tjestenina s pestom i piletinom",
+   "steps": [
+    "Skuhaj tjesteninu.",
+    "Začinjenu piletinu narezanu na trakice ispeci.",
+    "Tjesteninu promiješaj s pestom, piletinom i rajčicom narezanom na kockice."
+   ]
+  },
+  "csirkes-wok": {
+   "name": "Wok s piletinom i brokulom",
+   "steps": [
+    "Skuhaj rižu.",
+    "Piletinu narezanu na trakice poprži u jako vrućoj tavi i izvadi.",
+    "Povrće poprži da ostane hrskavo i vrati meso.",
+    "Začini sojinim umakom, medom i đumbirom i zgusni s malo vode i škroba."
+   ]
+  },
+  "tofus-pad-thai": {
+   "name": "Prženi rižini rezanci s tofuom (na pad thai način)",
+   "steps": [
+    "Rižine rezance namoči u vrućoj vodi prema uputi na pakiranju.",
+    "Tofu narezan na kocke isprži da postane hrskav i izvadi.",
+    "Poprži povrće, odmakni ga u stranu i pored njega ispeci razmućeno jaje.",
+    "Dodaj rezance, tofu i umak, promiješaj i posluži s grubo sjeckanim kikirikijem i limunom."
+   ]
+  },
+  "piritott-rizs": {
+   "name": "Pržena riža s jajem",
+   "steps": [
+    "Skuhaj rižu i potpuno je ohladi (najbolja je jučerašnja riža).",
+    "U vrućoj tavi poprži mrkvu i grašak i dodaj šunku narezanu na kockice.",
+    "Odmakni u stranu, ispeci razmućeno jaje, zatim dodaj rižu i sve poprži sa sojinim umakom."
+   ]
+  },
+  "csicseri-salata": {
+   "name": "Mediteranska salata od slanutka",
+   "steps": [
+    "Ocijedi slanutak i nareži povrće na kockice.",
+    "Promiješaj s maslinovim uljem, limunovim sokom i začinima.",
+    "Na vrh stavi izmrvljenu fetu."
+   ]
+  },
+  "kuszkusz-salata": {
+   "name": "Salata od kus-kusa s povrćem",
+   "steps": [
+    "Kus-kus prelij vrućom slanom vodom, ostavi poklopljen 5 minuta i rastresi vilicom.",
+    "Dodaj sitno nasjeckano povrće, limunov sok i ulje.",
+    "Posluži s fetom i svježim začinskim biljem."
+   ]
+  },
+  "sutotokkremleves": {
+   "name": "Krem juha od bundeve",
+   "steps": [
+    "Poprži luk, dodaj bundevu narezanu na kocke i prelij s 1 litrom vode.",
+    "Kuhaj dok ne omekša, pa izmiksaj štapnim mikserom.",
+    "Začini vrhnjem za kuhanje, đumbirom i muškatnim oraščićem; posluži s tostom."
+   ]
+  },
+  "brokkolikremleves": {
+   "name": "Krem juha od brokule sa sirom",
+   "steps": [
+    "Pirjaj luk, dodaj brokulu i krumpir narezan na kocke i prelij s 1 litrom vode.",
+    "Kuhaj dok ne omekša, pa izmiksaj.",
+    "Umiješaj vrhnje za kuhanje i naribani sir i začini."
+   ]
+  },
+  "edesburgonya-csirke": {
+   "name": "Pečeni pileći batci s batatom",
+   "steps": [
+    "Batat nareži na kriške i promiješaj s uljem i začinima.",
+    "Batke natrljaj začinima.",
+    "Peci zajedno na 200 °C 40 minuta (u fritezi na vrući zrak na 190 °C, u dva tura, 25 minuta).",
+    "Posluži s jogurtom i češnjakom."
+   ]
+  },
+  "muszaka": {
+   "name": "Musaka od patlidžana i krumpira",
+   "steps": [
+    "Patlidžan i krumpir nareži na ploške, posoli, premaži uljem i prethodno ispeci u pećnici.",
+    "Mljeveno meso kuhaj s pasiranom rajčicom, cimetom i origanom u gusti ragu.",
+    "Od maslaca, brašna i mlijeka skuhaj bešamel i umiješaj jaje.",
+    "Slaži u pekač: krumpir, patlidžan, ragu, a na vrh bešamel; peci na 180 °C 45 minuta."
+   ]
+  },
+  "zoldbabfozelek": {
+   "name": "Varivo od mahuna s jajima na oko",
+   "steps": [
+    "Mahune skuhaj u malo slane vode dok ne omekšaju.",
+    "Zgusni vrhnjem razmućenim s brašnom i mlijekom, začini češnjakom, koprom i malo octa.",
+    "Posluži s jajima na oko."
+   ]
+  },
+  "karfiolfasirt": {
+   "name": "Polpete od cvjetače s pire krumpirom",
+   "steps": [
+    "Cvjetaču skuhaj, ocijedi i izgnječi vilicom.",
+    "Izmiješaj s jajem, naribanim sirom, namočenim pecivom i začinima; oblikuj polpete.",
+    "Peci ih na malo ulja dok ne porumene s obje strane.",
+    "Krumpir skuhaj i izgnječi u pire s maslacem i toplim mlijekom."
+   ]
+  },
+  "fasirt-pure": {
+   "name": "Polpete s pire krumpirom",
+   "steps": [
+    "Mljeveno meso izmijesi s namočenim i ocijeđenim pecivom, jajem, naribanim lukom i začinima.",
+    "Oblikuj plosnate polpete i prži ih u ulju 4–5 minuta sa svake strane.",
+    "Krumpir skuhaj i izgnječi u pire s maslacem i toplim mlijekom.",
+    "Posluži s kiselim krastavcima."
+   ]
+  },
+  "paprikas-krumpli": {
+   "name": "Paprikaš od krumpira s kobasicom",
+   "steps": [
+    "Na masnoći poprži luk i pospi crvenom paprikom.",
+    "Dodaj krumpir narezan na kocke, papriku, rajčicu, narezanu kobasicu i kim.",
+    "Prelij s toliko vode da ga prekrije i kuhaj dok ne omekša. Posluži s kiselim krastavcima."
+   ]
+  },
+  "nuggets": {
+   "name": "Domaći pileći medaljoni s pomfritom",
+   "steps": [
+    "Piletinu nareži na zalogaje i začini.",
+    "Uvaljaj u brašno, jaje i krušne mrvice i poprskaj s malo ulja.",
+    "Peci u fritezi na vrući zrak na 200 °C 12 minuta ili u pećnici na 220 °C 18 minuta, na pola okreni.",
+    "Posluži s pomfritom i jogurtom s češnjakom."
+   ]
+  },
+  "babgulyas": {
+   "name": "Gulaš od graha",
+   "steps": [
+    "Pirjaj luk, pospi crvenom paprikom, dodaj meso narezano na kocke i pirjaj ga u vlastitom soku 1 sat.",
+    "Prelij s 1,5 litrom vode i dodaj povrće i krumpir.",
+    "Kad sve omekša, umiješaj ocijeđeni grah i kuhaj još 10 minuta."
+   ]
+  },
+  "marhahusleves": {
+   "name": "Goveđa juha s tankim rezancima",
+   "steps": [
+    "Meso stavi u hladnu vodu i kuhaj na vrlo laganoj vatri 2 sata; skidaj pjenu.",
+    "Dodaj povrće, luk i začine i kuhaj još 45 minuta.",
+    "Procijedi juhu, a rezance skuhaj posebno; posluži s mesom i povrćem."
+   ]
+  },
+  "zoldsegleves": {
+   "name": "Proljetna juha od povrća",
+   "steps": [
+    "Povrće nareži na kockice i pirjaj ga nekoliko minuta na maslacu.",
+    "Pospi brašnom, prelij s 1,5 litrom vode i kuhaj dok ne omekša.",
+    "Posluži sa sjeckanim peršinom."
+   ]
+  },
+  "pogacsa": {
+   "name": "Pogačice sa sirom",
+   "steps": [
+    "Brašno izmrvi s maslacem, dodaj kvasac, vrhnje, žumanjak, pola sira i sol pa zamijesi tijesto.",
+    "Razvaljaj ga na debljinu prsta, zareži površinu, premaži jajetom i pospi ostatkom sira.",
+    "Izreži pogačice i peci na 200 °C 18–20 minuta."
+   ]
+  },
+  "lekvaros-bukta": {
+   "name": "Buhtle s pekmezom",
+   "steps": [
+    "Kvasac aktiviraj u mlakom zaslađenom mlijeku.",
+    "S brašnom, jajem, otopljenim maslacem i solju zamijesi mekano tijesto i ostavi da se udvostruči.",
+    "Razvaljaj ga, izreži na kvadrate, u sredinu stavi pekmez, spoji krajeve i složi u lim.",
+    "Ostavi da se diže još 20 minuta, premaži jajetom i peci na 180 °C 25 minuta."
+   ]
+  },
+  "turos-retes": {
+   "name": "Savijača sa sirom od lisnatog tijesta",
+   "steps": [
+    "Svježi sir izmiješaj sa žumanjkom, šećerom u prahu, limunovom koricom i vrhnjem.",
+    "Rasporedi ga po listovima tijesta i zarolaj.",
+    "Premaži jajetom i peci na 200 °C 25 minuta dok ne porumeni."
+   ]
+  },
+  "almas-retes": {
+   "name": "Savijača s jabukama i orasima",
+   "steps": [
+    "Jabuke naribaj, ocijedi i izmiješaj sa šećerom, cimetom i orasima.",
+    "Rasporedi po listovima tijesta, zarolaj i izbockaj vrh.",
+    "Peci na 200 °C 25 minuta."
+   ]
+  },
+  "bananos-kenyer": {
+   "name": "Kruh od banane s orasima",
+   "steps": [
+    "Banane vilicom izgnječi u kašu i izmiješaj s otopljenim maslacem, šećerom i jajima.",
+    "Dodaj brašno, sodu bikarbonu, cimet i orahe i samo kratko promiješaj.",
+    "Peci u kalupu za kruh obloženom papirom na 175 °C oko 55 minuta."
+   ]
+  },
+  "mezes-mustaros-csirke": {
+   "name": "Pileći batci s medom i senfom uz krumpir",
+   "steps": [
+    "Senf izmiješaj s medom, češnjakom, solju i malo ulja i premaži batke.",
+    "Krumpir nareži na kriške, a luk na četvrtine i stavi ih u pekač pokraj mesa.",
+    "Peci na 200 °C oko 45 minuta (u fritezi na vrući zrak na 190 °C 25 minuta)."
+   ]
+  },
+  "cordon-bleu": {
+   "name": "Pileći cordon bleu s rižom",
+   "steps": [
+    "Pileća prsa zareži u džep, posoli i napuni šunkom i sirom.",
+    "Uvaljaj u brašno, jaje i krušne mrvice.",
+    "Prži na srednjoj vatri u dosta ulja 5–6 minuta sa svake strane.",
+    "Posluži s rižom."
+   ]
+  },
+  "karaj-gombamartas": {
+   "name": "Svinjski odresci u umaku od gljiva",
+   "steps": [
+    "Odreske karea istuci, začini i peci u vrućoj tavi 3 minute sa svake strane, pa izvadi.",
+    "U istoj tavi pirjaj luk i gljive, prelij vrhnjem za kuhanje i zakuhaj.",
+    "Vrati meso i pirjaj ga u umaku 5 minuta. Posluži s rižom."
+   ]
+  },
+  "gyros-tal": {
+   "name": "Gyros tanjur",
+   "steps": [
+    "Svinjski vrat nareži na tanke trakice i mariniraj 30 minuta u začinu za gyros.",
+    "Prži u dijelovima u vrućoj tavi dok ne postane hrskavo.",
+    "Od jogurta, naribanog krastavca i češnjaka napravi tzatziki.",
+    "Posluži s pomfritom, salatom i tzatzikijem."
+   ]
+  },
+  "pulykaragu": {
+   "name": "Kremasti ragu od puretine s rižom",
+   "steps": [
+    "Puretinu narezanu na kocke zapeci sa svih strana s lukom.",
+    "Dodaj gljive i grašak i pirjaj 10 minuta.",
+    "Zakuhaj s vrhnjem za kuhanje i estragonom i posluži s rižom."
+   ]
+  },
+  "mexikoi-egytal": {
+   "name": "Meksičko jelo iz jednog lonca s mljevenim mesom i rižom",
+   "steps": [
+    "Mljeveno meso poprži i začini.",
+    "Dodaj rižu, pasiranu rajčicu i 6 dl vode i kuhaj poklopljeno 15 minuta.",
+    "Umiješaj grah, kukuruz i papriku narezanu na kocke i kuhaj još 5 minuta."
+   ]
+  },
+  "burrito": {
+   "name": "Burrito s grahom i rižom",
+   "steps": [
+    "Skuhaj rižu; grah pirjaj sa začinima i lagano ga izgnječi.",
+    "Tortilje napuni rižom, grahom, kukuruzom, rajčicom, sirom i vrhnjem.",
+    "Čvrsto zarolaj i zapeci s obje strane u suhoj tavi."
+   ]
+  },
+  "quesadilla": {
+   "name": "Quesadilla sa šunkom i sirom",
+   "steps": [
+    "Na pola svake tortilje pospi naribani sir, šunku, kukuruz i papriku i preklopi drugu polovicu.",
+    "Peci u suhoj tavi 2–3 minute sa svake strane dok se sir ne otopi.",
+    "Nareži na trokute i posluži s vrhnjem."
+   ]
+  },
+  "hazi-pizza": {
+   "name": "Domaća pizza sa šunkom i gljivama",
+   "steps": [
+    "Brašno s kvascem, solju, uljem i 3 dl mlake vode zamijesi u glatko tijesto i ostavi da se diže 1 sat.",
+    "Razvaljaj ga u dva lima i premaži začinjenom pasiranom rajčicom.",
+    "Pospi šunkom, gljivama, kukuruzom i mozzarellom.",
+    "Peci u što vrućoj pećnici (250 °C) 10–12 minuta."
+   ]
+  },
+  "margherita": {
+   "name": "Pizza Margherita",
+   "steps": [
+    "Brašno s kvascem, solju, uljem i 3 dl mlake vode zamijesi u glatko tijesto i ostavi da se diže 1 sat.",
+    "Tanko ga razvaljaj, premaži posoljenom pasiranom rajčicom i pospi natrganom mozzarellom i ploškama rajčice.",
+    "Peci na 250 °C 10–12 minuta i posluži sa svježim bosiljkom."
+   ]
+  },
+  "langos": {
+   "name": "Langoš sa sirom i vrhnjem",
+   "steps": [
+    "Kuhani, protisnuti krumpir zamijesi s brašnom, kvascem aktiviranim u mlakom mlijeku i solju u mekano tijesto i ostavi da se diže 1 sat.",
+    "Nauljenim rukama razvuci krugove veličine dlana.",
+    "Prži ih u dosta vrućeg ulja dok ne porumene s obje strane.",
+    "Premaži vodom s češnjakom i posluži s vrhnjem i naribanim sirom."
+   ]
+  },
+  "hot-dog": {
+   "name": "Domaći hot dog",
+   "steps": [
+    "Hrenovke zagrijavaj u vrućoj vodi 5 minuta.",
+    "Peciva zareži i zagrij u pećnici da postanu hrskava.",
+    "Napuni ih hrenovkom, krastavcem, lukom i umacima."
+   ]
+  },
+  "frittata": {
+   "name": "Frittata s krumpirom i kobasicom",
+   "steps": [
+    "Krumpir nareži na tanke ploške i ispeci ga u tavi koja može u pećnicu.",
+    "Dodaj kobasicu i papriku i prelij začinjenim razmućenim jajima.",
+    "Pospi sirom i peci u pećnici na 180 °C 12–15 minuta dok se ne stisne."
+   ]
+  },
+  "spenotos-pite": {
+   "name": "Pita sa špinatom i fetom",
+   "steps": [
+    "Špinat odmrzni s češnjakom i ispari mu tekućinu.",
+    "Kad se ohladi, izmiješaj ga s izmrvljenom fetom, jajima i začinima.",
+    "Napuni kalup obložen tijestom, preklopi rubove i peci na 200 °C 25 minuta."
+   ]
+  },
+  "rakott-brokkoli": {
+   "name": "Složenac od brokule i šunke",
+   "steps": [
+    "Brokulu i narezani krumpir napola skuhaj u slanoj vodi.",
+    "Slaži ih u pekač sa šunkom narezanom na kockice.",
+    "Vrhnje izmiješaj s jajima i začinima, prelij i pospi sirom.",
+    "Peci na 190 °C 25 minuta."
+   ]
+  },
+  "sult-camembert": {
+   "name": "Pečeni camembert s pekmezom i tostom",
+   "steps": [
+    "Camemberte zareži po vrhu i pospi timijanom.",
+    "Peci u fritezi na vrući zrak na 180 °C 8 minuta ili u pećnici na 200 °C 12 minuta.",
+    "Posluži s tostom, pekmezom i rajčicama."
+   ]
+  },
+  "rantott-parizsi": {
+   "name": "Pohana parizer kobasica s pire krumpirom",
+   "steps": [
+    "Krumpir skuhaj i izgnječi u pire s maslacem i toplim mlijekom.",
+    "Parizer nareži na ploške od 1 cm i zareži im rubove.",
+    "Uvaljaj u brašno, jaje i krušne mrvice i isprži u vrućem ulju."
+   ]
+  },
+  "voroslencse-dal": {
+   "name": "Dal od crvene leće s kokosovim mlijekom",
+   "steps": [
+    "Pirjaj luk i češnjak i pospi začinima.",
+    "Dodaj leću, pasiranu rajčicu, kokosovo mlijeko i 5 dl vode i kuhaj 20 minuta dok se leća ne raspadne.",
+    "Posluži s rižom."
+   ]
+  },
+  "csirkes-kuszkusz": {
+   "name": "Kus-kus s piletinom i povrćem",
+   "steps": [
+    "Kus-kus prelij vrućom slanom vodom i ostavi 5 minuta.",
+    "Piletinu i povrće nareži na kocke, začini i poprži.",
+    "Dodaj ocijeđeni slanutak i sve promiješaj s kus-kusom."
+   ]
+  },
+  "hummusz-tal": {
+   "name": "Humus s povrćem",
+   "steps": [
+    "Slanutak izmiksaj s limunovim sokom, uljem, češnjakom i malo vode u kremu.",
+    "Začini solju i kuminom.",
+    "Posluži s povrćem narezanim na štapiće i kruhom."
+   ]
+  },
+  "ceklas-tal": {
+   "name": "Pečena cikla i batat s fetom",
+   "steps": [
+    "Ciklu i batat nareži na kocke i promiješaj s uljem, solju i timijanom.",
+    "Peci na 200 °C 35–40 minuta.",
+    "Posluži s izmrvljenom fetom, orasima i malo meda."
+   ]
+  },
+  "sutotokos-rizotto": {
+   "name": "Rižoto s bundevom",
+   "steps": [
+    "Pirjaj luk na maslacu, dodaj bundevu narezanu na kocke i rižu.",
+    "Dolijevaj temeljac kutlaču po kutlaču uz stalno miješanje oko 20 minuta.",
+    "Umiješaj maslac i sir da bude kremasto."
+   ]
+  },
+  "lazac-edesburgonya": {
+   "name": "Losos s pečenim batatom i brokulom",
+   "steps": [
+    "Batat nareži na kriške, začini uljem i peci na 200 °C 20 minuta.",
+    "Dodaj brokulu i začinjeni losos i peci još 12 minuta (u fritezi na vrući zrak na 190 °C 10 minuta).",
+    "Posluži pokapano limunovim sokom."
+   ]
+  },
+  "tonhalas-rakott": {
+   "name": "Zapečena tjestenina s tunom",
+   "steps": [
+    "Tjesteninu napola skuhaj.",
+    "Izmiješaj je s tunom, kukuruzom i smjesom jaja i vrhnja.",
+    "Rasporedi u pekač, pospi sirom i peci na 190 °C 25 minuta."
+   ]
+  },
+  "rantott-ponty": {
+   "name": "Pohani šaran s krumpirom i peršinom",
+   "steps": [
+    "Komade ribe posoli i ostavi 15 minuta.",
+    "Uvaljaj ih u brašno, jaje i ponovno u brašno i prži u dosta ulja.",
+    "Krumpir skuhaj u slanoj vodi i promiješaj s maslacem i peršinom."
+   ]
+  },
+  "stroganoff": {
+   "name": "Svinjski Stroganoff s rižom",
+   "steps": [
+    "Meso nareži na tanke trakice, brzo ga zapeci sa svih strana u vrućoj tavi i izvadi.",
+    "Pirjaj luk i gljive, dodaj senf i kisele krastavce narezane na trakice.",
+    "Zakuhaj s vrhnjem, vrati meso i posluži s rižom."
+   ]
+  },
+  "tejszines-sonkas-teszta": {
+   "name": "Kremasta tjestenina sa šunkom i graškom",
+   "steps": [
+    "Skuhaj tjesteninu, a zadnje 3 minute u vodu dodaj i grašak.",
+    "Poprži šunku narezanu na kockice, prelij vrhnjem za kuhanje i zakuhaj.",
+    "Promiješaj s tjesteninom i naribanim sirom."
+   ]
+  },
+  "mac-and-cheese": {
+   "name": "Mac and cheese (makaroni sa sirom)",
+   "steps": [
+    "Skuhaj tjesteninu.",
+    "Na maslacu poprži brašno, postupno dodaj mlijeko i kuhaj dok se ne zgusne.",
+    "Umiješaj naribani sir i malo senfa, a zatim tjesteninu."
+   ]
+  },
+  "rakott-burgonya-sajtos": {
+   "name": "Kremasti gratinirani krumpir sa sirom",
+   "steps": [
+    "Krumpir nareži na tanke ploške.",
+    "Slaži ga u namašćen pekač natrljan češnjakom i začini svaki sloj.",
+    "Prelij vrhnjem za kuhanje, pospi sirom i peci na 180 °C oko 50 minuta."
+   ]
+  },
+  "krumplisalata-virsli": {
+   "name": "Krumpir salata s hrenovkama",
+   "steps": [
+    "Krumpir skuhaj u ljusci, a jaja na tvrdo, pa ih nareži.",
+    "Hrenovke skuhaj ili poprži i nareži.",
+    "Sve promiješaj s preljevom od jogurta, senfa i octa."
+   ]
+  },
+  "csirkes-tesztasalata": {
+   "name": "Salata od tjestenine s piletinom",
+   "steps": [
+    "Skuhaj tjesteninu i grašak i isperi ih hladnom vodom.",
+    "Ispeci pileća prsa i nareži ih na kockice.",
+    "Sve promiješaj s jogurtom s koprom i senfom i do posluživanja drži u hladnjaku."
+   ]
+  },
+  "paraszt-reggeli": {
+   "name": "Seljački doručak",
+   "steps": [
+    "Krumpir narezan na kockice isprži na malo masnoće da postane hrskav.",
+    "Dodaj luk i kobasicu, prelij razmućenim jajima i napravi kajganu.",
+    "Posluži s kruhom."
+   ]
+  },
+  "makos-guba": {
+   "name": "Puding od kruha s makom (mákos guba)",
+   "steps": [
+    "Peciva nareži na kolutove i prelij ih toplim mlijekom sa šećerom i vanilijom.",
+    "Svaki sloj pospi makom pomiješanim sa šećerom u prahu.",
+    "Pospi komadićima maslaca i peci na 180 °C 15 minuta."
+   ]
+  },
+  "lebbencsleves": {
+   "name": "Juha s tjesteninom i krumpirom (lebbencs)",
+   "steps": [
+    "Isprži slaninu i na njezinoj masti poprži tjesteninu.",
+    "Dodaj luk, pospi crvenom paprikom i prelij s 1,5 litrom vode.",
+    "U njoj skuhaj krumpir, papriku i rajčicu."
+   ]
+  },
+  "fokhagymakremleves": {
+   "name": "Krem juha od češnjaka s krutonima",
+   "steps": [
+    "Češnjak pirjaj na maslacu, dodaj krumpir narezan na kocke i prelij s 1 litrom vode.",
+    "Kuhaj dok ne omekša, izmiksaj i umiješaj vrhnje za kuhanje.",
+    "Posluži s krutonima sa sirom."
+   ]
+  },
+  "sutotokos-curry": {
+   "name": "Pileći curry s bundevom",
+   "steps": [
+    "Pirjaj luk, dodaj curry i piletinu narezanu na kocke.",
+    "Dodaj bundevu narezanu na kocke i kokosovo mlijeko i kuhaj 20 minuta.",
+    "Posluži s rižom."
+   ]
+  },
+  "szezamos-csirke": {
+   "name": "Piletina sa sezamom i medom uz rižu",
+   "steps": [
+    "Piletinu narezanu na kocke uvaljaj u brašno i isprži u vrućem ulju da postane hrskava.",
+    "Sojin umak zakuhaj s medom i češnjakom i u njemu promiješaj meso.",
+    "Pospi sezamom i posluži s rižom i brokulom."
+   ]
+  },
+  "csirke-uborkasalata": {
+   "name": "Pileća prsa s roštilja uz salatu od krastavaca s vrhnjem",
+   "steps": [
+    "Pileća prsa začini i peci u grill tavi 5–6 minuta sa svake strane.",
+    "Krastavac tanko nareži, posoli, ocijedi i izmiješaj s vrhnjem, češnjakom i malo octa.",
+    "Posluži s kuhanim krumpirom."
+   ]
+  },
+  "kremes-spenotos-csirke": {
+   "name": "Kremasta piletina sa špinatom i rižom",
+   "steps": [
+    "Začinjena pileća prsa ispeci i izvadi.",
+    "U istoj tavi na češnjaku odmrzni špinat i prelij vrhnjem za kuhanje.",
+    "Vrati meso, zakuhaj i posluži s rižom."
+   ]
+  },
+  "risi-bisi-sonkas": {
+   "name": "Rizi-bizi sa šunkom",
+   "steps": [
+    "Rižu promiješaj na maslacu i skuhaj u dvostrukoj količini slane vode.",
+    "Zadnjih 5 minuta dodaj grašak i šunku narezanu na kockice.",
+    "Posluži s naribanim sirom i peršinom."
+   ]
+  },
+  "caprese-csirke": {
+   "name": "Pečena piletina s rajčicom i mozzarellom",
+   "steps": [
+    "Krumpir nareži na kriške, začini uljem i prethodno peci na 200 °C 15 minuta.",
+    "Pileća prsa začini, stavi ih pokraj krumpira i na njih slaži ploške rajčice i mozzarelle.",
+    "Peci još 20 minuta (u fritezi na vrući zrak na 190 °C 15 minuta)."
+   ]
+  },
+  "csirkeporkolt": {
+   "name": "Pileći perkelt s noklicama",
+   "steps": [
+    "Luk pirjaj na masnoći dok ne postane staklast, makni s vatre i pospi crvenom paprikom.",
+    "Dodaj piletinu, papriku i rajčicu, posoli i pirjaj s malo vode 40 minuta.",
+    "Od brašna, jaja i vode napravi noklice. Posluži s kiselim krastavcima."
+   ]
+  },
+  "marhaporkolt": {
+   "name": "Goveđi perkelt s kuhanim krumpirom",
+   "steps": [
+    "Puno luka polako pirjaj na masnoći dok ne postane staklast i pospi crvenom paprikom.",
+    "Dodaj meso narezano na kocke, začini i pirjaj s malo vode 2–2,5 sata dok ne omekša.",
+    "Krumpir skuhaj u slanoj vodi; posluži s kiselim krastavcima."
+   ]
+  },
+  "tocsni": {
+   "name": "Placke od krumpira sa sirom i vrhnjem",
+   "steps": [
+    "Krumpir naribaj i ocijedi.",
+    "Izmiješaj ga s jajem, brašnom, zgnječenim češnjakom i začinima.",
+    "U vrućem ulju peci tanke placke.",
+    "Posluži s vrhnjem i naribanim sirom."
+   ]
+  },
+  "zoldseges-tojasos-teszta": {
+   "name": "Prženi rezanci s povrćem i jajem",
+   "steps": [
+    "Skuhaj tjesteninu.",
+    "U vrućoj tavi poprži povrće i kupus narezan na trakice.",
+    "Odmakni u stranu, ispeci razmućeno jaje, zatim dodaj tjesteninu i sojin umak i sve poprži."
+   ]
+  },
+  "lencsefasirt": {
+   "name": "Polpete od leće s umakom od jogurta",
+   "steps": [
+    "Leću skuhaj, ocijedi i izgnječi vilicom.",
+    "Izmiješaj s naribanim lukom, jajem, krušnim mrvicama i začinima; oblikuj polpete.",
+    "Peci ih na malo ulja s obje strane.",
+    "Posluži s kuhanim krumpirom i jogurtom s češnjakom."
+   ]
+  },
+  "tejfoles-csirkecomb-tepsis": {
+   "name": "Pileći batci s vrhnjem iz pekača",
+   "steps": [
+    "Krumpir nareži na ploške i stavi na dno pekača s lukom.",
+    "Na njih položi začinjene batke.",
+    "Vrhnje izmiješaj s češnjakom, prelij u pekač i peci na 190 °C 50 minuta."
+   ]
+  },
+  "csirkemell-rizs-zoldseg": {
+   "name": "Zdjela s piletinom i povrćem na pari",
+   "steps": [
+    "Skuhaj rižu.",
+    "Povrće kuhaj na pari ili u malo slane vode da ostane hrskavo.",
+    "Začinjena pileća prsa ispeci u grill tavi i nareži."
+   ]
+  },
+  "kolbaszos-babos-egytal": {
+   "name": "Jelo iz jednog lonca s kobasicom i grahom",
+   "steps": [
+    "Poprži luk, papriku i narezanu kobasicu.",
+    "Dodaj grah i pasiranu rajčicu, začini i kuhaj 20 minuta.",
+    "Posluži sa svježim kruhom."
+   ]
+  },
+  "parizsi-tojasrantotta": {
+   "name": "Kajgana s parizerom i tostom",
+   "steps": [
+    "Na maslacu pirjaj luk i dodaj parizer narezan na kockice.",
+    "Prelij razmućenim jajima i miješaj dok ne bude kremasto.",
+    "Posluži s tostom."
+   ]
+  },
+  "gyumolcsos-palacsinta-eper": {
+   "name": "Palačinke s jagodama i sirom",
+   "steps": [
+    "Od brašna, mlijeka i jaja napravi smjesu i peci tanke palačinke.",
+    "Svježi sir izmiješaj sa šećerom u prahu.",
+    "Palačinke napuni kremom od sira i narezanim jagodama."
+   ]
+  },
+  "almas-zabos-morzsa": {
+   "name": "Crumble od jabuka i zobenih pahuljica",
+   "steps": [
+    "Jabuke nareži na kockice, promiješaj s cimetom i limunovim sokom i stavi u pekač.",
+    "Zobene pahuljice, brašno, šećer i hladan maslac utrljaj u mrvice i pospi preko jabuka.",
+    "Peci na 180 °C 30 minuta dok vrh ne porumeni."
+   ]
+  }
+ },
+ "ingredients": {
+  "csirkemell": "Pileća prsa (file)",
+  "csirkecomb": "Pileći batci",
+  "csirkeszarny": "Pileća krilca",
+  "egesz_csirke": "Cijelo pile",
+  "tyuk": "Kokoš za juhu",
+  "pulykamell": "Pureća prsa (file)",
+  "daralthus": "Mljevena svinjetina",
+  "daralt_marha": "Mljevena junetina",
+  "marhalabszar": "Goveđa koljenica",
+  "sertes_karaj": "Svinjski kare",
+  "sertes_comb": "Svinjski but",
+  "sertes_tarja": "Svinjski vrat",
+  "sertes_oldalas": "Svinjska rebra",
+  "virsli": "Hrenovke",
+  "kolbasz": "Kobasica",
+  "bacon": "Dimljena slanina",
+  "sonka": "Šunka",
+  "zsir": "Svinjska mast",
+  "halfile": "Riblji file",
+  "harcsa": "File soma",
+  "ponty": "Odresci šarana",
+  "tonhal": "Tuna u konzervi",
+  "tojas": "Jaja",
+  "tej": "Mlijeko",
+  "tejfol": "Kiselo vrhnje",
+  "tejszin": "Vrhnje za kuhanje",
+  "habtejszin": "Slatko vrhnje",
+  "vaj": "Maslac",
+  "trappista": "Trapist sir",
+  "feta": "Feta sir",
+  "mozzarella": "Mozzarella",
+  "turo": "Svježi sir",
+  "joghurt": "Prirodni jogurt",
+  "kefir": "Kefir",
+  "liszt": "Glatko brašno",
+  "retesliszt": "Oštro brašno",
+  "cukor": "Kristalni šećer",
+  "porcukor": "Šećer u prahu",
+  "kakao": "Kakao prah",
+  "keksz": "Obični keksi",
+  "rizs": "Riža",
+  "spagetti": "Špageti",
+  "penne": "Suha tjestenina",
+  "tarhonya": "Tarana",
+  "lencse": "Leća",
+  "zabpehely": "Zobene pahuljice",
+  "napraforgoolaj": "Suncokretovo ulje",
+  "olivaolaj": "Maslinovo ulje",
+  "kenyer": "Kruh",
+  "zsemle": "Pecivo",
+  "tortilla": "Tortilje",
+  "burgonya": "Krumpir",
+  "hasabburgonya": "Smrznuti pomfrit",
+  "voroshagyma": "Crveni luk",
+  "fokhagyma": "Češnjak",
+  "paradicsom": "Rajčica",
+  "paprika": "Zelena paprika",
+  "uborka": "Krastavac",
+  "sargarepa": "Mrkva",
+  "petrezselyem": "Korijen peršina",
+  "karfiol": "Cvjetača",
+  "kelkaposzta": "Kelj",
+  "kaposzta": "Bijeli kupus",
+  "brokkoli": "Brokula",
+  "cukkini": "Tikvica",
+  "gomba": "Šampinjoni",
+  "alma": "Jabuke",
+  "korte": "Kruške",
+  "banan": "Banane",
+  "narancs": "Naranče",
+  "citrom": "Limun",
+  "passata": "Pasirana rajčica",
+  "voros_bab": "Crveni grah u konzervi",
+  "kukorica": "Kukuruz šećerac u konzervi",
+  "csicseri": "Slanutak u konzervi",
+  "kokusztej": "Kokosovo mlijeko",
+  "lekvar": "Pekmez",
+  "spenot": "Špinat (smrznuti)",
+  "borso": "Grašak (smrznuti)",
+  "csemegeuborka": "Kiseli krastavci",
+  "lazac": "File lososa",
+  "gouda": "Gouda / edamer",
+  "cheddar": "Cheddar",
+  "camembert": "Camembert",
+  "parizsi": "Parizer",
+  "szalami": "Salama",
+  "margarin": "Margarin",
+  "almale": "Sok od jabuke",
+  "mogyoro": "Kikiriki",
+  "eper": "Jagode",
+  "lasagne": "Listovi za lazanje",
+  "kuszkusz": "Kus-kus",
+  "rizsteszta": "Rižini rezanci",
+  "leveles_teszta": "Lisnato tijesto (rashlađeno)",
+  "sutotok": "Bundeva",
+  "cekla": "Cikla",
+  "edesburgonya": "Batat",
+  "padlizsan": "Patlidžan",
+  "zoldbab": "Mahune (smrznute)",
+  "zoldsegkeverek": "Smrznuta mješavina povrća",
+  "feher_bab": "Bijeli grah u konzervi",
+  "tofu": "Tofu",
+  "pesto": "Pesto",
+  "dio": "Mljeveni orasi",
+  "mak": "Mljeveni mak",
+  "olajbogyo": "Masline"
+ },
+ "words": {
+  "1 l zöldségalaplé": "1 l povrtnog temeljca",
+  "1,5 l alaplé": "1,5 l temeljca",
+  "8 dl alaplé": "8 dl temeljca",
+  "babérlevél": "lovorov list",
+  "bazsalikom": "bosiljak",
+  "bors": "papar",
+  "chili": "čili",
+  "citrom": "limun",
+  "citromhéj": "limunova korica",
+  "citromlé": "limunov sok",
+  "csipet só": "prstohvat soli",
+  "cukor": "šećer",
+  "curry": "curry",
+  "curryfűszer": "curry začin",
+  "currypaszta vagy curry": "curry pasta ili curry",
+  "dió": "orasi",
+  "ecet": "ocat",
+  "erős paprika": "ljuta paprika",
+  "fahéj": "cimet",
+  "fajitas-fűszer (paprika": "začin za fajitas (paprika",
+  "fokhagyma": "češnjak",
+  "fokhagyma)": "češnjak)",
+  "fokhagymapor": "češnjak u prahu",
+  "frissen őrölt bors": "svježe mljeveni papar",
+  "füstölt paprika": "dimljena paprika",
+  "fűszerpaprika": "crvena paprika",
+  "garam masala": "garam masala",
+  "gyros-fűszer": "začin za gyros",
+  "gyömbér": "đumbir",
+  "ha van": "ako imaš",
+  "kakukkfű": "timijan",
+  "kapor": "kopar",
+  "keményítő": "škrob",
+  "ketchup": "kečap",
+  "kurkuma": "kurkuma",
+  "kurkuma vagy sáfrány": "kurkuma ili šafran",
+  "kömény": "kim",
+  "lilahagyma": "crveni luk",
+  "lime vagy citrom": "limeta ili limun",
+  "majoránna": "majoran",
+  "mazsola": "grožđice",
+  "menta": "metvica",
+  "mustár": "senf",
+  "méz": "med",
+  "méz vagy juharszirup": "med ili javorov sirup",
+  "olaj": "ulje",
+  "olajbogyó": "masline",
+  "olajspray": "ulje u spreju",
+  "olívaolaj": "maslinovo ulje",
+  "olívaolaj vagy étolaj": "maslinovo ili jestivo ulje",
+  "oregánó": "origano",
+  "paprika": "paprika",
+  "petrezselyem": "peršin",
+  "petrezselyemzöld": "sjeckani peršin",
+  "pirospaprika": "crvena paprika",
+  "pirított hagyma": "prženi luk",
+  "rozmaring": "ružmarin",
+  "római kömény": "kumin",
+  "snidling": "vlasac",
+  "szemes bors": "papar u zrnu",
+  "szerecsendió": "muškatni oraščić",
+  "szezámmag": "sezam",
+  "szódabikarbóna": "soda bikarbona",
+  "szójaszósz": "sojin umak",
+  "só": "sol",
+  "sütőpor": "prašak za pecivo",
+  "tahini": "tahini",
+  "tárkony": "estragon",
+  "tökmag": "bučine sjemenke",
+  "vaníliás cukor": "vanilin šećer",
+  "zeller": "celer",
+  "zellerlevél": "listovi celera",
+  "zsálya": "kadulja",
+  "élesztő": "kvasac",
+  "újhagyma": "mladi luk",
+  "kömény, füstölt paprika": "kim, dimljena paprika"
+ },
+ "units": {
+  "fej": [
+   "glavica",
+   "glavice",
+   "glavica"
+  ],
+  "kis fej": [
+   "mala glavica",
+   "male glavice",
+   "malih glavica"
+  ],
+  "nagy fej": [
+   "velika glavica",
+   "velike glavice",
+   "velikih glavica"
+  ],
+  "doboz": [
+   "limenka",
+   "limenke",
+   "limenki"
+  ],
+  "ek": [
+   "žlica",
+   "žlice",
+   "žlica"
+  ],
+  "pohár": [
+   "čaša",
+   "čaše",
+   "čaša"
+  ],
+  "gerezd": [
+   "češanj",
+   "češnja",
+   "češnjeva"
+  ],
+  "üveg": [
+   "staklenka",
+   "staklenke",
+   "staklenki"
+  ],
+  "zacskó": [
+   "vrećica",
+   "vrećice",
+   "vrećica"
+  ],
+  "szelet": [
+   "kriška",
+   "kriške",
+   "kriški"
+  ],
+  "csomag": [
+   "pakiranje",
+   "pakiranja",
+   "pakiranja"
+  ],
+  "golyó": [
+   "kuglica",
+   "kuglice",
+   "kuglica"
+  ],
+  "tekercs": [
+   "rola",
+   "role",
+   "rola"
+  ],
+  "vekni": [
+   "štruca",
+   "štruce",
+   "štruca"
+  ],
+  "db": [
+   "kom",
+   "kom",
+   "kom"
+  ],
+  "csomó": [
+   "vezica",
+   "vezice",
+   "vezica"
+  ]
+ },
+ "phrases": {
+  "Zöldség, gyümölcs": "Voće i povrće",
+  "Pékáru": "Pekarski proizvodi",
+  "Hús, hal": "Meso i riba",
+  "Felvágott, sajt": "Narezci i sir",
+  "Tejtermék, tojás, hűtött": "Mliječni proizvodi, jaja, rashlađeno",
+  "Száraz áru": "Suha roba",
+  "Konzerv, üveges": "Konzerve i staklenke",
+  "Mélyhűtött": "Smrznuto",
+  "Italok": "Pića",
+  "Hétfő": "Ponedjeljak",
+  "Kedd": "Utorak",
+  "Szerda": "Srijeda",
+  "Csütörtök": "Četvrtak",
+  "Péntek": "Petak",
+  "Szombat": "Subota",
+  "Vasárnap": "Nedjelja",
+  "tűzhely": "štednjak",
+  "sütő": "pećnica",
+  "sütő vagy airfryer": "pećnica ili friteza na vrući zrak",
+  "könnyű": "lako",
+  "közepes": "srednje",
+  "Magyarország": "Mađarska",
+  "Horvátország": "Hrvatska",
+  "mérlegelős": "na vagu",
+  "A keret szűkös: néhány napra a legolcsóbb receptet tettük, a változatossági szabályokat lazítva.": "Budžet je tijesan: za neke dane odabrali smo najjeftiniji recept i ublažili pravila raznolikosti.",
+  "A beállításaidnak most kevés recept felel meg, ezért néhány napra a korábbi főzés maradéka jut (aznap többet főzöl).": "Tvojim postavkama sada odgovara malo recepata, pa neke dane jedeš ostatke ranijeg kuhanja (taj dan kuhaš više).",
+  "Demó árak (az Árfigyelő nem volt elérhető)": "Demo cijene (mađarski GVH Árfigyelő nije bio dostupan)",
+  "GVH Árfigyelő – friss letöltés": "GVH Árfigyelő (mađarski nadzor cijena) – svježe preuzeto",
+  "GVH Árfigyelő – utoljára letöltött példány": "GVH Árfigyelő (mađarski nadzor cijena) – zadnja preuzeta kopija",
+  "GVH Árfigyelő": "GVH Árfigyelő (mađarski nadzor cijena)",
+  "a horvát láncok napi árlistái (cijene.dev)": "dnevni cjenici hrvatskih trgovačkih lanaca (cijene.dev)",
+  "A legfrissebb horvát árlista keresése…": "Tražim najnoviji hrvatski cjenik…",
+  "A horvát árak feldolgozása…": "Obrađujem hrvatske cijene…",
+  "a lánc napi árlistája": "dnevni cjenik lanca",
+  "Bolti akció": "Akcija trgovine",
+  "Hűségkártyás/appos akció": "Akcija s karticom vjernosti / aplikacijom",
+  "kézi": "ručno",
+  "Egyéb": "Ostalo",
+  "Adj meg egy tételt": "Upiši stavku",
+  "Legfeljebb 60 saját tétel lehet": "Možeš imati najviše 60 vlastitih stavki",
+  "Nincs ilyen tétel": "Nema takve stavke",
+  "Legalább 2 karakteres keresőszó kell": "Upiši barem 2 znaka",
+  "Hiányzó vagy érvénytelen profil-azonosító": "Nedostaje ili je neispravan ID profila",
+  "Nincs ilyen háztartás-profil": "Nema takvog profila kućanstva",
+  "Hibás tétel": "Neispravna stavka",
+  "Hibás nap": "Neispravan dan",
+  "Ez a hét utolsó vacsorája": "Ovo je zadnja večera u tjednu",
+  "A profilok tárolása nincs bekapcsolva": "Spremanje profila nije uključeno",
+  "Túl nagy kérés (legfeljebb 1 MB)": "Zahtjev je prevelik (najviše 1 MB)",
+  "Ismeretlen recept": "Nepoznat recept",
+  "Az admin felület nincs bekapcsolva": "Administracija nije uključena",
+  "Az akciók kezelése nincs bekapcsolva": "Upravljanje akcijama nije uključeno"
+ },
+ "patterns": [
+  [
+   "^(\\S+)-kal olcsóbb, mint a másik láncban \\((.+)\\)$",
+   "$1 jeftinije nego u drugom lancu ($2)"
+  ],
+  [
+   "^(\\S+)-kal olcsóbb, mint a többi ((?:\\d*[02-9])?[2-4]) láncban \\((.+)\\)$",
+   "$1 jeftinije nego u ostala $2 lanca ($3)"
+  ],
+  [
+   "^(\\S+)-kal olcsóbb, mint a többi (\\d+) láncban \\((.+)\\)$",
+   "$1 jeftinije nego u ostalih $2 lanaca ($3)"
+  ],
+  [
+   "^(\\S+)-kal olcsóbb a szokásos áránál \\((.+)\\)$",
+   "$1 jeftinije od uobičajene cijene ($2)"
+  ],
+  [
+   "^egyes boltjaikban (\\S+)-kal olcsóbb \\(máshol akár (.+)\\)$",
+   "u nekim njihovim trgovinama $1 jeftinije (drugdje i do $2)"
+  ],
+  [
+   "^egységárban a legolcsóbbak közt: (.+) \\(átlag (.+)\\)$",
+   "među najjeftinijima po jedinici: $1 (prosjek $2)"
+  ],
+  [
+   "^Hűségkártyás/appos akció",
+   "Akcija s karticom vjernosti / aplikacijom"
+  ],
+  [
+   "^Bolti akció",
+   "Akcija trgovine"
+  ],
+  [
+   ", (\\S+)-kal olcsóbb \\(rendesen ([^)]+)\\)",
+   ", $1 jeftinije (inače $2)"
+  ],
+  [
+   " · forrás: fájl: ",
+   " · izvor: datoteka: "
+  ],
+  [
+   " · forrás: kézi",
+   " · izvor: ručno"
+  ],
+  [
+   " · forrás: ",
+   " · izvor: "
+  ],
+  [
+   " · csak a boltjaik (\\d+)%-ában kapható",
+   " · dostupno samo u $1 % njihovih trgovina"
+  ],
+  [
+   "^A szűrőknek csak (\\d+) recept felelt meg ebben a boltban\\.$",
+   "Broj recepata koji u ovoj trgovini odgovaraju filterima: $1."
+  ],
+  [
+   "^A terv túllépi a keretet \\((.+)\\)\\.$",
+   "Plan prelazi budžet ($1)."
+  ],
+  [
+   "^cijene\\.dev – a horvát láncok napi árlistái \\((\\d+) lánc\\)$",
+   "cijene.dev – dnevni cjenici hrvatskih lanaca (lanaca: $1)"
+  ],
+  [
+   "^GVH Árfigyelő – helyi fájl \\((.+)\\)$",
+   "GVH Árfigyelő – lokalna datoteka ($1)"
+  ],
+  [
+   "^A horvát árlista letöltése \\((.+)\\)…$",
+   "Preuzimam hrvatski cjenik ($1)…"
+  ],
+  [
+   "^(.+) árai töltődnek…$",
+   "Učitavam cijene: $1…"
+  ],
+  [
+   "^Nem sikerült betölteni: ",
+   "Učitavanje nije uspjelo: "
+  ],
+  [
+   "^Nincs ilyen recept: ",
+   "Nema takvog recepta: "
+  ],
+  [
+   "^Ismeretlen recept: ",
+   "Nepoznat recept: "
+  ],
+  [
+   "^Ismeretlen végpont: ",
+   "Nepoznata adresa: "
+  ],
+  [
+   "^Nincs ilyen termék: ",
+   "Nema takvog proizvoda: "
+  ],
+  [
+   "^Ismeretlen művelet: ",
+   "Nepoznata radnja: "
+  ],
+  [
+   "^Ismeretlen vagy hiányzó bolt: ",
+   "Nepoznata ili nedostajuća trgovina: "
+  ],
+  [
+   "^Nem támogatott kérés: ",
+   "Nepodržani zahtjev: "
+  ],
+  [
+   "^Belső hiba: ",
+   "Interna greška: "
+  ],
+  [
+   "\\(becsült\\)",
+   "(procjena)"
+  ],
+  [
+   " / csomó \\(kb\\. ",
+   " / vezica (oko "
+  ],
+  [
+   "-os csomag ≈ ",
+   " pakiranje ≈ "
+  ],
+  [
+   "\\bkb\\. ",
+   "oko "
+  ],
+  [
+   "\\bfél\\b",
+   "½"
+  ],
+  [
+   "\\bmásfél\\b",
+   "1½"
+  ],
+  [
+   "\\bnéhány\\b",
+   "nekoliko"
+  ],
+  [
+   "\\(morzsának\\)",
+   "(za mrvice)"
+  ],
+  [
+   "\\(salátának\\)",
+   "(za salatu)"
+  ],
+  [
+   "\\(csipetkének\\)",
+   "(za tijesto)"
+  ],
+  [
+   "\\(mellé\\)",
+   "(uz to)"
+  ],
+  [
+   "\\(lila\\)",
+   "(crveni)"
+  ],
+  [
+   "\\(hamburgerzsemle\\)",
+   "(peciva za burger)"
+  ],
+  [
+   "\\(vastag szeletek\\)",
+   "(debele kriške)"
+  ],
+  [
+   "\\(cérnametélt helyett\\)",
+   "(umjesto tankih rezanaca)"
+  ],
+  [
+   "\\(parmezán helyett\\)",
+   "(umjesto parmezana)"
+  ],
+  [
+   "\\(kifli helyett\\)",
+   "(umjesto kiflica)"
+  ],
+  [
+   "\\(ramen helyett\\)",
+   "(umjesto ramen rezanaca)"
+  ],
+  [
+   "\\(pita helyett\\)",
+   "(umjesto pite)"
+  ],
+  [
+   "\\(búzadara helyett\\)",
+   "(umjesto pšenične krupice)"
+  ],
+  [
+   "\\(betűtészta helyett\\)",
+   "(umjesto tjestenine slova)"
+  ],
+  [
+   "\\(lebbencs helyett\\)",
+   "(umjesto tjestenine lebbencs)"
+  ],
+  [
+   "\\(áfonya helyett\\)",
+   "(umjesto brusnica)"
+  ],
+  [
+   "\\((\\S+) helyett\\)",
+   "(umjesto: $1)"
+  ],
+  [
+   "\\bmellé$",
+   "uz to"
+  ],
+  [
+   "\\bpirítósnak$",
+   "za tost"
+  ],
+  [
+   "\\btartármártásnak$",
+   "za tartar umak"
+  ],
+  [
+   "\\bzsemlemorzsának$",
+   "za krušne mrvice"
+  ],
+  [
+   "\\böntetnek$",
+   "za preljev"
+  ],
+  [
+   "^a hagymához$",
+   "za luk"
+  ],
+  [
+   "\\breszelt héja$",
+   "naribana korica"
+  ],
+  [
+   "^érett ",
+   "zrelo "
+  ],
+  [
+   ", vegyes színű$",
+   ", raznih boja"
+  ],
+  [
+   "\\bek olaj$",
+   "žlica ulja"
+  ]
+ ],
+ "search": {
+  "kava": "kave",
+  "kruh": "kenyer",
+  "mlijeko": "tej",
+  "jaja": "tojas",
+  "jaje": "tojas",
+  "pivo": "sor",
+  "vino": "bor",
+  "voda": "viz",
+  "mineralna voda": "asvanyviz",
+  "sok": "gyumolcsle",
+  "sok od jabuke": "almale",
+  "sok od narance": "narancsle",
+  "cokolada": "csokolade",
+  "keks": "keksz",
+  "keksi": "keksz",
+  "sir": "sajt",
+  "maslac": "vaj",
+  "jogurt": "joghurt",
+  "vrhnje": "tejfol",
+  "kiselo vrhnje": "tejfol",
+  "tjestenina": "teszta",
+  "riza": "rizs",
+  "secer": "cukor",
+  "brasno": "liszt",
+  "sol": "so",
+  "papar": "bors",
+  "ulje": "olaj",
+  "ocat": "ecet",
+  "med": "mez",
+  "banana": "banan",
+  "banane": "banan",
+  "jabuka": "alma",
+  "jabuke": "alma",
+  "kruska": "korte",
+  "kruske": "korte",
+  "naranca": "narancs",
+  "narance": "narancs",
+  "limun": "citrom",
+  "grozde": "szolo",
+  "rajcica": "paradicsom",
+  "rajcice": "paradicsom",
+  "krastavac": "uborka",
+  "luk": "hagyma",
+  "cesnjak": "fokhagyma",
+  "krumpir": "krumpli",
+  "mrkva": "repa",
+  "piletina": "csirke",
+  "pile": "csirke",
+  "svinjetina": "sertes",
+  "junetina": "marha",
+  "govedina": "marha",
+  "riba": "hal",
+  "sunka": "sonka",
+  "kobasica": "kolbasz",
+  "salama": "szalami",
+  "deterdzent za sude": "mosogatoszer",
+  "deterdzent": "mososzer",
+  "prasak za rublje": "mososzer",
+  "toaletni papir": "wc papir",
+  "papirnati rucnici": "papirtorlo",
+  "pasta za zube": "fogkrem",
+  "sampon": "sampon",
+  "sapun": "szappan",
+  "pelene": "pelenka",
+  "maramice": "zsebkendo",
+  "caj": "tea",
+  "kakao": "kakao",
+  "cips": "chips",
+  "sladoled": "jegkrem",
+  "pizza": "pizza",
+  "zob": "zab",
+  "zobene pahuljice": "zabpehely",
+  "musli": "muzli",
+  "vrhnje za kuhanje": "tejszin",
+  "gljive": "gomba",
+  "sampinjoni": "gomba",
+  "paprika": "paprika",
+  "kupus": "kaposzta",
+  "cvjetaca": "karfiol",
+  "brokula": "brokkoli",
+  "grah": "bab",
+  "leca": "lencse",
+  "tuna": "tonhal",
+  "losos": "lazac",
+  "puretina": "pulyka",
+  "pekmez": "lekvar",
+  "spinat": "spenot",
+  "grasak": "borso",
+  "kukuruz": "kukorica"
+ }
+}

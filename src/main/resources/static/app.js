@@ -87,7 +87,7 @@ const unitName = (u) => (u === "db" ? t("db") : u);
 function qty(amount, unit) {
   const comma = (n) => String(n).replace(".", DEC);
   if (unit === "kg" && amount < 1) return `${Math.round(amount * 1000)} g`;
-  if (unit === "l" && amount < 1) return LANG === "hu" ? `${comma(Math.round(amount * 100) / 10)} dl` : `${Math.round(amount * 1000)} ml`;
+  if (unit === "l" && amount < 1) return LANG !== "en" ? `${comma(Math.round(amount * 100) / 10)} dl` : `${Math.round(amount * 1000)} ml`;
   return `${comma(Math.round(amount * 100) / 100)} ${unitName(unit)}`;
 }
 
@@ -214,7 +214,7 @@ const storeInfo = (id) => state.status?.stores.find((s) => s.id === id);
 const storeName = (id) => storeInfo(id)?.name || id;
 const inStore = (id) => (LANG === "hu" ? IN_STORE[id] || `itt: ${storeName(id)}` : t("itt: {store}", { store: storeName(id) }));
 /** „szerdára” / „for Wednesday”; a nap neve a szervertől már a felület nyelvén jön. */
-const dayTo = (label) => (LANG === "hu" ? DAY_TO[label] || "erre a napra" : t("erre: {day}", { day: label }));
+const dayTo = (label) => (LANG === "hu" ? DAY_TO[label] || "erre a napra" : DAY_FOR[LANG]?.[label] || t("erre: {day}", { day: label }));
 /** A recept- és árnézetek boltja: a beállított, automatikus módban a hét boltja (ahol a hét a legolcsóbb). */
 const currentStore = () => settings().store || state.week?.store || bestStore()?.id;
 
