@@ -790,3 +790,4 @@ dialog::backdrop { background: rgb(15 12 5 / 0.5); }
 .buy-label { display: flex; flex-direction: column; }
 .have-note { margin: 6px 0 0; max-width: 32ch; }
 @media print { .have-btn, .aisle.have { display: none !important; } }
+.share-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }

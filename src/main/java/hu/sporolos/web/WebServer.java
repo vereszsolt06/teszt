@@ -350,7 +350,7 @@ public final class WebServer {
             boolean writes = path.equals("/api/rate") || path.equals("/api/check");
             boolean isExtras = path.equals("/api/extras");
             boolean allowed = method.equals("GET") && !isRefresh && !writes
-                    || method.equals("POST") && (isRefresh || isPromos || writes || path.equals("/api/profile"))
+                    || method.equals("POST") && (isRefresh || isPromos || writes || path.equals("/api/profile") || path.equals("/api/profile/rotate"))
                     || method.equals("PUT") && path.equals("/api/profile")
                     || method.equals("DELETE") && (isPromos || path.equals("/api/rate") || isExtras)
                     || method.equals("POST") && isExtras;
@@ -386,6 +386,7 @@ public final class WebServer {
                     case "PUT" -> saveProfile(q, readBody(ex, MAX_PUBLIC_BODY));
                     default -> profileJson(requireId(q));
                 };
+                case "/api/profile/rotate" -> rotateProfile(q);
                 case "/api/rate" -> method.equals("DELETE") ? clearRatings(q) : rate(q, readBody(ex, MAX_PUBLIC_BODY));
                 case "/api/week" -> week(q);
                 case "/api/check" -> check(q, readBody(ex, MAX_PUBLIC_BODY));
@@ -838,6 +839,18 @@ public final class WebServer {
         Map<String, Object> in = body.isBlank() ? Map.of() : Json.obj(Json.parse(body));
         requireStorage().saveProfile(id, Household.from(in, markets).toJson());
         return profileJson(id);
+    }
+
+    /**
+     * A közös link visszavonása: a háztartás minden adata új, véletlen azonosítóra kerül, a régi megszűnik.
+     * Aki a régi linket ismeri (vagy a régi linkkel nyitott eszközön van), többé nem éri el a háztartást.
+     */
+    private Object rotateProfile(Map<String, String> q) throws IOException {
+        String id = requireId(q);
+        Household.load(requireStorage(), id, markets); // létezik-e (különben 404)
+        String fresh = Ids.newProfileId();
+        if (!requireStorage().moveHousehold(id, fresh)) throw new NotFound("Nincs ilyen háztartás-profil");
+        return profileJson(fresh);
     }
 
     private Object saveProfile(Map<String, String> q, String body) throws IOException {
@@ -1561,7 +1574,7 @@ public final class WebServer {
     /** Ismert útvonalak (a metrikák címkéi korlátos számúak maradjanak, véletlen URL-ek ne hozzanak létre újat). */
     private static final Set<String> ROUTES = Set.of("/api/status", "/api/markets", "/api/deals", "/api/suggestions",
             "/api/recipe", "/api/item", "/api/search", "/api/ingredients", "/api/plan", "/api/recipes", "/api/offers",
-            "/api/extras", "/api/promos", "/api/refresh", "/api/profile", "/api/rate", "/api/week", "/api/check");
+            "/api/extras", "/api/promos", "/api/refresh", "/api/profile", "/api/profile/rotate", "/api/rate", "/api/week", "/api/check");
 
     static String route(String path, boolean api) {
         if (!api) return path.equals("/healthz") || path.equals("/metrics") ? path : "static";
@@ -1584,7 +1597,7 @@ public final class WebServer {
         return path + "?" + q.replaceAll("(^|&)id=[^&]*", "$1id=***");
     }
 
-    private static final Set<String> PROFILE_PATHS = Set.of("/api/week", "/api/profile", "/api/extras", "/api/rate", "/api/check");
+    private static final Set<String> PROFILE_PATHS = Set.of("/api/week", "/api/profile", "/api/profile/rotate", "/api/extras", "/api/rate", "/api/check");
 
     private void metricsEndpoint(HttpExchange ex) throws IOException {
         StringBuilder sb = new StringBuilder();

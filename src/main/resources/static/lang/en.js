@@ -372,4 +372,8 @@ I18N.en = {
   "{price} értékű már megvan otthon – nem számoltuk bele.": "{price} worth is already at home – not included.",
   "Otthon megvan: {list}": "Already at home: {list}",
   "Megvan otthon – kivettük a vásárlásból.": "Already at home – removed from the shopping.",
+  "Új link (a régi megszűnik)": "New link (the old one stops working)",
+  "Új linket készítünk; a régi azonnal megszűnik. A hét, a lista és a kedvencek megmaradnak, de a háztartás többi tagjának el kell küldened az új linket. Folytatod?": "We'll create a new link and the old one stops working right away. Your week, list and favourites stay, but you'll need to send the new link to the others in your household. Continue?",
+  "Kész az új link – küldd el a háztartás tagjainak.": "New link ready – send it to your household.",
+  "Ez a közös link már nem érvényes – kérj újat attól, aki küldte.": "This shared link is no longer valid – ask whoever sent it for a new one.",
 };

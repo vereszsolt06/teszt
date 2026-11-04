@@ -358,4 +358,8 @@ I18N.de = {
   "{price} értékű már megvan otthon – nem számoltuk bele.": "Für {price} ist schon zu Hause – nicht mitgerechnet.",
   "Otthon megvan: {list}": "Schon zu Hause: {list}",
   "Megvan otthon – kivettük a vásárlásból.": "Schon zu Hause – aus dem Einkauf genommen.",
+  "Új link (a régi megszűnik)": "Neuer Link (der alte wird ungültig)",
+  "Új linket készítünk; a régi azonnal megszűnik. A hét, a lista és a kedvencek megmaradnak, de a háztartás többi tagjának el kell küldened az új linket. Folytatod?": "Wir erstellen einen neuen Link, der alte wird sofort ungültig. Woche, Liste und Favoriten bleiben, aber du musst den anderen im Haushalt den neuen Link schicken. Fortfahren?",
+  "Kész az új link – küldd el a háztartás tagjainak.": "Neuer Link ist fertig – schick ihn deinem Haushalt.",
+  "Ez a közös link már nem érvényes – kérj újat attól, aki küldte.": "Dieser gemeinsame Link ist nicht mehr gültig – bitte die Person, die ihn geschickt hat, um einen neuen.",
 };

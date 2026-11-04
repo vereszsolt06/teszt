@@ -151,7 +151,7 @@ docker compose -f docker-compose.prod.yml up -d --build
 - **Bolt** a fejlécben: **automatikus** (ahol a heted a legolcsóbb) vagy egy rögzített lánc. **Két bolt:** ha bekapcsolod, és legalább ~300 Ft-ot (vagy a hét 4%-át) spórolsz vele, a lista két boltra bomlik – minden tétel ott, ahol olcsóbb.
 - **Beállítások:** háztartás, keret, diéta, konyha, **boltjaim** (a nem kedvelt lánc kizárható), **kiszerelés** (háztartási vagy nagy), **hűségkártyák**, **közös háztartás** link. (A bolti akciók felvitele és az árfrissítés az admin felületre költözött.)
 - **Admin felület (`/admin`):** receptek, alapanyagok, bolti akciók, árfrissítés, export – részletesen a [9. pontban](#9-admin-felület-admin).
-- **Közös háztartás:** a Beállításokban kapott linkkel (`…/#profil=…`) a párod vagy a családod ugyanazt a profilt használja: ugyanaz a hét, ugyanaz a lista, közös pipák.
+- **Közös háztartás:** a Beállításokban kapott linkkel (`…/#profil=…`) a párod vagy a családod ugyanazt a profilt használja: ugyanaz a hét, ugyanaz a lista, közös pipák. Ha a link rossz kézbe került: **„Új link (a régi megszűnik)”** – a háztartás minden adata (beállítások, kedvencek, hét, pipák, saját tételek) új, véletlen azonosítóra kerül, a régi link azonnal megszűnik (`POST /api/profile/rotate`). Egy visszavont vagy elgépelt link nem írja felül az eszköz saját profilját: az app szól, hogy a link nem érvényes.
 
 ## Hogyan működik
 
@@ -395,7 +395,7 @@ Dockerfile, docker-compose.yml   konténer: app + postgres:16
 ./build.sh test        # Windows: build.cmd test
 ```
 
-49 teszt fut le:
+50 teszt fut le:
 - JSON- és xlsx-olvasás, az Árfigyelő-fejléc felismerése, egységátváltás;
 - mind a négy jó ár jel, valamint az elérhetőség hatása;
 - a kiszerelés-modell: tojásdoboz vagy tálca, mérlegelős áru minimum egy darabbal, „ca. 500g”, csak csomagolt liszt, darab ↔ kg (paprika, zsemle), csomós zöldség, tűrés, a nagy kiszerelés határa;
@@ -405,7 +405,8 @@ Dockerfile, docker-compose.yml   konténer: app + postgres:16
 - receptadatok (kalória, a vega címke és a hús egyezése, eszközök, mi tartható el másnapig);
 - a mennyiségek átszámolása más adagszámra (db, szelet, dl, dkg → kg, „fél”, „másfél”), mind a 170 recept minden sorára;
 - heti terv maradékkal (3 napra főzés, a maradéknapra nincs vásárlás, csak eltartható étel), ugyanaz a hét több boltban, két boltos lista (sosem drágább, kis megtakarításért nem bont);
-- tárolás oda-vissza (profil, értékelés, hét, pipák, árnap, kézi akció) fájlokkal, és – ha a `PG_TEST_URL` meg van adva – PostgreSQL-lel is, párhuzamos írással és SQL-befecskendezési próbával;
+- tárolás oda-vissza (profil, értékelés, hét, pipák, árnap, kézi akció, a háztartás áthelyezése új azonosítóra minden adatával) fájlokkal, és – ha a `PG_TEST_URL` meg van adva – PostgreSQL-lel is, párhuzamos írással és SQL-befecskendezési próbával;
+- a közös link visszavonása a webszerveren át: új, 20 karakteres azonosító, a régi 404, a beállítások, a hét és a jelölések megmaradnak, a régi azonosítóval újra nem visszavonható;
 - heti terv javító köre: 6 boltban × 2 létszám × 3 mag × keret nélkül / kerettel átlagosan olcsóbb a mohó tervnél, nem lépi túl gyakrabban a keretet, nincs ismétlés vagy desszert, a megtartott napokhoz nem nyúl;
 - heti terv: nincs ismétlés, változatos fő alapanyag, nincs desszert, a lista összege egyezik, egy termék egy sor, diéta- és eszközszűrő, csere a többi nap megtartásával, keret, más mag más hetet ad;
 - a letöltés, a gyorsítótár és a visszaesés egy helyi HTTP-szerverrel;
@@ -475,7 +476,7 @@ Ezeket kérdezés nélkül döntöttem el; bármelyik könnyen módosítható.
 - A horvát első betöltés egy-két perc (letöltés), utána naponta egyszer; egy szerényebb gépen a feldolgozás kb. 300–500 MB memóriát kér.
 - A tápértékek tipikus, kerekített értékekből számolt becslések; diétás vagy orvosi célra nem elég pontosak.
 - A heti terv mohó választás + egycserés javító kör (lásd 5. pont): nem garantáltan a legjobb kombináció (két nap egyidejű cseréjét nem próbálja), cserébe gyors (≈ 13 ms) és jól érthető.
-- A közös háztartás linkje bárkinek hozzáférést ad, aki megkapja; jelszó / fiók nincs.
+- A közös háztartás linkje bárkinek hozzáférést ad, aki megkapja; jelszó / fiók nincs. Kiszivárgott linknél a Beállításokban új link kérhető, a régi megszűnik.
 - A NomNom Planner ötletét és felépítését vettem át (lásd lent), a szövegeit, fotóit és márkáját nem.
 - Az ár „hasonló termék” cseréje a saját tételeknél kategória + egység + kb. kiszerelés alapján megy; nagyon eltérő minőségű termékeket is párba állíthat.
 - Az árelőzmény csak attól a naptól gyűlik, amikor az app először fut; a GVH régebbi napi fájljait nem tölti le.

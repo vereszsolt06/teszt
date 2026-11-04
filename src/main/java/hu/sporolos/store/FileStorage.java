@@ -144,6 +144,17 @@ public final class FileStorage implements Storage {
         writeDoc(profileId, d);
     }
 
+    @Override
+    public synchronized boolean moveHousehold(String fromId, String toId) throws IOException {
+        Path from = profileFile(fromId), to = profileFile(toId);
+        if (!Files.exists(from)) return false;
+        if (Files.exists(to)) throw new IOException("Az új azonosító már foglalt");
+        Files.move(from, to, StandardCopyOption.ATOMIC_MOVE);
+        Path extrasFrom = docFile("extras-" + fromId), extrasTo = docFile("extras-" + toId);
+        if (Files.exists(extrasFrom)) Files.move(extrasFrom, extrasTo, StandardCopyOption.REPLACE_EXISTING);
+        return true;
+    }
+
     // ---------- árelőzmények ----------
 
     private Path historyDir() {

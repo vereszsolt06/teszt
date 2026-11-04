@@ -74,6 +74,14 @@ public interface Storage extends AutoCloseable {
 
     void deleteDocument(String key) throws IOException;
 
+    /**
+     * A háztartás minden adata (beállítások, értékelések, hét, pipák, saját tételek) átkerül egy új azonosítóra,
+     * a régi megszűnik – a közös link „visszavonása”: aki a régi linket ismeri, többé nem éri el a háztartást.
+     *
+     * @return false, ha nincs ilyen (régi) háztartás
+     */
+    boolean moveHousehold(String fromId, String toId) throws IOException;
+
     /** Hány háztartás-profil van (az admin áttekintéséhez). */
     int householdCount() throws IOException;
 

@@ -803,6 +803,32 @@ public final class AllTests {
         eq(null, WebServer.forwardedClient(List.of()), "nincs fejléc");
     }
 
+    static void testRotateHouseholdLink() throws Exception {
+        Path dir = Files.createTempDirectory("sporolos");
+        PriceRepository repo = new PriceRepository(CATALOG, List.of(new DemoPriceProvider(CATALOG, LocalDate.now())),
+                new PriceHistory(new FileStorage(dir), 28), new PromoStore(dir.resolve("akciok"), List.of()), Duration.ofHours(1));
+        WebServer server = new WebServer(repo, new FileStorage(dir));
+        int port = server.start("127.0.0.1", 0);
+        try {
+            HttpClient c = HttpClient.newHttpClient();
+            String base = "http://127.0.0.1:" + port;
+            String old = String.valueOf(Json.obj(Json.parse(send(c, "POST", base + "/api/profile", "{\"people\":3,\"onboarded\":true}", 200))).get("id"));
+            Map<String, Object> week = Json.obj(Json.parse(get(c, base + "/api/week?id=" + old, 200)));
+            send(c, "POST", base + "/api/check?id=" + old, "{\"key\":\"" + week.get("listKey") + "\",\"item\":\"have:Tojás\",\"on\":true}", 200);
+            Map<String, Object> rotated = Json.obj(Json.parse(send(c, "POST", base + "/api/profile/rotate?id=" + old, "", 200)));
+            String fresh = String.valueOf(rotated.get("id"));
+            check(!fresh.equals(old) && fresh.length() == 20, "új, véletlen azonosító");
+            get(c, base + "/api/profile?id=" + old, 404);
+            eq(3L, Json.obj(Json.obj(Json.parse(get(c, base + "/api/profile?id=" + fresh, 200))).get("settings")).get("people"), "a beállítások megmaradtak");
+            Map<String, Object> week2 = Json.obj(Json.parse(get(c, base + "/api/week?id=" + fresh, 200)));
+            eq(week.get("listKey"), week2.get("listKey"), "ugyanaz a hét");
+            check(Json.arr(week2.get("checked")).contains("have:Tojás"), "a jelölések megmaradtak");
+            send(c, "POST", base + "/api/profile/rotate?id=" + old, "", 404);
+        } finally {
+            server.stop();
+        }
+    }
+
     static void testLogRedaction() {
         eq("/api/week?id=***&lang=en", WebServer.redactForTest("/api/week?id=abcdefghjk23456789mn&lang=en"), "profil-azonosító kitakarva");
         eq("/api/extras?id=***&n=3", WebServer.redactForTest("/api/extras?id=x&n=3"), "több paraméter");
@@ -1201,6 +1227,19 @@ public final class AllTests {
         eq(Set.of("Kenyér"), st.checked(id, "k1"), "pipák");
         st.setChecked(id, "k2", "Rizs", true);
         check(st.checked(id, "k1").isEmpty(), "új lista: a régi pipák törlődnek");
+        // a közös link visszavonása: minden adat új azonosítóra kerül, a régi megszűnik
+        st.rate(id, "lecso", true);
+        st.saveDocument("extras-" + id, "[{\"name\":\"Kávé\"}]");
+        String moved = id + "uj";
+        check(st.moveHousehold(id, moved), "áthelyezve");
+        check(st.profile(id) == null, "a régi azonosító megszűnt");
+        eq("lidl", st.profile(moved).get("store"), "a beállítások átkerültek");
+        eq(Map.of("lecso", true), st.ratings(moved), "az értékelések átkerültek");
+        eq(List.of("a", "b"), st.week(moved).get("ids"), "a hét átkerült");
+        eq(Set.of("Rizs"), st.checked(moved, "k2"), "a pipák átkerültek");
+        check(st.document("extras-" + id) == null && st.document("extras-" + moved) != null, "a saját tételek átkerültek");
+        check(!st.moveHousehold(id, id + "x"), "nem létező háztartás");
+        id = moved;
         LocalDate d = LocalDate.of(2020, 1, 1).plusDays(System.nanoTime() % 2000);
         check(!st.hasPriceDay(d), "még nincs ilyen nap");
         st.savePriceDay(d, List.of(entry("x1", "Tej", 1, "lidl", 299, "l", 1), entry("x2", "Kenyér", 1, "aldi", 499.5, "kg", 1)));

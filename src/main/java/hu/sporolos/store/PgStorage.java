@@ -257,6 +257,25 @@ public final class PgStorage implements Storage {
         c.query("INSERT INTO household(id) VALUES ($1) ON CONFLICT (id) DO NOTHING", Ids.check(id));
     }
 
+    @Override
+    public boolean moveHousehold(String fromId, String toId) throws IOException {
+        Ids.check(fromId);
+        Ids.check(toId);
+        return tx(c -> {
+            // az új sor előbb jön létre (a gyerektáblák rá hivatkoznak), a régi a végén törlődik
+            int n = c.query("""
+                    INSERT INTO household(id, settings, created_at, updated_at)
+                    SELECT $2, settings, created_at, now() FROM household WHERE id = $1""", fromId, toId).updated();
+            if (n == 0) return false;
+            c.query("UPDATE recipe_rating SET household_id = $2 WHERE household_id = $1", fromId, toId);
+            c.query("UPDATE saved_week SET household_id = $2 WHERE household_id = $1", fromId, toId);
+            c.query("UPDATE checked_item SET household_id = $2 WHERE household_id = $1", fromId, toId);
+            c.query("UPDATE app_document SET key = $2 WHERE key = $1", "extras-" + fromId, "extras-" + toId);
+            c.query("DELETE FROM household WHERE id = $1", fromId);
+            return true;
+        });
+    }
+
     // ---------- profil ----------
 
     @Override

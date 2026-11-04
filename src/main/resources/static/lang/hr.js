@@ -358,4 +358,8 @@ I18N.hr = {
   "{price} értékű már megvan otthon – nem számoltuk bele.": "Za {price} već imaš kod kuće – nije uračunato.",
   "Otthon megvan: {list}": "Već imam kod kuće: {list}",
   "Megvan otthon – kivettük a vásárlásból.": "Već imaš kod kuće – maknuto iz kupnje.",
+  "Új link (a régi megszűnik)": "Nova poveznica (stara prestaje raditi)",
+  "Új linket készítünk; a régi azonnal megszűnik. A hét, a lista és a kedvencek megmaradnak, de a háztartás többi tagjának el kell küldened az új linket. Folytatod?": "Napravit ćemo novu poveznicu, a stara odmah prestaje raditi. Tjedan, popis i omiljeni ostaju, ali ostalim članovima kućanstva moraš poslati novu poveznicu. Nastaviti?",
+  "Kész az új link – küldd el a háztartás tagjainak.": "Nova poveznica je spremna – pošalji je ukućanima.",
+  "Ez a közös link már nem érvényes – kérj újat attól, aki küldte.": "Ova zajednička poveznica više ne vrijedi – zatraži novu od onoga tko ti ju je poslao.",
 };

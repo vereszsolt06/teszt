@@ -277,9 +277,18 @@ function badges(r, max) {
 async function loadProfile() {
   const fromLink = new URLSearchParams(location.hash.slice(1)).get("profil");
   if (fromLink) {
-    local("sporolos.profile", fromLink);
     history.replaceState(null, "", "#het");
-    toast(t("Csatlakoztál a háztartás közös tervéhez."));
+    // a linkből jövő háztartást csak akkor vesszük át, ha létezik: egy visszavont vagy elgépelt link
+    // nem írhatja felül (és nem törölheti) az eszköz saját profilját
+    try {
+      const p = await api(`/api/profile?id=${encodeURIComponent(fromLink)}`);
+      local("sporolos.profile", p.id);
+      toast(t("Csatlakoztál a háztartás közös tervéhez."));
+      return (state.profile = p);
+    } catch (e) {
+      if (e.status === 404 || e.status === 400) toast(t("Ez a közös link már nem érvényes – kérj újat attól, aki küldte."));
+      else if (!e.offline) throw e;
+    }
   }
   const id = local("sporolos.profile");
   if (!id) return null;
@@ -1800,9 +1809,13 @@ function openSettings() {
     state.week = null;
     startOnboarding();
   });
+  const rotate = el("button", "ghost small", t("Új link (a régi megszűnik)"), { type: "button" });
+  rotate.addEventListener("click", () => rotateLink());
   const sr = el("div", "share-row");
   sr.append(linkBox, copy);
-  share.append(sr, restart);
+  const actions = el("div", "share-actions");
+  actions.append(rotate, restart);
+  share.append(sr, actions);
 
   const data = group(t("Adatok"));
   const st = state.status;
@@ -1812,6 +1825,25 @@ function openSettings() {
     ? t("Az árak 6 óránként maguktól frissülnek. A receptek, alapanyagok és bolti akciók az admin felületen (/admin) kezelhetők.")
     : t("A horvát árlisták naponta egyszer frissülnek (a láncok minden reggel közzéteszik őket). A receptek és az alapanyagok közösek, az illesztés a terméknevek alapján történik – béta.")));
   openDialog($("#settings"));
+}
+
+/**
+ * A közös link visszavonása: a háztartás új, véletlen azonosítót kap (minden adat megmarad), a régi link megszűnik.
+ * Akinek a régi linkje volt, annak az újat kell elküldeni.
+ */
+async function rotateLink() {
+  if (!confirm(t("Új linket készítünk; a régi azonnal megszűnik. A hét, a lista és a kedvencek megmaradnak, de a háztartás többi tagjának el kell küldened az új linket. Folytatod?"))) return;
+  try {
+    const p = await api(`/api/profile/rotate?id=${encodeURIComponent(state.profile.id)}`, { method: "POST" });
+    state.profile = p;
+    local("sporolos.profile", p.id);
+    local("sporolos.profileData", JSON.stringify(p));
+    local(PENDING, null); // a régi azonosítóra szóló, még el nem küldött pipák már nem mennének fel
+    openSettings();
+    toast(t("Kész az új link – küldd el a háztartás tagjainak."));
+  } catch (e) {
+    toast(e.message);
+  }
 }
 
 /** Ország váltása: új profilbeállítás (az ottani boltokkal), az árak betöltése, új hét. */
