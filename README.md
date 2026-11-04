@@ -110,7 +110,7 @@ cd deploy && cp .env.example .env   # DOMAIN, DB_PASSWORD, ADMIN_PASSWORD
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-**1. TLS a proxyn.** Az app maga nem kezel tanúsítványt; a proxy végzi a HTTPS-t, és az appnak `TRUST_PROXY=true`-t kell kapnia, hogy a kliens IP-címét (kéréskorlát) és a HTTPS-t (HSTS fejléc) a proxytól vegye. Caddyvel (automatikus Let's Encrypt-tanúsítvány):
+**1. TLS a proxyn.** Az app maga nem kezel tanúsítványt; a proxy végzi a HTTPS-t, és az appnak `TRUST_PROXY=true`-t kell kapnia, hogy a kliens IP-címét (kéréskorlát) és a HTTPS-t (HSTS fejléc) a proxytól vegye. Az app az `X-Forwarded-For` **utolsó** elemét tekinti a kliensnek (azt írta a közvetlenül előtte álló proxy; az első elemet a kliens hamisíthatja), vagyis egy proxy-réteget feltételez – CDN + terheléselosztó láncnál a terheléselosztó cserélje le a fejlécet a valódi kliens címére. Caddyvel (automatikus Let's Encrypt-tanúsítvány):
 
 ```
 sporolos.example.com {
@@ -409,7 +409,7 @@ Dockerfile, docker-compose.yml   konténer: app + postgres:16
 ./build.sh test        # Windows: build.cmd test
 ```
 
-47 teszt fut le:
+48 teszt fut le:
 - JSON- és xlsx-olvasás, az Árfigyelő-fejléc felismerése, egységátváltás;
 - mind a négy jó ár jel, valamint az elérhetőség hatása;
 - a kiszerelés-modell: tojásdoboz vagy tálca, mérlegelős áru minimum egy darabbal, „ca. 500g”, csak csomagolt liszt, darab ↔ kg (paprika, zsemle), csomós zöldség, tűrés, a nagy kiszerelés határa;
@@ -426,7 +426,7 @@ Dockerfile, docker-compose.yml   konténer: app + postgres:16
 - országok: forint- és eurós pénzformázás (a kérés szála szerint); a horvát névillesztés 31 valódi (a láncok listáiból vett) terméknéven, köztük olyanokon, amelyek *nem* alapanyagok (felvágott, kész étel, csokoládé, állateledel, habfürdő); egy valósághű horvát napi archívum feldolgozása (darabos tojás, mérlegelős csirkemell, akciós ár üres árral, idézőjeles-vesszős név, a drogéria kihagyása, két láncban ugyanaz a vonalkód), majd a teljes app horvát árakkal: 503 „töltődik”, euró, horvát boltok, magyar keresőszó, horvát bolti akció, vissza magyarra;
 - heti terv: a napok dátuma és neve, a hét kezdete, változatosság (jellegzetes alapanyag egyszer, krumpli legfeljebb kétszer), csere-javaslatok (nincsenek már a héten, a hét új ára közel a tényleges árhoz), választás után a többi nap és a kezdőnap marad, maradéknapnál a főzős nap javaslatai;
 - admin: rossz jelszó 401, jó jelszó token; az akció- és a frissítés-végpont token nélkül 401; receptmódosítás mentése, tárolóba írása és azonnali érvényesülése; hibás recept 400; előnézet figyelmeztetéssel; új / ismételt / törölt recept; alapanyag kizáró szóval kevesebb találat; használt alapanyag nem törölhető; visszaállás a beépítettre; az `/admin` oldal kiszolgálása;
-- éles üzem: ellenséges JSON (100 000 szint mély, lezáratlan szöveg, hibás escape, túl nagy szám) → 400, nem veremtúlcsordulás; túl nagy törzs; biztonsági fejlécek (CSP, X-Frame-Options, nosniff, Referrer-Policy, kérésazonosító), HSTS csak HTTPS-proxy mögött, API `no-store`; 300 véletlen URL után sem nő a statikus gyorsítótár; előre tömörített `app.js` kibontva helyes; admin-belépés: 14 párhuzamos próbálkozásból legalább 4 → 429; metrikák (útvonal, státusz, elutasítás oka, árak betöltve); terhelésszabályozás: egy lassan feltöltött kérés mellett a következő 503 + `Retry-After`, utána újra működik; a napló kitakarja a profil-azonosítót;
+- éles üzem: ellenséges JSON (100 000 szint mély, lezáratlan szöveg, hibás escape, túl nagy szám) → 400, nem veremtúlcsordulás; túl nagy törzs; biztonsági fejlécek (CSP, X-Frame-Options, nosniff, Referrer-Policy, kérésazonosító), HSTS csak HTTPS-proxy mögött, API `no-store`; 300 véletlen URL után sem nő a statikus gyorsítótár; előre tömörített `app.js` kibontva helyes; admin-belépés: 14 párhuzamos próbálkozásból legalább 4 → 429; metrikák (útvonal, státusz, elutasítás oka, árak betöltve); terhelésszabályozás: egy lassan feltöltött kérés mellett a következő 503 + `Retry-After`, utána újra működik; a napló csak a háztartáshoz kötött végpontokon takarja ki az azonosítót; proxy mögött az `X-Forwarded-For` utolsó eleme a kliens (a hamisított első elem nem kerüli meg a korlátot);
 - német: minden recept / lépés / alapanyag, mértékek (dl → ml), keresés („milch” → tej), napnév;
 - horvát: minden recept / lépés / alapanyag, háromalakú többes szám (1, 3, 5, 12, 21), európai számformátum, a dl marad; keresés nyelvek között (angol → magyar, horvát → magyar, kifejezés egyben, alapanyagnév visszafelé, horvát boltban „coffee” → kava, „kava” marad); kéréskorlát (429, `Retry-After`, angol üzenet, a statikus fájlokat és a `/healthz`-t nem korlátozza);
 - többnyelvűség: nyelvfelismerés (`?lang=`, `Accept-Language`), minden recept, lépés és alapanyag angol fordítása megvan, a generált mondatok (akció-indoklás, mérlegelős mennyiség, forint és euró, dkg → g, dl → ml, egyes/többes szám, fűszerlista), a terméknév változatlan, az azonosítók és a szűrőkulcsok maradnak, a pipák kulcsa nyelvfüggetlen; a webszerveren angol recept és hibaüzenet, a magyar válasz egy angol kérés után is magyar, `/healthz`, ETag és 304;

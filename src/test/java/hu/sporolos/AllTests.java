@@ -752,6 +752,13 @@ public final class AllTests {
         }
     }
 
+    static void testForwardedForUsesLastHop() {
+        eq("203.0.113.9", WebServer.forwardedClient(List.of("1.2.3.4, 203.0.113.9")), "a kliens által küldött első elem nem számít");
+        eq("203.0.113.9", WebServer.forwardedClient(List.of("203.0.113.9")), "egy elem");
+        eq("198.51.100.7", WebServer.forwardedClient(List.of("hamis", "198.51.100.7 , ")), "több fejléc, záró vessző");
+        eq(null, WebServer.forwardedClient(List.of()), "nincs fejléc");
+    }
+
     static void testLogRedaction() {
         eq("/api/week?id=***&lang=en", WebServer.redactForTest("/api/week?id=abcdefghjk23456789mn&lang=en"), "profil-azonosító kitakarva");
         eq("/api/extras?id=***&n=3", WebServer.redactForTest("/api/extras?id=x&n=3"), "több paraméter");

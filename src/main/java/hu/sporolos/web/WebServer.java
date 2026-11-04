@@ -250,10 +250,26 @@ public final class WebServer {
 
     private String clientKey(HttpExchange ex) {
         if (trustProxy) {
-            String fwd = ex.getRequestHeaders().getFirst("X-Forwarded-For");
-            if (fwd != null && !fwd.isBlank()) return fwd.split(",")[0].trim();
+            String ip = forwardedClient(ex.getRequestHeaders().get("X-Forwarded-For"));
+            if (ip != null) return ip;
         }
         return ex.getRemoteAddress() == null ? "?" : ex.getRemoteAddress().getAddress().getHostAddress();
+    }
+
+    /**
+     * A kliens címe az X-Forwarded-For-ból: az UTOLSÓ elem, mert azt a közvetlenül előttünk álló (megbízható) proxy
+     * írta. Az első elemet a kliens maga is küldheti (az nginx $proxy_add_x_forwarded_for hozzáfűz a kliens
+     * fejlécéhez), azzal a kéréskorlát véletlen értékekkel megkerülhető lenne. Egy proxy-réteget feltételez.
+     */
+    public static String forwardedClient(List<String> headers) {
+        if (headers == null || headers.isEmpty()) return null;
+        String last = headers.get(headers.size() - 1);
+        String[] parts = last.split(",");
+        for (int i = parts.length - 1; i >= 0; i--) {
+            String p = parts[i].trim();
+            if (!p.isEmpty()) return p;
+        }
+        return null;
     }
 
     /** A válasz nyelve: a ?lang= paraméter, különben a böngésző Accept-Language fejléce. */
